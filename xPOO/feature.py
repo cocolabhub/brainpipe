@@ -1,11 +1,9 @@
 import numpy as n
-
-from ._utils._feat import _manageWindow, _manageFrequencies, normalize
-from ._utils._plot import _plot, _2Dplot
-
-from .system.sysTools import binarize, binArray
-
-from .filtering.filtsig import filtvec
+from brainpipe.xPOO._utils._feat import (_manageWindow, _manageFrequencies,
+                                         normalize)
+from brainpipe.xPOO._utils._plot import _plot, _2Dplot
+from brainpipe.xPOO.tools import binarize, binArray
+from brainpipe.xPOO.filtering.filtsig import filtvec
 
 __all__ = ['power', 'phase']
 
@@ -203,7 +201,7 @@ class power(filtvec, _featC):
         # Mean time :
         if window is not None:
             tfn, _ = binArray(tfn, window, axis=1)
-            print(tfn.shape)
+        self.window = window
 
         return tfn
 
