@@ -35,5 +35,3 @@ v0.0
 - Brain3D
 - Nipype integration
 - Operation in cache
-
-
