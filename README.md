@@ -17,8 +17,23 @@ v0.0
 	your own time vector.
 
 ## To do
-- Description of the study class
-- physiology module
+### Descriptions
+- study class
+
+### Modules
+- add cfc and the diffrents methods
+- physiology
+- classification
+- Visu
+- Multi-features
+
+### Organization
 - Find a incremental template name for saving files
+
+## Future
+- Parallelize some functions
+- Brain3D
+- Nipype integration
+- Operation in cache
 
 
