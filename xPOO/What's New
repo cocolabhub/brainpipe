@@ -1,6 +1,0 @@
-25/01/16
-- Add a interpolation parameter to the tfplot function
-- File organization
-- Add the binarize option to tf
-- Add to power and phase class a 'time' otional input to specify
-	your own time vector.
