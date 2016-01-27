@@ -4,6 +4,9 @@
 v0.0
 
 ## Updates
+27/01/16
+- Add a description to the module bpstudy
+
 26/01/16
 - Add a testing folder to xPOO to test power and phase features
 - Basic configuration of init files
@@ -17,8 +20,21 @@ v0.0
 	your own time vector.
 
 ## To do
-- Description of the study class
-- physiology module
+### Descriptions
+
+### Modules
+- bpstudy : add_dataset, add_file
+- add cfc and the diffrents methods
+- physiology
+- classification
+- Visu
+- Multi-features
+
+### Organization
 - Find a incremental template name for saving files
 
-
+## Future
+- Parallelize some functions
+- Brain3D
+- Nipype integration
+- Operation in cache
