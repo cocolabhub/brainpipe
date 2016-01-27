@@ -4,9 +4,12 @@
 v0.0
 
 ## Updates
+27/01/16
+- Add a description to the module bpstudy
+
 26/01/16
 - Add a testing folder to xPOO to test power and phase features
-- Basix configuration of init files
+- Basic configuration of init files
 - Add a module to create a study and manage features...
 
 25/01/16
@@ -18,9 +21,9 @@ v0.0
 
 ## To do
 ### Descriptions
-- study class
 
 ### Modules
+- bpstudy : add_dataset, add_file
 - add cfc and the diffrents methods
 - physiology
 - classification
