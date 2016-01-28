@@ -1,4 +1,4 @@
-from ..system.sysTools import binarize
+from brainpipe.xPOO.tools import binarize
 import numpy as n
 import warnings
 

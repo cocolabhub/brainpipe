@@ -1,6 +1,6 @@
 import numpy as n
 import matplotlib.pyplot as plt
-from ._interp import mapinterpolation
+from brainpipe.xPOO._utils._interp import mapinterpolation
 
 __all__ = ['_plot', '_2Dplot', 'mapinterpolation']
 
