@@ -22,6 +22,11 @@ v0.0
 ## To do
 ### Descriptions
 
+### Module panda complémentaire
+- pdKeep
+- pdRemove
+- pdOrder
+
 ### Modules
 - bpstudy : add_dataset, add_file
 - add cfc and the diffrents methods
