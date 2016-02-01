@@ -79,6 +79,8 @@ def mf(x, y, Id=0, featList=None, clfIn=0, clfOut=0, p=0.05, combineGroup=False,
 
     # Manage group of features :
     groupinfo = combineInfo(x, featList, combineGroup=combineGroup)
+    if display:
+        print('-> '+str(len(list(groupinfo['feature'])))+' combinations found')
 
     # Define classifier option :
     clfOutMod = classifier_choice(
@@ -189,11 +191,10 @@ def combineInfo(x, featList, combineGroup=True):
 
     return pd.DataFrame({'feature': featNameComb, 'idx': idxComb})
 
+
 ####################################################################
 # - Combine string and int elements :
 ####################################################################
-
-
 def getCombi(stuff, start=1, stop=None, kind=int, sep=''):
     allComb = []
     if stop is None:
