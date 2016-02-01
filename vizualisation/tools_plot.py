@@ -12,7 +12,7 @@ __all__ = [
 ####################################################################
 def BorderPlot(x, y=None, time=None, linewidth=6, condition=None, palette=None, xlabel='', fullscreen='off',
                ylabel='', title='', despine='on', vLines=[], vColor=None, vShape=None, vWidth=None,
-               hLines=[], hColor=None, hWidth=None, hShape=None):
+               hLines=[], hColor=None, hWidth=None, hShape=None, vmin=None, vmax=None, tight=True):
     # [x] = nbtrials x timepoints
 
     # ---------------------------------------------------------
@@ -46,6 +46,10 @@ def BorderPlot(x, y=None, time=None, linewidth=6, condition=None, palette=None, 
         xr = n.zeros((yPearClass,nbpoints,yUniqueLen))
         for k in range(0,yUniqueLen):
             xr[:,:,k] = x[y == yUnique[k] ]
+    if vmin is None:
+        vmin = xr.min()
+    if vmax is None:
+        vmax = xr.max()
 
     # ---------------------------------------------------------
     # Plot part :
@@ -55,8 +59,11 @@ def BorderPlot(x, y=None, time=None, linewidth=6, condition=None, palette=None, 
     # Draw BorderPlot :
     sns.set(palette=palette, context='poster', style='white')
     q = sns.tsplot(data=xr, time=time, condition=condition,linewidth=linewidth)
-    plt.autoscale(tight=True)
+    q.set_ylim([vmin,vmax])
+    if tight:
+        plt.autoscale(tight=True)
     q.set_xlabel(xlabel), q.set_ylabel(ylabel), q.set_title(title)
+
     xl, yl = q.get_xlim(), q.get_ylim()
     if despine == 'on': sns.despine()
 
@@ -202,10 +209,10 @@ def _mapplot(signal, x=None, y=None, vmin=None, vmax=None, cmap='jet', axes=None
         signali, xvec, yvec = mapinterpolation(signal,interpx=interp[0],interpy=interp[1],x=x,y=y)
     else:
         signali, xvec, yvec = signal, x, y
-    try:
-         plt.style.use('brainpipe')
-    except :
-         plt.style.use('ggplot')
+    # try:
+    #      plt.style.use('brainpipe')
+    # except :
+    #      plt.style.use('ggplot')
     if axes is None:
         fig = plt.figure(figName,figsize=figsize)
         ax = fig.add_subplot(111)
