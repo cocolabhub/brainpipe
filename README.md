@@ -4,6 +4,13 @@
 v0.0
 
 ## Updates
+28 & 29 & 30 & 01/02/16
+- New visualization folder with BorderPlot, addLines...
+- New "settings" folder for bpstudy
+- Started the physiologie module
+- Add a filter control of pandas dataframe
+- Add a clean 2D interpolation method and native integration for features
+
 27/01/16
 - Add a description to the module bpstudy
 
@@ -22,18 +29,33 @@ v0.0
 ## To do
 ### Descriptions
 
-### Module panda complémentaire
-- pdKeep
+### Modules
+#### bpstudy
+- add_dataset
+- add_file
+- save
+
+#### Features
+- add cfc and the diffrents methods
+- welch method for power
+- inherate from built-in classes to avoid one unecessary line for plotting (plot method should be integrate in the power object)
+
+#### Panda complements
 - pdRemove
 - pdOrder
+- 
+#### physiology
+- TO DO
 
-### Modules
-- bpstudy : add_dataset, add_file
-- add cfc and the diffrents methods
-- physiology
-- classification
-- Visu
-- Multi-features
+#### Classification
+- TO DO
+
+#### Visualization
+- global 2D plot for TF and CFC
+- Time generalisation
+
+#### Multifeatures
+- TO DO
 
 ### Organization
 - Find a incremental template name for saving files
@@ -43,3 +65,5 @@ v0.0
 - Brain3D
 - Nipype integration
 - Operation in cache
+- cpu/gpu
+- Neural networks/DeepLearning (Philippe)
