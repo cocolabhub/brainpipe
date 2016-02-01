@@ -63,7 +63,7 @@ def timegeneralizationMap(da, time=None, interp=None, xlabel='Generalization tim
 
         ax.contour(time,time,da,pval,colors=pcol)
         plt.legend(handles=ppatch, loc=2, fancybox=True, frameon=True, shadow=True, 
-           borderpad=0.3, labelspacing=0.05, handletextpad=0.3, fontsize=15, borderaxespad=0.37)
+           borderpad=0.3, labelspacing=0.05, handletextpad=0.3, fontsize=20, borderaxespad=0.37)
             
     # Define a cue=(timeIndex,string,color,linewidth):
     if cue != None: 
