@@ -51,7 +51,7 @@ def classify(x, y, classifier='lda', kern='rbf', n_folds=10, rep=10, kind='sf', 
                                                                                                            n_permutations=n_perm,
                                                                                                            n_jobs=n_jobs)
 
-    return 100*da, 100*all_scores, permutation_scores, list(pvalue[0])
+    return 100*da, 100*all_scores, permutation_scores, pvalue#list(pvalue[0])
 
 
 ####################################################################
