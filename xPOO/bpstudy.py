@@ -61,6 +61,9 @@ class study(object):
             _check_study_exist(self)
             _update_bpsettings()
 
+    # -------------------------------------------------------------
+    # Manage Files:
+    # -------------------------------------------------------------
     def add_study(self, path):
         """Create a new study
 
@@ -78,6 +81,7 @@ class study(object):
             - /figure : figures of the study
             - /physiology : physiological informations
             - /backup : some backup files
+            - /settings : save some settings
         """
         # Main studyName directory :
         _bpfolders(path+self.name)
@@ -89,6 +93,7 @@ class study(object):
         _bpfolders(path+self.name+'/figures')
         _bpfolders(path+self.name+'/backup')
         _bpfolders(path+self.name+'/physiology')
+        _bpfolders(path+self.name+'/settings')
         # Add the study to the bpsetting file:
         _add_bpsettings_entry(name, path)
         _update_bpsettings()
@@ -102,6 +107,9 @@ class study(object):
             print('No folder found')
         _update_bpsettings()
 
+    # -------------------------------------------------------------
+    # Manage Files:
+    # -------------------------------------------------------------
     def file(self, *args, folder='', lower=True):
         """Get a list of files
 
@@ -163,13 +171,19 @@ class study(object):
         fileToLoad = self.path+folder+'/'+file
         fileName, fileExt = os.path.splitext(fileToLoad)
         if fileExt == '.pickle':
-            with open(, "rb") as f:
+            with open(fileToLoad, "rb") as f:
                 data = pickle.load(f)
         elif fileExt == '.mat':
             data = loadmat(fileToLoad)
 
         return data
 
+    def save(self, type, ):
+        print('To do')
+
+    # -------------------------------------------------------------
+    # Static methods :
+    # -------------------------------------------------------------
     @staticmethod
     def studies():
         """Get the list of all defined studies
