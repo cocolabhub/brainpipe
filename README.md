@@ -43,7 +43,7 @@ v0.0
 #### Panda complements
 - pdRemove
 - pdOrder
-- 
+
 #### physiology
 - TO DO
 
