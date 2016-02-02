@@ -48,7 +48,15 @@ v0.0
 - TO DO
 
 #### Classification
-- TO DO
+- Choix d'un classifieur
+- Choix d'une cross-val
+- Choix d'une évaluation statistique:
+	- Binomiale
+	- Permutations:
+		- shuffle labels
+		- Shuffle intra-class
+		- Shuffle "full randomization"
+- kind : sf ou mf
 
 #### Visualization
 - global 2D plot for TF and CFC
