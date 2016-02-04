@@ -97,7 +97,7 @@ class study(object):
         _bpfolders(path+self.name+'/physiology')
         _bpfolders(path+self.name+'/settings')
         # Add the study to the bpsetting file:
-        _add_bpsettings_entry(name, path)
+        _add_bpsettings_entry(self.name, path)
         _update_bpsettings()
 
     def delete_study(self):
@@ -202,7 +202,7 @@ class study(object):
         _update_bpsettings()
 
 
-def __bpfolders(directory):
+def _bpfolders(directory):
     """Check if a folder exist otherwise, create it
     """
     if not os.path.exists(directory):
