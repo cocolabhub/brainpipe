@@ -12,8 +12,8 @@ class study(object):
     Parameters
     ----------
     name : string, optional [def : None]
-        Name of the study. If this study already exist, this will load
-        the path the associated database.
+        Name of the study. If this study already exists, this will load
+        the path with the associated database.
 
     Methods
     ----------
