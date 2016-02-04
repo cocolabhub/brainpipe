@@ -5,6 +5,8 @@ from shutil import rmtree
 import numpy as n
 from scipy.io import loadmat
 
+__all__ = ['study']
+
 
 class study(object):
     """Create and manage a study with a files database.
@@ -178,7 +180,7 @@ class study(object):
 
         return data
 
-    def save(self, type, ):
+    def save(self, type):
         print('To do')
 
     # -------------------------------------------------------------
