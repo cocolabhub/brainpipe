@@ -4,6 +4,9 @@
 v0.0
 
 ## Updates
+04/02/16
+- New atlas to pandas Dataframe
+- 
 28 & 29 & 30 & 01/02/16
 - New visualization folder with BorderPlot, addLines...
 - New "settings" folder for bpstudy
@@ -67,6 +70,8 @@ v0.0
 
 ### Organization
 - Find a incremental template name for saving files
+- Fichier tampon pandas Dataframe qui résumé les paramètres // path // 
+- fonction seek pour charger que ce dont on a besoin
 
 ## Future
 - Parallelize some functions
