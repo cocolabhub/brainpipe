@@ -1,33 +1,35 @@
 import numpy as n
 
 
-def physiochannel(pos, mask, hdr, gray, label, r=5, nearest='on'):
+def pos2label(pos, mask, hdr, gray, label, r=5, nearest=True):
+    """From the xyz coordonates, get the labels of gyrus, hemisphere...
+    """
     pos = mni2tal(pos)
     ind = coord2ind(pos, mask, hdr, gray, r=r, nearest=nearest)
+    # Not found
     if ind == -1:
-        hemi, lobe, gyrus, matter, brod =['Not found']*4+[-1]
+        hemi, lobe, gyrus, matter, brod = ['Not found']*4+[-1]
+    # Not found <r:
     elif ind == -2:
-        hemi, lobe, gyrus, matter, brod = ['No Gray Matter found within +/-'+str(r)+'mm'], ['No Gray Matter found within +/-'+str(r)+'mm'], [
-            'No Gray Matter found within +/-'+str(r)+'mm'], ['No Gray Matterfound within +/-'+str(r)+'mm'], ['No Gray Matter found within +/-'+str(r)+'mm']
+        hemi, lobe, gyrus, matter, brod = [
+            'No Gray Matter found within +/-'+str(r)+'mm']*4+[0]
+    # found:
     else:
         hemi, lobe, gyrus, matter, brod = [label[ind, :][0][0]], [label[ind, :][1][0]], [
             label[ind, :][2][0]], [label[ind, :][3][0]], [label[ind, :][4][0]]
     return hemi, lobe, gyrus, matter, brod
 
 
-def coord2ind(pos, mask, hdr, gray, r=5, nearest='on'):
+def coord2ind(pos, mask, hdr, gray, r=5, nearest=True):
+    """Find the correspondance between coordonate and atlas index
+    """
     # Apply a transformation of position:
     pos.extend([1])
     sub = list(
         n.around(n.array(n.linalg.lstsq(hdr, n.matrix(pos).T)[0].T)[0]).astype(
             int))
     # Find the index with the nearest option:
-    if nearest is 'off':
-        try:
-            ind = mask[sub[0], sub[1], sub[2]]-1
-        except:
-            ind = -1
-    elif nearest is 'on':
+    if nearest:
         if sub[2] > gray.shape[2]:
             sub[2] = gray.shape[2]-1
         tranche = n.squeeze(gray[:, :, sub[2]])
@@ -42,10 +44,17 @@ def coord2ind(pos, mask, hdr, gray, r=5, nearest='on'):
             ind = mask[umin[0], vmin[0], sub[2]]-1
         else:
             ind = -2
+    else:
+        try:
+            ind = mask[sub[0], sub[1], sub[2]]-1
+        except:
+            ind = -1
     return ind
 
 
-def loadatlas(atlas='Talairach'):
+def loadatlas(atlas='tal'):
+    """Load the atlas from the brainpipe module
+    """
     B3Dpath = os.path.dirname(
         os.path.abspath(inspect.getfile(inspect.currentframe())))
     # Load AAL atlas :
@@ -54,7 +63,7 @@ def loadatlas(atlas='Talairach'):
         hdr, label, mask = AAL['AAL_hdr'], AAL['AAL_label'], AAL['AAL_vol']
 
     # Load talairach atlas :
-    if atlas is 'Talairach':
+    if atlas is 'tal':
         TAL = scio.loadmat(B3Dpath + '/Atlas/Labels/Talairach_atlas')
         hdr = TAL['hdr']['mat'][0][0]
 
@@ -64,7 +73,25 @@ def loadatlas(atlas='Talairach'):
     return hdr, mask, gray, brodtxt, brodidx, label
 
 
+def mni2tal(pos):
+    """Transform coordonates from mni to talairach
+    """
+    upT = spm_matrix([0, 0, 0, 0.05, 0, 0, 0.99, 0.97, 0.92])
+    downT = spm_matrix([0, 0, 0, 0.05, 0, 0, 0.99, 0.97, 0.84])
+
+    tmp = pos[-1] < 0
+    pos.extend([1])
+    pos = n.matrix(pos).T
+    if tmp:
+        pos = downT * pos
+    else:
+        pos = upT * pos
+    return list(n.array(pos.T)[0][0:3])
+
+
 def spm_matrix(P):
+    """Matrix transformation
+    """
 
     q = [0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0]
     P.extend(q[len(P):12])
@@ -83,17 +110,3 @@ def spm_matrix(P):
     S = n.matrix([[1, P[9], P[10], 0], [0, 1, P[11], 0],
                   [0, 0, 1, 0], [0, 0, 0, 1]])
     return T*R1*R2*R3*Z*S
-
-
-def mni2tal(pos):
-    upT = spm_matrix([0, 0, 0, 0.05, 0, 0, 0.99, 0.97, 0.92])
-    downT = spm_matrix([0, 0, 0, 0.05, 0, 0, 0.99, 0.97, 0.84])
-
-    tmp = pos[-1] < 0
-    pos.extend([1])
-    pos = n.matrix(pos).T
-    if tmp:
-        pos = downT * pos
-    else:
-        pos = upT * pos
-    return list(n.array(pos.T)[0][0:3])
