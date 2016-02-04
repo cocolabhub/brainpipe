@@ -190,6 +190,7 @@ class study(object):
     def studies():
         """Get the list of all defined studies
         """
+        bpCfg = _path_bpsettings()
         with open(bpCfg, "rb") as f:
             bpsettings = pickle.load(f)
         _update_bpsettings()
