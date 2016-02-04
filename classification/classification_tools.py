@@ -51,7 +51,7 @@ def classify(x, y, classifier='lda', kern='rbf', n_folds=10, rep=10, kind='sf', 
                                                                                                            n_permutations=n_perm,
                                                                                                            n_jobs=n_jobs)
 
-    return 100*da, 100*all_scores, permutation_scores, pvalue#list(pvalue[0])
+    return 100*da, 100*all_scores, 100*permutation_scores, pvalue#list(pvalue[0])
 
 
 ####################################################################
@@ -62,7 +62,7 @@ def classify_fcn(x, y, clf, n_folds=10, rep=10, n_jobs=1, cvkind='skfold'):
 
     for k in range(0, rep):
         # Shuffling
-        cv_model = crossval_choice(y, cvkind=cvkind, n_folds=n_folds, rndstate=k, rep=rep)
+        cv_model = crossval_choice(y, cvkind=cvkind, n_folds=n_folds, rndstate=k+10, rep=rep)
         all_scores[k, :] = cross_validation.cross_val_score(clf, x, y, cv=cv_model, n_jobs=n_jobs)
 
     da = all_scores.mean()
