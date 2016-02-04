@@ -8,7 +8,10 @@ from brainpipe.xPOO.filtering.filtsig import filtvec
 __all__ = ['power', 'phase']
 
 
-class _featC(object):
+class _featC(list):
+
+    def __init(self):
+        list.__init__(self)
 
     def get(self, x):
         """Compute the selected kind of feature of a signal x
@@ -23,7 +26,7 @@ class _featC(object):
         """
         dimLen = len(x.shape)
         if dimLen == 2:
-            return self._get(x)
+            return [self._get(x)]
         elif dimLen == 3:
             return [self._get(x[k, :, :]) for k in range(0, x.shape[0])]
 
