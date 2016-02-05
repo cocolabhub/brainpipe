@@ -4,6 +4,8 @@ import numpy as n
 ####################################################################
 # - Statistical binomial threshold :
 ####################################################################
+
+
 def binostat(y, p):
     y = n.ravel(y)
     nbepoch = len(y)
@@ -17,7 +19,11 @@ def binostatinv(y, da):
     nbclass = len(n.unique(y))
     return 1 - binom.cdf(nbepoch * da / 100, nbepoch, 1 / nbclass)
 
-def binofeat(y,da,p):
+
+def binofeat(y, da, p):
     th = binostat(y, p)
     signifeat = da >= th
-    return signifeat[0], th
+    try:
+        return signifeat[0], th
+    except:
+        return [signifeat], th
