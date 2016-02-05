@@ -1,23 +1,26 @@
 import numpy as n
+from os.path import abspath, dirname, join
+from inspect import getfile, currentframe
+from scipy.io import loadmat
+from pandas import DataFrame, concat
+import pandas as pd
+import pickle
+pd.options.mode.chained_assignment = None
 
 
-def pos2label(pos, mask, hdr, gray, label, r=5, nearest=True):
+def pos2label(posC, mask, hdr, gray, label, r=5, nearest=True):
     """From the xyz coordonates, get the labels of gyrus, hemisphere...
     """
+    pos = n.ndarray.tolist(posC)
+    if type(pos[0]) is not list:
+        pos = [pos]
     pos = mni2tal(pos)
-    ind = coord2ind(pos, mask, hdr, gray, r=r, nearest=nearest)
-    # Not found
-    if ind == -1:
-        hemi, lobe, gyrus, matter, brod = ['Not found']*4+[-1]
-    # Not found <r:
-    elif ind == -2:
-        hemi, lobe, gyrus, matter, brod = [
-            'No Gray Matter found within +/-'+str(r)+'mm']*4+[0]
-    # found:
-    else:
-        hemi, lobe, gyrus, matter, brod = [label[ind, :][0][0]], [label[ind, :][1][0]], [
-            label[ind, :][2][0]], [label[ind, :][3][0]], [label[ind, :][4][0]]
-    return hemi, lobe, gyrus, matter, brod
+    ind = [coord2ind(k, mask, hdr, gray, r=r, nearest=nearest)
+           for k in pos]
+    sub = label.iloc[ind]
+    sub['X'], sub['Y'], sub['Z'] = posC[:, 0], posC[:, 1], posC[:, 2]
+    sub = sub.set_index([list(n.arange(sub.shape[0]))])
+    return sub
 
 
 def coord2ind(pos, mask, hdr, gray, r=5, nearest=True):
@@ -43,20 +46,20 @@ def coord2ind(pos, mask, hdr, gray, r=5, nearest=True):
         if mindist < r:
             ind = mask[umin[0], vmin[0], sub[2]]-1
         else:
-            ind = -2
+            ind = -1
     else:
         try:
             ind = mask[sub[0], sub[1], sub[2]]-1
         except:
-            ind = -1
+            ind = -2
     return ind
 
 
-def loadatlas(atlas='tal'):
+def loadatlas(atlas='tal', r=5):
     """Load the atlas from the brainpipe module
     """
-    B3Dpath = os.path.dirname(
-        os.path.abspath(inspect.getfile(inspect.currentframe())))
+    B3Dpath = dirname(
+        abspath(join(getfile(currentframe()), '..', '..', 'atlas')))
     # Load AAL atlas :
     if atlas is 'AAL':  # PAS FINIT
         AAL = scio.loadmat(B3Dpath + '/Atlas/Labels/BrainNet_AAL_Label')
@@ -64,29 +67,33 @@ def loadatlas(atlas='tal'):
 
     # Load talairach atlas :
     if atlas is 'tal':
-        TAL = scio.loadmat(B3Dpath + '/Atlas/Labels/Talairach_atlas')
-        hdr = TAL['hdr']['mat'][0][0]
+        with open(B3Dpath + '/atlas/labels/talairach_atlas.pickle', "rb") as f:
+            TAL = pickle.load(f)
+        label = TAL['label']
+        strGM = ['No Gray Matter found within +/-'+str(r)+'mm']
+        label = concat([label, DataFrame({'hemisphere': [strGM], 'lobe':[
+                       strGM], 'gyrus':[strGM], 'matter':[strGM], 'brodmann':[
+            0]})])
+        label = label.set_index([list(n.arange(label.shape[0]))])
+        return TAL['hdr'], TAL['mask'], TAL['gray'], label
 
-        label, mask, gray = TAL['label'], TAL['mask'], TAL['gray']
-        brodtxt, brodidx = TAL['brod']['txt'][0][0], TAL['brod']['idx'][0][0]
 
-    return hdr, mask, gray, brodtxt, brodidx, label
-
-
-def mni2tal(pos):
+def mni2tal(posmni):
     """Transform coordonates from mni to talairach
     """
     upT = spm_matrix([0, 0, 0, 0.05, 0, 0, 0.99, 0.97, 0.92])
     downT = spm_matrix([0, 0, 0, 0.05, 0, 0, 0.99, 0.97, 0.84])
-
-    tmp = pos[-1] < 0
-    pos.extend([1])
-    pos = n.matrix(pos).T
-    if tmp:
-        pos = downT * pos
-    else:
-        pos = upT * pos
-    return list(n.array(pos.T)[0][0:3])
+    pos = []
+    for k in posmni:
+        tmp = k[-1] < 0
+        k.extend([1])
+        k = n.matrix(k).T
+        if tmp:
+            k = downT * k
+        else:
+            k = upT * k
+        pos.append(list(n.array(k.T)[0][0:3]))
+    return pos
 
 
 def spm_matrix(P):
