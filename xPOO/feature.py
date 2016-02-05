@@ -26,7 +26,7 @@ class _featC(list):
         """
         dimLen = len(x.shape)
         if dimLen == 2:
-            return [self._get(x)]
+            return self._get(x)
         elif dimLen == 3:
             return [self._get(x[k, :, :]) for k in range(0, x.shape[0])]
 
