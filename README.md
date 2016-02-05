@@ -6,7 +6,9 @@ v0.0
 ## Updates
 04/02/16
 - New atlas to pandas Dataframe
-- 
+- Bugs in bpstudy and power
+- New module physiologie + more controlable DataFrame (should be 10x faster)
+
 28 & 29 & 30 & 01/02/16
 - New visualization folder with BorderPlot, addLines...
 - New "settings" folder for bpstudy

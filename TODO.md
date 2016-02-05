@@ -1,6 +1,7 @@
 # To do
 ## Documentation
 - Physio // try to find how to get the doc of an other method
+- Vizu BorderPlot & addLines
 
 ## Modules
 ### bpstudy
