@@ -113,7 +113,7 @@ class BorderPlot(_pltutils):
             legend = ['']*dev
         else:
             if type(legend) is not list:
-                legend = [colegendcolorlor]
+                legend = [legend]
             if len(legend) is not nclass:
                 legend = legend*nclass
 
