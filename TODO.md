@@ -45,6 +45,10 @@
 - Fichier tampon pandas Dataframe qui résumé les paramètres // path // 
 - fonction seek pour charger que ce dont on a besoin
 
+## Test
+- Add a test_physio
+- Add notebooks
+
 # Future
 - Parallelize some functions
 - Brain3D
