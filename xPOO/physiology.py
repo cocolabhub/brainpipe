@@ -14,9 +14,12 @@ class physio(object):
         (self.__hdr, self.__mask, self.__gray,
             self.__label) = loadatlas(atlas=self.atlas, r=self.r)
 
-    def get(self, xyz, channel=''):
+    def get(self, xyz, chan=''):
         pdPhy = pos2label(xyz, self.__mask, self.__hdr, self.__gray,
                           self.__label, r=self.r, nearest=self.nearest)
+        if chan == '':
+            chan = ['channel'+str(k) for k in range(len(pdPhy))]
+        pdPhy['channel'] = chan
         return pd2physio(pdPhy)
 
 
