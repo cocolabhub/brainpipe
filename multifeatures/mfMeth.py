@@ -11,7 +11,7 @@ __all__ = ['select_MF', 'apply_MF']
 
 
 def select_MF(Id, y, clfIn, p=0.05, display=False, direction='forward',
-              nbest=10, **kwargs):
+              nbest=10, grpType='sf', **kwargs):
     """Centralize the implemented model for the multifeatures which can be
     selected using the Id Id can be a string containing multiple elements.
     [ex: Id='031']
@@ -61,30 +61,40 @@ def select_MF(Id, y, clfIn, p=0.05, display=False, direction='forward',
     # Define all the methods :
     def submeth(Idx):
         if Idx == '0':  # Select all features
-            def MFmeth(x): return select_all(x)
+            def MFmeth(x):
+                return select_all(x)
             StrMeth = 'SelectAll'
+
         if Idx == '1':  # use a binomial law to select features
-            def MFmeth(x): return select_bino(
-                x, y, p=p, classifier=clfIn, **kwargs)
+            def MFmeth(x):
+                return select_bino(x, y, p=p, classifier=clfIn,
+                                   grpType=grpType, **kwargs)
+
             StrMeth = 'Binomial selection at p<'+str(p)
+
         if Idx == '2':  # use permutations to select features
-            def MFmeth(x): return select_perm(
-                x, y, p=p, classifier=clfIn, **kwargs)
+            def MFmeth(x):
+                return select_perm(x, y, p=p, classifier=clfIn,
+                                   grpType=grpType, **kwargs)
             StrMeth = 'Permutation selection at p<'+str(p)
+
         # use 'forward'/'backward'/'exhaustive'to  select features
         if Idx == '3':
             clf = classifier_choice(clfIn, n_tree=kwargs['n_tree'],
                                     n_knn=kwargs['n_knn'],
                                     kern=kwargs['kern'])
 
-            def MFmeth(x): return sequence_inner(clf, x, y,
-                                                 direction=direction,
-                                                 inner_folds=kwargs['n_folds'],
-                                                 display=display)
+            def MFmeth(x):
+                return sequence_inner(clf, x, y,
+                                      direction=direction,
+                                      inner_folds=kwargs['n_folds'],
+                                      display=display)
             StrMeth = direction+' feature selection'
+
         if Idx == '4':  # nbest features
-            def MFmeth(x): return select_nbest(
-                x, y, nbest=nbest, classifier=clfIn, **kwargs)
+            def MFmeth(x):
+                return select_nbest(x, y, nbest=nbest, classifier=clfIn,
+                                    grpType=grpType, **kwargs)
             StrMeth = str(nbest)+' best features'
 
         return MFmeth, StrMeth
@@ -141,28 +151,31 @@ def select_all(x):
 ####################################################################
 
 
-def select_bino(x, y, p=0.05, **kwargs):
+def select_bino(x, y, p=0.05, grpType='sf', **kwargs):
     """Select <p significant features using the binomial law"""
-
-    allfeat = [k for k in range(0, x.shape[0])]
+    if x.shape[0] is not len(y):
+        x = x.T
     # Classify each features :
-    da, _, _, _ = classify(x, y, kind='sf', **kwargs)
+    da, _, _, _ = classify(x, y, kind=grpType, **kwargs)
     # Get significant features :
     signifeat, _ = binofeat(y, da, p)
-    # Return list of significant fatures:
-    return list(n.array(allfeat)[signifeat])
+    # Complete signifeat for group features:
+    if grpType == 'mf':
+        signifeat = signifeat*x.shape[1]
+    # Return list of significant features:
+    return [k for k, i in enumerate(list(signifeat)) if i]
 
 ####################################################################
 # 2 - Select significant features based on permutations :
 ####################################################################
 
 
-def select_perm(x, y, p=0.05, **kwargs):
+def select_perm(x, y, p=0.05, grpType='sf', **kwargs):
     """Select <p significant features using the permutations"""
 
     n_perm = round(1/p)
     # Classify each features :
-    _, _, _, pvalue = classify(x, y, n_perm=n_perm, kind='sf', **kwargs)
+    _, _, _, pvalue = classify(x, y, n_perm=n_perm, kind=grpType, **kwargs)
 
     return [k for k in range(0, len(pvalue)) if pvalue[k] < p]
 
@@ -171,9 +184,9 @@ def select_perm(x, y, p=0.05, **kwargs):
 ####################################################################
 
 
-def select_nbest(x, y, nbest=10, **kwargs):
+def select_nbest(x, y, nbest=10, grpType='sf', **kwargs):
     """Select nbest features"""
 
     # Classify each features :
-    da, _, _, _ = classify(x, y, kind='sf', **kwargs)
+    da, _, _, _ = classify(x, y, kind=grpType, **kwargs)
     return list(n.ravel(da.T).argsort()[-nbest:][::-1])

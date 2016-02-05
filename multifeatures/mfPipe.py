@@ -15,10 +15,11 @@ __all__ = ['mf']
 ####################################################################
 
 
-def mf(x, y, Id=0, featList=None, clfIn=0, clfOut=0, p=0.05, combineGroup=False,
+def mf(x, y, Id=0, clfIn=0, clfOut=0, p=0.05,
         n_knn=3, n_tree=100, kern='rbf', cvIn='sss', n_foldsIn=10, repIn=1,
         cvOut='skfold', n_foldsOut=3, repOut=10, probOccur='rpercent',
-        display=True, threshold=None, direction='forward', nbest=10):
+        display=True, threshold=None, direction='forward', nbest=10,
+        grpList=None, grpCombine=False, grpAs='single'):
     """Compute the multi-features contain in an array x, using the target
     vector y. The Id serve to combine MF methods.
 
@@ -26,7 +27,7 @@ def mf(x, y, Id=0, featList=None, clfIn=0, clfOut=0, p=0.05, combineGroup=False,
     ----------
 
     x : array-like
-    The features. Dimension [nfeat x ntrial]
+        The features. Dimension [nfeat x ntrial]
 
     y : array-like
         The target variable to try to predict in the case of
@@ -37,6 +38,10 @@ def mf(x, y, Id=0, featList=None, clfIn=0, clfOut=0, p=0.05, combineGroup=False,
         '1': Select <p significant features using a binomial law
         '2': Select <p significant features using permutations
         '3': use 'forward'/'backward'/'exhaustive'to  select features
+        '4': select 'nbest' features based on evaluation
+
+    grpList : list, optional, [def: None]
+        Specify
 
     clf : estimator object implementing 'fit'
         The object to use to fit the data
@@ -72,15 +77,19 @@ def mf(x, y, Id=0, featList=None, clfIn=0, clfOut=0, p=0.05, combineGroup=False,
     """
     # Get size elements :
     nfeat, ntrial = x.shape
-    if featList is None:
-        featList, combineGroup = [0] * nfeat, False
+    if grpList is None:
+        grpList, grpCombine = [0] * nfeat, False
     if threshold is not None:
         p = binostatinv(y, threshold)
+    if grpAs == 'single':
+        grpType = 'sf'
+    elif grpAs == 'group':
+        grpType = 'mf'
 
     # Manage group of features :
-    groupinfo = combineInfo(x, featList, combineGroup=combineGroup)
-    if display:
-        print('-> '+str(len(list(groupinfo['feature'])))+' combinations found')
+    groupinfo = combineInfo(x, grpList, grpCombine=grpCombine)
+    # if display:
+    #     print('-> '+str(len(list(groupinfo['feature'])))+' combinations found')
 
     # Define classifier option :
     clfOutMod = classifier_choice(
@@ -94,12 +103,13 @@ def mf(x, y, Id=0, featList=None, clfIn=0, clfOut=0, p=0.05, combineGroup=False,
 
     # Run the MF model for each combinaition:
     da, prob = [], []
-    for k in range(0, len(groupinfo)):  # list(groupinfo['idx']):
+    for k in range(len(groupinfo)):
         if display:
-            print('=> Group : ' + groupinfo['feature'].iloc[k], end='\r')
+            print('=> Group : ' + groupinfo['feature'].iloc[k]+' ('+str(
+                k)+'/'+str(len(groupinfo))+')', end='\r')
         daComb, probComb, MFstr = MFcv(
             x[groupinfo['idx'].iloc[k], :], y, Id, clfOutMod, clfIn=clfIn,
-            display=display, **setup)
+            display=display, grpType=grpType, **setup)
         da.append(daComb), prob.append(probComb)
 
     # Get final info on the classifier used :
@@ -122,7 +132,7 @@ def mf(x, y, Id=0, featList=None, clfIn=0, clfOut=0, p=0.05, combineGroup=False,
 def MFcv(x, y, Id, clfOut, p=0.05, clfIn=0, cvOut='skfold', n_foldsOut=3,
          repOut=10, cvIn='skfold', n_foldsIn=10, repIn=1,
          n_tree=100, n_knn=10, kern='rbf', probOccur='rpercent', display=True,
-         direction='forward', nbest=10):
+         direction='forward', nbest=10, grpType='sf'):
     """cross-validation multifeatures """
     idxCvOut, da = [], []
     for k in range(0, repOut):
@@ -139,7 +149,7 @@ def MFcv(x, y, Id, clfOut, p=0.05, clfIn=0, cvOut='skfold', n_foldsOut=3,
             MFmeth, MFstr = select_MF(Id, yTrain, clfIn, p=p, display=display,
                                       cvkind=cvIn, rep=repIn,
                                       n_folds=n_foldsIn, n_tree=n_tree,
-                                      n_knn=n_knn, kern=kern,
+                                      n_knn=n_knn, kern=kern, grpType=grpType,
                                       direction=direction, nbest=nbest)
 
             # Apply the MF model:
@@ -171,19 +181,19 @@ def MFcv(x, y, Id, clfOut, p=0.05, clfIn=0, cvOut='skfold', n_foldsOut=3,
 ####################################################################
 
 
-def combineInfo(x, featList, combineGroup=True):
+def combineInfo(x, grpList, grpCombine=True):
 
     nfeat, ntrial = x.shape
-    gpFeat = pd.DataFrame({'group': featList})
+    gpFeat = pd.DataFrame({'group': grpList})
     gp = gpFeat.groupby(['group'])
-    if combineGroup:
+    if grpCombine:
         start, stop = 1, None
     else:
         start, stop = 1, 2  # len(gp.groups.keys())-1
 
     seen = set()
     seen_add = seen.add
-    unqOrder = [x for x in featList if not (x in seen or seen_add(x))]
+    unqOrder = [x for x in grpList if not (x in seen or seen_add(x))]
     idxGp = [gp.groups[k] for k in unqOrder]
     idxComb = getCombi(idxGp, start=start, stop=stop, kind=int)
     featNameComb = getCombi(
