@@ -2,27 +2,10 @@ import pandas as pd
 from warnings import warn
 import numpy as n
 
+__all__ = ['pdSearch', 'pdKeep', 'pdRm']
 
-def pdKeep(df, *keep, indCol=True):
-    """Filter a pandas dataframe and keep only interresting rows.
-    This function can combine "and" and "or" conditionnal test for
-    a more flexible control of a dataframe.
 
-    df : pandas dataframe
-        The dataframe to be filtered
-
-    keep : tuple/list
-        Control the informations to keep
-
-    indCol : bool, optional [def : True]
-        Add a column to df to check what are the rows that has been
-        kept.
-
-    & : inside the list
-    + : for the number of arg
-    Each keep: [(Column1,[s1,s2,...]),(Column2,[s21,s22])]
-    """
-    dfKeep = pd.DataFrame()
+def pdSearch(df, *keep):
     keyList = list(df.keys())
     # For each keep:
     index, indexCol = [], []
@@ -51,9 +34,71 @@ def pdKeep(df, *keep, indCol=True):
                 indSet = []
 
         index.append(list(indSet))
-        indexCol.extend(list(indSet))
-        dfKeep = dfKeep.append(df.iloc[list(indSet)])
-    if indCol:
-        dfKeep['indKeep'] = indexCol
 
-    return dfKeep.set_index([list(n.arange(dfKeep.shape[0]))]), index
+    return index
+
+
+def pdKeep(df, *keep, keep_idx=True):
+    """Filter a pandas dataframe and keep only interresting rows.
+    This function can combine "and" and "or" conditionnal test for
+    a more flexible control of a dataframe.
+
+    df : pandas dataframe
+        The dataframe to be filtered
+
+    keep : tuple/list
+        Control the informations to keep
+
+    indCol : bool, optional [def : True]
+        Add a column to df to check what are the rows that has been
+        kept.
+
+    & : inside the list
+    + : for the number of arg
+    Each keep: [(Column1,[s1,s2,...]),(Column2,[s21,s22])]
+    """
+    dfKeep = pd.DataFrame()
+    keepIdx = pdSearch(df, *keep)
+    indCol = []
+    for k in keepIdx:
+        dfKeep = dfKeep.append(df.iloc[k])
+        indCol.extend(k)
+
+    if keep_idx:
+        dfKeep['keep_idx'] = indCol
+
+    return dfKeep.set_index([list(n.arange(dfKeep.shape[0]))]), keepIdx
+
+
+def pdRm(dfT, *keep, rm_idx=True):
+    """Filter a pandas dataframe and keep only interresting rows.
+    This function can combine "and" and "or" conditionnal test for
+    a more flexible control of a dataframe.
+
+    df : pandas dataframe
+        The dataframe to be filtered
+
+    keep : tuple/list
+        Control the informations to keep
+
+    indCol : bool, optional [def : True]
+        Add a column to df to check what are the rows that has been
+        kept.
+
+    & : inside the list
+    + : for the number of arg
+    Each keep: [(Column1,[s1,s2,...]),(Column2,[s21,s22])]
+    """
+    df = dfT.copy()
+    rmIdx = pdSearch(df, *keep)
+    indCol = []
+    for k in rmIdx:
+        indCol.extend(k)
+    setList = list(set(indCol))
+    df.drop(setList, inplace=True)
+    fullList = list(n.arange(dfT.shape[0]))
+
+    if rm_idx:
+        df['rm_idx'] = list(set(fullList).difference(setList))
+
+    return df.set_index([list(n.arange(df.shape[0]))]), rmIdx
