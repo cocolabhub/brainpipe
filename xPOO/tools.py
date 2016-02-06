@@ -1,6 +1,9 @@
 import numpy as n
 
-__all__ = ['binarize', 'binArray']
+__all__ = ['binarize',
+           'binArray',
+           'p2str'
+           ]
 
 
 def binarize(starttime, endtime, width, step, kind='tuple'):
@@ -60,3 +63,10 @@ def binArray(x, binList, axis=0):
             xBin[k, ...] = n.mean(x[i[0]:i[1], ...], 0)
 
     return n.swapaxes(xBin, 0, axis), [(k[0]+k[1])/2 for k in binList]
+
+
+def p2str(p):
+    """Convert a pvalue to a string. Usefull for saving !
+    """
+    pStr = str(p)
+    return pStr[-1]+'e-'+str(len(pStr[pStr.find('.')+1::]))
