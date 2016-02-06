@@ -110,6 +110,7 @@ class study(object):
         _add_bpsettings_entry(self.name, path, creation)
         _update_bpsettings()
         print(self.name+' has been successfully created')
+        _check_study_exist(self)
 
     def delete(self):
         """Delete the current study
