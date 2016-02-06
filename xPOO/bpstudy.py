@@ -1,9 +1,16 @@
-import os
-import brainpipe
-import pickle
+from os import listdir
+from os.path import splitext, join
+from datetime import datetime
+
 from shutil import rmtree
-import numpy as n
 from scipy.io import loadmat
+import pickle
+
+import brainpipe
+from brainpipe.xPOO._utils._system import loadfile, savefile
+from brainpipe.xPOO._utils._bpstudy import *
+
+import numpy as n
 
 __all__ = ['study']
 
@@ -42,18 +49,15 @@ class study(object):
     studyName = 'MyStudy'
 
     # Create a study object :
-    studObj = study(name)
-    studObj.add_study(path) # Create the study
+    studObj = study(name=studyName)
+    studObj.add(path) # Create the study
     studObj.studies()       # Print the list of studies
 
     # Manage files in your study :
-    fileList = studObj.file('filter1', 'filter2', folder='features')
+    fileList = studObj.search('filter1', 'filter2', folder='features')
     # Let say that fileList contain two files : ['file1.mat', 'file2.pickle']
     # Load the second file :
     data = studObj.load('features', 'file2.pickle')
-
-
-
     """
 
     def __init__(self, name=None):
@@ -63,11 +67,14 @@ class study(object):
             _check_study_exist(self)
             _update_bpsettings()
 
+    def __str__(self):
+        return 'Study name: '+self.name+', path = '
+
     # -------------------------------------------------------------
     # Manage Files:
     # -------------------------------------------------------------
-    def add_study(self, path):
-        """Create a new study
+    def add(self, path):
+        """Add a new study
 
         Parameters
         ----------
@@ -86,33 +93,41 @@ class study(object):
             - /settings : save some settings
         """
         # Main studyName directory :
-        _bpfolders(path+self.name)
+        _bpfolders(join(path, self.name))
         # Subfolders :
-        _bpfolders(path+self.name+'/database')
-        _bpfolders(path+self.name+'/features')
-        _bpfolders(path+self.name+'/classified')
-        _bpfolders(path+self.name+'/multifeatures')
-        _bpfolders(path+self.name+'/figures')
-        _bpfolders(path+self.name+'/backup')
-        _bpfolders(path+self.name+'/physiology')
-        _bpfolders(path+self.name+'/settings')
+        _bpfolders(join(path, self.name, 'database'))
+        _bpfolders(join(path, self.name, 'features'))
+        _bpfolders(join(path, self.name, 'classified'))
+        _bpfolders(join(path, self.name, 'multifeatures'))
+        _bpfolders(join(path, self.name, 'figures'))
+        _bpfolders(join(path, self.name, 'backup'))
+        _bpfolders(join(path, self.name, 'physiology'))
+        _bpfolders(join(path, self.name, 'settings'))
         # Add the study to the bpsetting file:
-        _add_bpsettings_entry(self.name, path)
+        now = datetime.now()
+        creation = (str(now.month)+'/'+str(now.day)+'/'+str(now.year),
+                    str(now.hour)+':'+str(now.minute)+':'+str(now.second))
+        _add_bpsettings_entry(self.name, path, creation)
         _update_bpsettings()
+        print(self.name+' has been successfully created')
 
-    def delete_study(self):
+    def delete(self):
         """Delete the current study
         """
-        try:
-            rmtree(self.path)
-        except:
-            print('No folder found')
-        _update_bpsettings()
+        print('Delete the study '+self.name+'? [y/n]')
+        userInput = input()
+        if userInput is 'y':
+            try:
+                rmtree(self.path)
+                print(self.name+' has been deleted')
+            except:
+                print('No folder found')
+            _update_bpsettings()
 
     # -------------------------------------------------------------
     # Manage Files:
     # -------------------------------------------------------------
-    def file(self, *args, folder='', lower=True):
+    def search(self, *args, folder='', lower=True):
         """Get a list of files
 
         Parameters
@@ -134,7 +149,7 @@ class study(object):
         A list containing the files found in the folder.
         """
 
-        ListFeat = os.listdir(self.path+folder+'/')
+        ListFeat = listdir(join(self.path, folder))
 
         if args == ():
             return ListFeat
@@ -155,7 +170,7 @@ class study(object):
         return [ListFeat[k] for k in n.where(n.sum(filterFeat, 0) == len(
                     args))[0]]
 
-    def load(self, folder, file):
+    def load(self, folder, name):
         """Load a file. The file can be a .pickle or .mat
 
         Parameters
@@ -170,18 +185,10 @@ class study(object):
         ----------
         A dictionary containing all the variables.
         """
-        fileToLoad = self.path+folder+'/'+file
-        fileName, fileExt = os.path.splitext(fileToLoad)
-        if fileExt == '.pickle':
-            with open(fileToLoad, "rb") as f:
-                data = pickle.load(f)
-        elif fileExt == '.mat':
-            data = loadmat(fileToLoad)
+        return loadfile(join(self.path, folder, name))
 
-        return data
-
-    def save(self, type):
-        print('To do')
+    def save(self, folder, name, **kwargs):
+        savefile(join(self.path, folder, name), **kwargs)
 
     # -------------------------------------------------------------
     # Static methods :
@@ -201,77 +208,3 @@ class study(object):
         """Update the list of studies
         """
         _update_bpsettings()
-
-
-def _bpfolders(directory):
-    """Check if a folder exist otherwise, create it
-    """
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-
-def _check_bpsettings_exist():
-    """Check if the bpsettings file exist otherwise create it
-    """
-    try:
-        _load_bpsettings()
-    except:
-        with open(bpPath+'bpsettings.pickle', 'wb') as f:
-            pickle.dump({}, f)
-
-
-def _add_bpsettings_entry(name, path):
-    """Add a study to the bpsettings file. bpsettings is a
-    dictionary organized by name of study and containing path.
-    """
-    bpsettings = _load_bpsettings()
-    bpsettings[name] = path+name+'/'
-    _save_bpsettings(bpsettings)
-
-
-def _path_bpsettings():
-    """Get the path of bpsettings
-    """
-    # bpPath = os.path.dirname(brainpipe.__file__)
-    bpPath = os.path.dirname(brainpipe.__file__)+'/xPOO/'
-    return bpPath+'/bpsettings.pickle'
-
-
-def _load_bpsettings():
-    """Load the bpsettings file
-    """
-    bpCfg = _path_bpsettings()
-    with open(bpCfg, "rb") as f:
-        bpsettings = pickle.load(f)
-    return bpsettings
-
-
-def _save_bpsettings(bpsettings):
-    """Update bpsettings. The parameter should be a
-    dictionary organized as bpsettings.
-    """
-    bpCfg = _path_bpsettings()
-    with open(bpCfg, 'wb') as f:
-        pickle.dump(bpsettings, f)
-
-
-def _check_study_exist(self):
-    """Check if a study exist
-    """
-    try:
-        bpsettings = _load_bpsettings()
-        self.path = bpsettings[self.name]
-        print('-> '+self.name+' found')
-    except:
-        pass
-
-
-def _update_bpsettings():
-    """Update bpsettings list of study by checking each folder.
-    """
-    bpsettings = _load_bpsettings()
-    bpsettingsNew = {}
-    for k, i in zip(bpsettings.keys(), bpsettings.values()):
-        if os.path.exists(i):
-            bpsettingsNew[k] = i
-    _save_bpsettings(bpsettingsNew)
