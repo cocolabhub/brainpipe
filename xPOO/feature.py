@@ -117,7 +117,7 @@ class power(filtvec, _featC):
     ----------
     get : compute the power of a signal
     freqvec : define a frequency vector
-    tfmap : time-frequency map
+    tf : time-frequency map
     plot : simple power plot
     tfplot : time-frequency plot
     """
