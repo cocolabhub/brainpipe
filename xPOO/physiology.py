@@ -3,6 +3,8 @@ from pandas import DataFrame
 from brainpipe.xPOO._utils._physio import loadatlas, pos2label
 from brainpipe.xPOO._utils._dataframe import *
 
+__all__ = ['physio']
+
 
 class physio(object):
 
