@@ -6,7 +6,6 @@
 ### bpstudy
 - add_dataset
 - add_file
-- save
 
 ### Features
 - add cfc and the diffrents methods
@@ -14,6 +13,7 @@
 - inherate from built-in classes to avoid one unecessary line for plotting (plot method should be integrate in the power object)
 - prefered phase
 - power phase locked
+- Inclure pentropy, kurtosis... Du code de Tarek
 
 ### Panda complements
 - pdOrder? pdPLot?
@@ -39,6 +39,7 @@
 
 ### Multifeatures
 - TO DO
+- Ajouter la possibilité de classer des groupes (pas facile du tout de combiner avec le single)
 
 ## Organization
 - Find a incremental template name for saving files
