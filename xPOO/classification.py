@@ -15,7 +15,6 @@ __all__ = ['defClf', 'defCv']
 
 
 class defClf(object):
-
     """Choose a classifier and switch easyly between classifiers
     implemented in scikit-learn.
 
@@ -123,7 +122,6 @@ class defClf(object):
 
 
 class defCv(object):
-
     """Choose a cross_validation (CV) and switch easyly between
     CV implemented in scikit-learn.
 
