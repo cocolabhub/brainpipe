@@ -9,9 +9,31 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 
 from sklearn.cross_validation import (StratifiedKFold, KFold,
-                                      StratifiedShuffleSplit, ShuffleSplit)
+                                      StratifiedShuffleSplit, ShuffleSplit,
+                                      cross_val_score, permutation_test_score)
 
-__all__ = ['defClf', 'defCv']
+__all__ = ['classify',
+           'defClf',
+           'defCv'
+           ]
+
+
+class classify(object):
+    def __init__(self):
+        if isinstance(clf, (int, str)):
+            pass
+
+    def __new__(self):
+        pass
+
+    def fit(self):
+        pass
+
+    def stat(self):
+        pass
+
+    def plot(self):
+        pass
 
 
 class defClf(object):
@@ -23,7 +45,7 @@ class defClf(object):
     y : array
         The vector label
 
-    classifier : int or string, optional, [def : 0]
+    clf : int or string, optional, [def : 0]
         Define a classifier. Use either an integer or a string
         [Example : classifier='lda' or 0].
         Choose between :
@@ -56,69 +78,78 @@ class defClf(object):
         - shStr : short description of the classifier
     """
 
-    def __init__(self, y, classifier='lda', kern='rbf', n_knn=10, n_tree=100,
+    def __init__(self, y, clf='lda', kern='rbf', n_knn=10, n_tree=100,
                  priors=False, **kwargs):
         pass
 
-    def __new__(self, y, classifier='lda', kern='rbf', n_knn=10, n_tree=100,
+    def __str__(self):
+        return self.lgStr
+
+    def __new__(self, y, clf='lda', kern='rbf', n_knn=10, n_tree=100,
                 priors=False, **kwargs):
 
         # Default value for priors :
         priors = n.array([1/len(n.unique(y))]*len(n.unique(y)))
 
-        if isinstance(classifier, str):
-            classifier = classifier.lower()
+        if isinstance(clf, str):
+            clf = clf.lower()
 
         # LDA :
-        if classifier == 'lda' or classifier == 0:
-            clf = LinearDiscriminantAnalysis(
+        if clf == 'lda' or clf == 0:
+            clfObj = LinearDiscriminantAnalysis(
                 priors=priors, **kwargs)
-            clf.lgStr, clf.shStr = 'Linear Discriminant Analysis', 'LDA'
+            clfObj.lgStr = 'Linear Discriminant Analysis'
+            clfObj.shStr = 'LDA'
 
         # SVM : ‘linear’, ‘poly’, ‘rbf’, ‘sigmoid’, ‘precomputed’ or a callable
-        elif classifier == 'svm' or classifier == 1:
-            clf = SVC(kernel=kern, probability=True, **kwargs)
-            clf.lgStr = 'Support Vector Machine (kernel=' + kern + ')'
-            clf.shStr = 'SVM-' + kern
+        elif clf == 'svm' or clf == 1:
+            clfObj = SVC(kernel=kern, probability=True, **kwargs)
+            clfObj.lgStr = 'Support Vector Machine (kernel=' + kern + ')'
+            clfObj.shStr = 'SVM-' + kern
 
         # Linear SVM:
-        elif classifier == 'linearsvm' or classifier == 2:
-            clf = LinearSVC(**kwargs)
-            clf.lgStr, clf.shStr = 'Linear Support Vector Machine', 'LSVM'
+        elif clf == 'linearsvm' or clf == 2:
+            clfObj = LinearSVC(**kwargs)
+            clfObj.lgStr = 'Linear Support Vector Machine'
+            clfObj.shStr = 'LSVM'
 
         # Nu SVM :
-        elif classifier == 'nusvm' or classifier == 3:
-            clf = NuSVC(**kwargs)
-            clf.lgStr, clf.shStr = 'Nu Support Vector Machine', 'NuSVM'
+        elif clf == 'nusvm' or clf == 3:
+            clfObj = NuSVC(**kwargs)
+            clfObj.lgStr = 'Nu Support Vector Machine'
+            clfObj.shStr = 'NuSVM'
 
         # Naive Bayesian :
-        elif classifier == 'nb' or classifier == 4:
-            clf = GaussianNB(**kwargs)
-            clf.lgStr, clf.shStr = 'Naive Baysian', 'NB'
+        elif clf == 'nb' or clf == 4:
+            clfObj = GaussianNB(**kwargs)
+            clfObj.lgStr = 'Naive Baysian'
+            clfObj.shStr = 'NB'
 
         # KNN :
-        elif classifier == 'knn' or classifier == 5:
-            clf = KNeighborsClassifier(n_neighbors=n_knn, **kwargs)
-            clf.lgStr = 'k-Nearest Neighbor (neighbor=' + str(n_knn) + ')'
-            clf.shStr = 'KNN-' + str(n_knn)
+        elif clf == 'knn' or clf == 5:
+            clfObj = KNeighborsClassifier(n_neighbors=n_knn, **kwargs)
+            clfObj.lgStr = 'k-Nearest Neighbor (neighbor=' + str(n_knn) + ')'
+            clfObj.shStr = 'KNN-' + str(n_knn)
 
         # Random forest :
-        elif classifier == 'rf' or classifier == 6:
-            clf = RandomForestClassifier(n_estimators=n_tree, **kwargs)
-            clf.lgStr = 'Random Forest (tree=' + str(n_tree) + ')'
-            clf.shStr = 'RF-' + str(n_tree)
+        elif clf == 'rf' or clf == 6:
+            clfObj = RandomForestClassifier(n_estimators=n_tree, **kwargs)
+            clfObj.lgStr = 'Random Forest (tree=' + str(n_tree) + ')'
+            clfObj.shStr = 'RF-' + str(n_tree)
 
         # Logistic regression :
-        elif classifier == 'lr' or classifier == 7:
-            clf = LogisticRegression(**kwargs)
-            clf.lgStr, clf.shStr = 'Logistic Regression', 'LogReg'
+        elif clf == 'lr' or clf == 7:
+            clfObj = LogisticRegression(**kwargs)
+            clfObj.lgStr = 'Logistic Regression'
+            clfObj.shStr = 'LogReg'
 
         # QDA :
-        elif classifier == 'qda' or classifier == 8:
-            clf = QuadraticDiscriminantAnalysis(**kwargs)
-            clf.lgStr, clf.shStr = 'Quadratic Discriminant Analysis', 'QDA'
+        elif clf == 'qda' or clf == 8:
+            clfObj = QuadraticDiscriminantAnalysis(**kwargs)
+            clfObj.lgStr = 'Quadratic Discriminant Analysis'
+            clfObj.shStr = 'QDA'
 
-        return clf
+        return clfObj
 
 
 class defCv(object):
@@ -130,7 +161,7 @@ class defCv(object):
     y : array
         The vector label
 
-    kind : string, optional, [def : skfold]
+    cvtype : string, optional, [def : skfold]
         Define a cross_validation. Choose between :
             - 'skfold' : Stratified k-Fold
             - 'kfold' : k-fold
@@ -156,43 +187,52 @@ class defCv(object):
         - shStr : short description of the cross_validation
     """
 
-    def __init__(self, y, kind='skfold', n_folds=10, rndstate=0, rep=10,
+    def __init__(self, y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
                  **kwargs):
         pass
 
-    def __new__(self, y, kind='skfold', n_folds=10, rndstate=0, rep=10,
+    def __str__(self):
+        return self.lgStr
+
+    def __new__(self, y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
                 **kwargs):
         y = n.ravel(y)
 
         # Stratified k-fold :
-        if kind == 'skfold':
+        if cvtype == 'skfold':
             cv = StratifiedKFold(y, n_folds=n_folds, shuffle=True,
                                  random_state=rndstate, **kwargs)
             cv.lgStr = str(rep)+'-times, '+str(n_folds)+' Stratified k-folds'
-            cv.shStr = str(rep)+'rep x'+str(n_folds)+' '+kind
+            cv.shStr = str(rep)+'rep x'+str(n_folds)+' '+cvtype
 
         # k-fold :
-        elif kind == 'kfold':
+        elif cvtype == 'kfold':
             cv = KFold(len(y), n_folds=n_folds, shuffle=True,
                        random_state=rndstate, **kwargs)
             cv.lgStr = str(rep)+'-times, '+str(n_folds)+' k-folds'
-            cv.shStr = str(rep)+'rep x'+str(n_folds)+' '+kind
+            cv.shStr = str(rep)+'rep x'+str(n_folds)+' '+cvtype
 
         # Shuffle stratified k-fold :
-        elif kind == 'sss':
+        elif cvtype == 'sss':
             cv = StratifiedShuffleSplit(y, n_iter=n_folds,
                                         test_size=1/n_folds,
                                         random_state=rndstate, **kwargs)
             cv.lgStr = str(rep)+'-times, test size 1/' + \
                 str(n_folds)+' Shuffle Stratified Split'
-            cv.shStr = str(rep)+'rep x'+str(n_folds)+' '+kind
+            cv.shStr = str(rep)+'rep x'+str(n_folds)+' '+cvtype
 
         # Shuffle stratified :
-        elif kind == 'ss':
+        elif cvtype == 'ss':
             cv = ShuffleSplit(len(y), n_iter=rep, test_size=1/n_folds,
                               random_state=rndstate, **kwargs)
             cv.lgStr = str(rep)+'-times, test size 1/' + \
                 str(n_folds)+' Shuffle Stratified'
-            cv.shStr = str(rep)+'rep x'+str(n_folds)+' '+kind
+            cv.shStr = str(rep)+'rep x'+str(n_folds)+' '+cvtype
 
         return cv
+
+
+def checkXY(x, y):
+    """Prepare the inputs x and y
+    """
+    pass
