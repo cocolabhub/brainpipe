@@ -67,7 +67,7 @@ def classify_fcn(x, y, clf, n_folds=10, rep=10, n_jobs=1, cvkind='skfold'):
     for k in range(0, rep):
         # Shuffling
         cv_model = crossval_choice(
-            y, cvkind=cvkind, n_folds=n_folds, rndstate=k+10, rep=rep)
+            y, cvkind=cvkind, n_folds=n_folds, rndstate=k, rep=rep)
         all_scores[k, :] = cross_validation.cross_val_score(
             clf, x, y, cv=cv_model, n_jobs=n_jobs)
 
