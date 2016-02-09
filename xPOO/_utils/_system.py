@@ -1,8 +1,12 @@
 import pickle
 from scipy.io import loadmat, savemat
 from os.path import splitext, isfile
+import numpy as n
 
-__all__ = ['savefile', 'loadfile']
+__all__ = ['savefile',
+           'loadfile',
+           'jobsMngmt'
+           ]
 
 
 def savefile(name, **kwargs):
@@ -43,3 +47,21 @@ def _safetySave(name):
             name = fname+'('+str(k)+')'+fext
         k += 1
     return name
+
+
+def jobsMngmt(n_jobs, **kwargs):
+    """Manage the jobs repartition between loops
+    """
+    def _jobsAssign(val):
+        for i, k in enumerate(kwargs.keys()):
+            kwargs[k] = int(val[i])
+        return kwargs
+
+    if n_jobs == 1:
+        return _jobsAssign([1]*len(kwargs))
+    else:
+        keys = list(kwargs.keys())
+        values = n.array(list(kwargs.values()))
+        jobsRepartition = list(n.ones(len(keys)))
+        jobsRepartition[values.argmax()] = n_jobs
+        return _jobsAssign(jobsRepartition)
