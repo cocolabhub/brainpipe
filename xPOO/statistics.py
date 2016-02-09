@@ -101,7 +101,7 @@ def permIntraClass(x, y, n_perm):
         for j in yClass:
             idxClass = n.where(y == j)[0]
             for l in range(nfeat):
-                xSub = xC[idxClass, l]
+                xSub = n.ravel(xC[idxClass, l])
                 xCperm[idxClass, l] = rndstate.permutation(xSub)
         return xCperm
 
