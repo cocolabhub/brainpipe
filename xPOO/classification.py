@@ -148,16 +148,25 @@ class classify(object):
 
         return n.array(da)
 
-    def stat(self, x, da, method='bino', n_perm=200, n_jobs=-1, rndstate=0):
+    def fit_stat(self, x, xcol='sf', method='bino', n_perm=200, n_jobs=-1,
+                 rndstate=0):
         """Evaluate the statistical significiancy of the decoding accuracy.
 
         Parameters
         ----------
         x : array
-            The data used to compute the decoding accuracy
+            Data to classify. Consider that x.shape = (N, M), N is the number
+            of trials (which should be the length of y). M, the number of
+            colums, is a supplementar dimension for classifying data. If M = 1,
+            the data is consider as a single feature. If M > 1, use the
+            parameter xcol to say if x should be consider as a single feature
+            (xcol='sf') or multi-features (xcol='mf')
 
-        da : array
-            The decoding accuracy
+        xcol : string, optional, [def : 'sf']
+            If xcol='mf', the returned decoding accuracy (da) will have a
+            shape of (1, rep) where rep, is the number of repetitions.
+            This mean that all the features are used together. If xcol='sf',
+            da.shape = (M, rep), where M is the number of columns of x.
 
         method : string, optional, [def : 'bino']
             Four methods are implemented to test the statistical significiance
@@ -199,24 +208,34 @@ class classify(object):
         classification and statistical assessment of decoding accuracy.
         J Neurosci Methods, doi: 10.1016/j.jneurmeth.2015.01.010.
         """
-        if x.shape[0] == da.shape[0]:
-            xcol = 'sf'
-        else:
-            xcol = 'mf'
+        # -------------------------------------------------------------
+        # Get the current da
+        # -------------------------------------------------------------
+        # Check the inputs size :
+        x, y = checkXY(x, self.y, xcol)
+        rep, nfeat = len(self.cv), len(x)
+        rndstate = n.random.RandomState(rndstate)
 
+        # Jobs management :
+        jrt = jobsMngmt(n_jobs, rep=rep, feat=nfeat)
+        repJobs, featJobs = jrt['rep'], jrt['feat']
+
+        # Run the classification :
+        da = Parallel(n_jobs=featJobs)(
+            delayed(_classifyRep)(k, y, clone(
+                self.clf), self.cv, repJobs) for k in x)
+        score = n.array([n.mean(k) for k in da])
+
+        # -------------------------------------------------------------
+        # Statisctical evaluation of da :
+        # -------------------------------------------------------------
         # Binomial :
         if method == 'bino':
-            pvalue = binostatinv(self.y, da)
+            pvalue = binostatinv(self.y, score)
             daPerm = n.array([])
 
         # Permutations :
         elif method.lower().find('_rnd')+1:
-
-            # Check the inputs size :
-            x, y = checkXY(x, self.y, xcol)
-            nfeat = len(x)
-            rndstate = n.random.RandomState(rndstate)
-
             # Jobs management :
             jrt = jobsMngmt(n_jobs, perm=n_perm, feat=nfeat)
             pJobs, featJobs = jrt['perm'], jrt['feat']
@@ -228,12 +247,12 @@ class classify(object):
 
             # Get the associated pvalue :
             daPerm = n.array(daPerm)
-            pvalue = perm2pval(n.mean(da, 1), daPerm)
+            pvalue = perm2pval(score, daPerm)
 
         else:
             raise ValueError('No statistical method '+method+' found')
 
-        return n.array(pvalue), daPerm
+        return n.array(da), n.array(pvalue), daPerm
 
 
 def _classifyPerm(x, y, clf, cv, pJobs, method, n_perm, rndstate):
