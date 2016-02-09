@@ -11,7 +11,12 @@ from sklearn.cross_validation import (StratifiedKFold, KFold,
                                       StratifiedShuffleSplit, ShuffleSplit,
                                       cross_val_score, permutation_test_score)
 from sklearn.metrics import accuracy_score
+from sklearn.base import clone
+
 from joblib import Parallel, delayed
+
+from brainpipe.xPOO.statistics import binostatinv, perm2pval, permIntraClass
+from brainpipe.xPOO._utils._system import jobsMngmt
 
 __all__ = ['classify',
            'defClf',
@@ -83,11 +88,14 @@ class classify(object):
     """
 
     def __init__(self, y, clf='lda', cvtype='skfold', clfArg={}, cvArg={}):
+
         self.y = y
+
         # Define clf if it's not defined :
         if isinstance(clf, (int, str)):
             clf = defClf(y, clf=clf, **clfArg)
         self.clf = clf
+
         # Define cv if it's not defined :
         if isinstance(cvtype, str):
             cvtype = defCv(y, cvtype=cvtype, **cvArg)
@@ -124,30 +132,129 @@ class classify(object):
         Returns
         ----------
         An array containing the decoding accuracy.
-
         """
         # Check the inputs size :
         x, y = checkXY(x, self.y, xcol)
         rep, nfeat = len(self.cv), len(x)
+
         # Jobs management :
-        if n_jobs == 1:
-            repJobs, featJobs = 1, 1
-        else:
-            if rep < nfeat:
-                featJobs, repJobs = n_jobs, 1
-            else:
-                repJobs, featJobs = n_jobs, 1
-        # Run the optimized classification :
+        jrt = jobsMngmt(n_jobs, rep=rep, feat=nfeat)
+        repJobs, featJobs = jrt['rep'], jrt['feat']
+
+        # Run the classification :
         da = Parallel(n_jobs=featJobs)(
-            delayed(_classifyRep)(k, y, self.clf, self.cv, repJobs) for k in x)
+            delayed(_classifyRep)(k, y, clone(
+                self.clf), self.cv, repJobs) for k in x)
 
         return n.array(da)
 
-    def stat(self):
-        pass
+    def stat(self, x, da, method='bino', n_perm=200, n_jobs=-1, rndstate=0):
+        """Evaluate the statistical significiancy of the decoding accuracy.
 
-    def plot(self):
-        pass
+        Parameters
+        ----------
+        x : array
+            The data used to compute the decoding accuracy
+
+        da : array
+            The decoding accuracy
+
+        method : string, optional, [def : 'bino']
+            Four methods are implemented to test the statistical significiance
+            of the decoding accuracy :
+                1 - 'bino' : binomial test
+                2 - 'label_rnd' : randomly shuffle the labels
+                3 - 'full_rnd' : randomly shuffle the whole array x
+                4 - 'intra_rnd' : randomly shuffle x inside each class and each
+                                  feature
+        Methods 2, 3 and 4 are based on permutations. The method 2 and 3 should
+        provide similar results. But 4 should be more conservative.
+
+        n_perm : integer, optional, [def : 200]
+            Number of permutations for the methods 2, 3 and 4
+
+        n_jobs : integer, optional, [def : -1]
+            Control the number of jobs to cumpute the decoding accuracy. If
+            n_jobs = -1, all the jobs are used.
+
+        rndstate : integer, optional, [def : 0]
+            Fix the random state of the machine. Usefull to reproduce results.
+
+        Returns
+        ----------
+        pvalue : array
+            Array of associated pvalue
+
+        daPerm : array
+            Array of all the decodings obtained for each permutations.
+
+        See:
+
+        [1] Ojala and Garriga. Permutation Tests for Studying Classifier
+        Performance.  The Journal of Machine Learning Research (2010)
+        vol. 11
+
+        [2] Combrisson, E., & Jerbi, K. (2015). Exceeding chance level by
+        chance: The caveat of theoretical chance levels in brain signal
+        classification and statistical assessment of decoding accuracy.
+        J Neurosci Methods, doi: 10.1016/j.jneurmeth.2015.01.010.
+        """
+        if x.shape[0] == da.shape[0]:
+            xcol = 'sf'
+        else:
+            xcol = 'mf'
+
+        # Binomial :
+        if method == 'bino':
+            pvalue = binostatinv(self.y, da)
+            daPerm = n.array([])
+
+        # Permutations :
+        elif method.lower().find('_rnd')+1:
+
+            # Check the inputs size :
+            x, y = checkXY(x, self.y, xcol)
+            nfeat = len(x)
+            rndstate = n.random.RandomState(rndstate)
+
+            # Jobs management :
+            jrt = jobsMngmt(n_jobs, perm=n_perm, feat=nfeat)
+            pJobs, featJobs = jrt['perm'], jrt['feat']
+
+            # Run the classification :
+            daPerm = Parallel(n_jobs=featJobs)(delayed(_classifyPerm)(
+                k, y, clone(self.clf), self.cv[0], pJobs, method,
+                n_perm, rndstate) for k in x)
+
+            # Get the associated pvalue :
+            daPerm = n.array(daPerm)
+            pvalue = perm2pval(n.mean(da, 1), daPerm)
+
+        else:
+            raise ValueError('No statistical method '+method+' found')
+
+        return n.array(pvalue), daPerm
+
+
+def _classifyPerm(x, y, clf, cv, pJobs, method, n_perm, rndstate):
+    """Generate and classify permutations
+    """
+    # Shuffle the labels :
+    if method == 'label_rnd':
+        ysh = [rndstate.permutation(y) for k in range(n_perm)]
+        return Parallel(n_jobs=pJobs)(delayed(
+            _cvscore)(x, k, clf, cv) for k in ysh)
+
+    # Full randomization :
+    elif method == 'full_rnd':
+        return Parallel(n_jobs=pJobs)(delayed(_cvscore)(
+            rndstate.permutation(x), y, clf, cv) for k in range(n_perm))
+
+    # Shuffle intra-class :
+    elif method == 'intra_rnd':
+        xPerm = permIntraClass(x.copy(), y.copy(), n_perm)
+        return Parallel(n_jobs=pJobs)(delayed(_cvscore)(
+            xPerm[k], y, clf, cv) for k in range(n_perm))
 
 
 def _classifyRep(x, y, clf, cv, repJobs):
@@ -285,6 +392,9 @@ class defClf(object):
             clfObj.lgStr = 'Quadratic Discriminant Analysis'
             clfObj.shStr = 'QDA'
 
+        else:
+            raise ValueError('No classifier "'+str(clf)+'"" found')
+
         return clfObj
 
 
@@ -371,6 +481,9 @@ def _define(y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
         cvT.lgStr = str(rep)+'-times, test size 1/' + \
             str(n_folds)+' Shuffle Stratified'
         cvT.shStr = str(rep)+'rep x'+str(n_folds)+' '+cvtype
+
+    else:
+        raise ValueError('No cross-validation "'+cvtype+'"" found')
 
     return cvT
 
