@@ -15,7 +15,7 @@ from sklearn.base import clone
 
 from joblib import Parallel, delayed
 
-from brainpipe.xPOO.statistics2 import binostatinv, perm2pval, permIntraClass
+from brainpipe.xPOO.statistics import binostatinv, perm2pval, permIntraClass
 from brainpipe.xPOO._utils._system import groupInList, list2index
 
 __all__ = ['classify',
