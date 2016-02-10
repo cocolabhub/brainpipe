@@ -89,20 +89,17 @@ def perm2pval(da, daperm):
     return pvalue
 
 
-def permIntraClass(x, y, n_perm):
-    """Generate n_perm intra permutations of x
+def permIntraClass(x, y, rndstate):
+    """Generate intra permutations of x
     """
     ntrials, nfeat = x.shape
     yClass = list(set(y))
 
-    def _intraPerm(xC, y, rndstate):
-        rndstate = n.random.RandomState(rndstate)
-        xCperm = n.zeros(xC.shape)
-        for j in yClass:
-            idxClass = n.where(y == j)[0]
-            for l in range(nfeat):
-                xSub = n.ravel(xC[idxClass, l])
-                xCperm[idxClass, l] = rndstate.permutation(xSub)
-        return xCperm
-
-    return [_intraPerm(x, y, k) for k in range(n_perm)]
+    rndstate = n.random.RandomState(rndstate)
+    xCperm = n.zeros(x.shape)
+    for j in yClass:
+        idxClass = n.where(y == j)[0]
+        for l in range(nfeat):
+            xSub = n.ravel(x[idxClass, l])
+            xCperm[idxClass, l] = rndstate.permutation(xSub)
+    return xCperm
