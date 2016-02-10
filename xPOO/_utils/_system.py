@@ -5,7 +5,9 @@ import numpy as n
 
 __all__ = ['savefile',
            'loadfile',
-           'jobsMngmt'
+           'jobsMngmt',
+           'list2index',
+           'groupInList'
            ]
 
 
@@ -65,3 +67,29 @@ def jobsMngmt(n_jobs, **kwargs):
         jobsRepartition = list(n.ones(len(keys)))
         jobsRepartition[values.argmax()] = n_jobs
         return _jobsAssign(jobsRepartition)
+
+
+def list2index(dim1, dim2):
+    """From two dimensions dim1 and dim2, build a list of
+    tuple which combine this two list
+    Example:
+    for (2,3) -> [(0,0),(1,0),(0,1),(1,1),(0,2),(1,2)]
+    """
+    list1 = list(n.arange(dim1))*dim2
+    list2 = sum([[k]*dim1 for k in range(dim2)], [])
+    return list(zip(list1, list2)), list1, list2
+
+
+def groupInList(x, idx):
+    """Group elements in an array/list using a list of index
+    Example:
+    groupInList([1,2,3,4,5],[0,0,1,1,2]) = [[1,2],[3,4],[5]]
+    """
+    if not isinstance(x, n.ndarray):
+        x = n.array(x)
+    if not isinstance(idx, list):
+        idx = list(idx)
+    # Get the list of unique elements in idx:
+    uelmt = list(set(idx))
+    idx = n.array(idx)
+    return [list(x[n.where(idx == k)]) for k in uelmt]
