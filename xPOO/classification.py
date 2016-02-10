@@ -15,8 +15,8 @@ from sklearn.base import clone
 
 from joblib import Parallel, delayed
 
-from brainpipe.xPOO.statistics import binostatinv, perm2pval, permIntraClass
-from brainpipe.xPOO._utils._system import jobsMngmt
+from brainpipe.xPOO.statistics2 import binostatinv, perm2pval, permIntraClass
+from brainpipe.xPOO._utils._system import groupInList, list2index
 
 __all__ = ['classify',
            'defClf',
@@ -133,20 +133,8 @@ class classify(object):
         ----------
         An array containing the decoding accuracy.
         """
-        # Check the inputs size :
-        x, y = checkXY(x, self.y, xcol)
-        rep, nfeat = len(self.cv), len(x)
-
-        # Jobs management :
-        jrt = jobsMngmt(n_jobs, rep=rep, feat=nfeat)
-        repJobs, featJobs = jrt['rep'], jrt['feat']
-
-        # Run the classification :
-        da = Parallel(n_jobs=featJobs)(
-            delayed(_classifyRep)(k, y, clone(
-                self.clf), self.cv, repJobs) for k in x)
-
-        return n.array(da)
+        da, _, _ = _fit(x, self.y, self.clf, self.cv, xcol, n_jobs)
+        return da
 
     def fit_stat(self, x, xcol='sf', method='bino', n_perm=200, n_jobs=-1,
                  rndstate=0):
@@ -208,79 +196,72 @@ class classify(object):
         classification and statistical assessment of decoding accuracy.
         J Neurosci Methods, doi: 10.1016/j.jneurmeth.2015.01.010.
         """
-        # -------------------------------------------------------------
         # Get the current da
-        # -------------------------------------------------------------
-        # Check the inputs size :
-        x, y = checkXY(x, self.y, xcol)
-        rep, nfeat = len(self.cv), len(x)
+        da, x, y = _fit(x, self.y, self.clf, self.cv, xcol, n_jobs)
+        score = n.array([n.mean(k) for k in da])
         rndstate = n.random.RandomState(rndstate)
 
-        # Jobs management :
-        jrt = jobsMngmt(n_jobs, rep=rep, feat=nfeat)
-        repJobs, featJobs = jrt['rep'], jrt['feat']
-
-        # Run the classification :
-        da = Parallel(n_jobs=featJobs)(
-            delayed(_classifyRep)(k, y, clone(
-                self.clf), self.cv, repJobs) for k in x)
-        score = n.array([n.mean(k) for k in da])
-
-        # -------------------------------------------------------------
-        # Statisctical evaluation of da :
         # -------------------------------------------------------------
         # Binomial :
+        # -------------------------------------------------------------
         if method == 'bino':
             pvalue = binostatinv(self.y, score)
             daPerm = n.array([])
 
+        # -------------------------------------------------------------
         # Permutations :
+        # -------------------------------------------------------------
         elif method.lower().find('_rnd')+1:
-            # Jobs management :
-            jrt = jobsMngmt(n_jobs, perm=n_perm, feat=nfeat)
-            pJobs, featJobs = jrt['perm'], jrt['feat']
 
-            # Run the classification :
-            daPerm = Parallel(n_jobs=featJobs)(delayed(_classifyPerm)(
-                k, y, clone(self.clf), self.cv[0], pJobs, method,
-                n_perm, rndstate) for k in x)
+            # Generate idx tricks :
+            claIdx, listPerm, listFeat = list2index(n_perm, len(x))
 
-            # Get the associated pvalue :
-            daPerm = n.array(daPerm)
+            # -> Shuffle the labels :
+            if method == 'label_rnd':
+                y_sh = [rndstate.permutation(y) for k in range(n_perm)]
+                daPerm = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
+                        x[k[1]], y_sh[k[0]], clone(self.clf), self.cv[0])
+                        for k in claIdx)
+
+            # -> Full randomization :
+            elif method == 'full_rnd':
+                daPerm = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
+                        rndstate.permutation(x[k[1]]), y, clone(self.clf),
+                        self.cv[0]) for k in claIdx)
+
+            # -> Shuffle intra-class :
+            elif method == 'intra_rnd':
+                daPerm = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
+                        permIntraClass(x[k[1]], y, k[0]), y, clone(self.clf),
+                        self.cv[0]) for k in claIdx)
+
+            # Reconstruct daPerm and get the associated p-value:
+            daPerm = n.array(groupInList(daPerm, listFeat))
             pvalue = perm2pval(score, daPerm)
 
         else:
             raise ValueError('No statistical method '+method+' found')
 
-        return n.array(da), n.array(pvalue), daPerm
+        return da, n.array(pvalue), daPerm
 
 
-def _classifyPerm(x, y, clf, cv, pJobs, method, n_perm, rndstate):
-    """Generate and classify permutations
+def _fit(x, y, clf, cv, xcol, n_jobs):
+    """Sub function for fitting
     """
-    # Shuffle the labels :
-    if method == 'label_rnd':
-        ysh = [rndstate.permutation(y) for k in range(n_perm)]
-        return Parallel(n_jobs=pJobs)(delayed(
-            _cvscore)(x, k, clf, cv) for k in ysh)
+    # Check the inputs size :
+    x, y = checkXY(x, y, xcol)
+    rep, nfeat = len(cv), len(x)
 
-    # Full randomization :
-    elif method == 'full_rnd':
-        return Parallel(n_jobs=pJobs)(delayed(_cvscore)(
-            rndstate.permutation(x), y, clf, cv) for k in range(n_perm))
+    # Tricks : construct a list of tuple containing the index of
+    # (repetitions,features) & loop on it. Optimal for parallel computing :
+    claIdx, listRep, listFeat = list2index(rep, nfeat)
 
-    # Shuffle intra-class :
-    elif method == 'intra_rnd':
-        xPerm = permIntraClass(x.copy(), y.copy(), n_perm)
-        return Parallel(n_jobs=pJobs)(delayed(_cvscore)(
-            xPerm[k], y, clf, cv) for k in range(n_perm))
+    # Run the classification :
+    da = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
+        x[k[1]], y, clone(clf), cv[k[0]]) for k in claIdx)
 
-
-def _classifyRep(x, y, clf, cv, repJobs):
-    """Classify repetitions in parallel
-    """
-    return Parallel(n_jobs=repJobs)(delayed(
-        _cvscore)(x, y, clf, k) for k in cv)
+    # Reconstruct the da :
+    return n.array(groupInList(da, listFeat)), x, y
 
 
 def _cvscore(x, y, clf, cvS):
