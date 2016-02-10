@@ -78,7 +78,7 @@ def mf(x, y, Id=0, clfIn=0, clfOut=0, p=0.05,
     # Get size elements :
     nfeat, ntrial = x.shape
     if grpList is None:
-        grpList, grpCombine = [0] * nfeat, False
+        grpList, grpCombine = ['0'] * nfeat, False
     if threshold is not None:
         p = binostatinv(y, threshold)
     if grpAs == 'single':
