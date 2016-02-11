@@ -1,63 +1,18 @@
 import numpy as n
 from brainpipe.xPOO._utils._feat import (_manageWindow, _manageFrequencies,
-                                         normalize)
-from brainpipe.xPOO._utils._plot import _plot, _2Dplot
+                                         normalize, _featC)
+from brainpipe.xPOO._utils._plot import _2Dplot
 from brainpipe.xPOO.tools import binarize, binArray
-from brainpipe.xPOO.filtering.filtsig import filtvec
+from brainpipe.xPOO.filtering import fextract
 
-__all__ = ['power', 'phase']
-
-
-class _featC(list):
-
-    def __init(self):
-        list.__init__(self)
-
-    def get(self, x):
-        """Compute the selected kind of feature of a signal x
-
-        x : array
-            - If x is a 2D array of size (npts, ntrial) and f, the frequency
-            vector has a length of nf, the "get" method will return a
-            (nf, npts, ntrial) array
-            - If x is a 3D array of size (N, npts, ntrial), power is calculated
-            for each N and a list of length N is return and each element of it
-            have a size of (nf, npts, ntrial).
-        """
-        dimLen = len(x.shape)
-        if dimLen == 2:
-            return self._get(x)
-        elif dimLen == 3:
-            return [self._get(x[k, :, :]) for k in range(0, x.shape[0])]
-
-    def plot(self, x, title=' feature', xlabel='Time',
-             ylabel=' modulations', **kwargs):
-        """Simple plot
-        """
-        return _plot(self.xvec, x, title=self.featKind+title, xlabel=xlabel,
-                     ylabel=self.featKind+ylabel,
-                     **kwargs)
-
-    @staticmethod
-    def freqvec(fstart, fend, fwidth, fstep):
-        """Generate a window to binarize a signal
-
-        fstart : int
-            Start at "fstart"
-
-        fend : int
-            End at "fend"
-
-        fwidth : int, optional [def : None]
-            fwidth of a single window
-
-        step : int, optional [def : None]
-            Each window will be spaced by the "step" value
-        """
-        return binarize(fstart, fend, fwidth, fstep, kind='list')
+__all__ = [
+            'power',
+            'phase',
+            'cfc'
+          ]
 
 
-class power(filtvec, _featC):
+class power(_featC):
     """Compute the power of multiple signals.
 
     Parameters
@@ -127,7 +82,7 @@ class power(filtvec, _featC):
                  **kwargs):
         self.baseline = baseline
         self.norm = norm
-        super().__init__(kind='power', method=method, **kwargs)
+        self.filter = fextract(kind='power', method=method, **kwargs)
         self.window, self.xvec = _manageWindow(
             npts, window=window, width=width, step=step, time=time)
         self.f, self.fSplit, self.__fSplitIndex = _manageFrequencies(
@@ -138,14 +93,22 @@ class power(filtvec, _featC):
         self.__nf = len(self.f)
         self.__sf = sf
         self.__npts = npts
-        self.fMeth = self.getMeth(sf, self.fSplit, npts)
+        self.fMeth = self.filter.getMeth(sf, self.fSplit, npts)
         self.yvec = [round((k[0]+k[1])/2) for k in self.f]
         self.featKind = 'Power'
+
+    def __str__(self):
+        extractStr = str(self.filter)
+        powStr = 'Power(norm='+str(self.norm)+', step='+str(
+            self.step)+', width='+str(self.width)+', split='+str(
+            self.split)+',\n'
+
+        return powStr+extractStr+')'
 
     def _get(self, x):
         npts, ntrial = x.shape
         # Get power :
-        xF = self.applyMeth(x, self.fMeth)
+        xF = self.filter.applyMeth(x, self.fMeth)
         # Normalize power :
         xF = normalize(xF, n.tile(n.mean(xF[:, self.baseline[0]:self.baseline[
             1], :], 1)[:, n.newaxis, :], [1, xF.shape[1], 1]), norm=self.norm)
@@ -186,7 +149,8 @@ class power(filtvec, _featC):
             self.__nf = len(self.f)
             _, self.fSplit, self.__fSplitIndex = _manageFrequencies(
                 self.f, split=None)
-            self.fMeth = self.getMeth(self.__sf, self.fSplit, self.__npts)
+            self.fMeth = self.filter.getMeth(self.__sf, self.fSplit,
+                                             self.__npts)
             self.yvec = [((k[0]+k[1])/2).astype(int) for k in self.f]
 
         backNorm = self.norm
@@ -216,7 +180,7 @@ class power(filtvec, _featC):
                        cblabel=cblabel, interp=interp, **kwargs)
 
 
-class phase(filtvec, _featC):
+class phase(_featC):
     """Compute the phase of multiple signals.
 
     Parameters
@@ -264,7 +228,7 @@ class phase(filtvec, _featC):
     """
     def __init__(self, sf, f, npts, method='hilbert', window=None,
                  width=None, step=None, time=None, **kwargs):
-        super().__init__(kind='phase', method=method, **kwargs)
+        self.filter = fextract(kind='phase', method=method, **kwargs)
         self.window, self.xvec = _manageWindow(
             npts, window=window, width=width, step=step)
         self.f, _, _ = _manageFrequencies(f, split=None)
@@ -273,15 +237,27 @@ class phase(filtvec, _featC):
         self.__nf = len(self.f)
         self.__sf = sf
         self.__npts = npts
-        self.fMeth = self.getMeth(sf, self.f, npts)
+        self.fMeth = self.filter.getMeth(sf, self.f, npts)
         self.yvec = [round((k[0]+k[1])/2) for k in self.f]
         self.featKind = 'Phase'
+
+    def __str__(self):
+        extractStr = str(self.filter)
+        phaStr = 'Phase(step='+str(self.step)+', width='+str(
+            self.width)+',\n'
+
+        return phaStr+extractStr+')'
 
     def _get(self, x):
         npts, ntrial = x.shape
         # Get power :
-        xF = self.applyMeth(x, self.fMeth)
+        xF = self.filter.applyMeth(x, self.fMeth)
         # Mean time :
         if self.window is not None:
             xF, _ = binArray(xF, self.window, axis=1)
         return xF
+
+
+class cfc(object):
+    def __init__(self):
+        pass
