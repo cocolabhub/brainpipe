@@ -11,7 +11,7 @@ Brainpipe is a toolbox to analyse neuro-physiological signals. For instance, it'
 ## Modules
 
 ### bpstudy
-Create and manage many studies, without carrying of path, variable names or settings. Everythong is going to be self organized in the clearest way as possible.
+Create and manage many studies, without carrying of path, variable names or settings. Everything is going to be self organized in the clearest way as possible.
 
 ### physiology
 This module give the physiological informations of intracranial recordings. It will return the brodmann area, the gyrus, the lobe and the hemisphere for a given list of electrodes' coordonates.
@@ -50,7 +50,7 @@ All this methods can be used individually or they can be combined in a sequentia
 ## Installation
 
 ## Version
-v0.0 - compatible with python 3.x only
+v0.0 compatible with python 3.x only
 (Still in development, final codes versions in xPOO for instance)
 
 ## Keywords
