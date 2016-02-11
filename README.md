@@ -1,7 +1,7 @@
 # brainpipe
 
 ## Description
-Brainpipe is a toolbox to analyse neuro-physiological signals. For instance, it's specialised for eeg, seeg and ecog signals. The aim of this toolbox is to extract informations from data [= features], to classify them and to find the best features combination from wide variety of features. Here is the list of the current implemented modules and there respectiv description :
+Brainpipe is a toolbox to analyse neuro-physiological signals. For instance, it's specialised for eeg, seeg and ecog signals. The aim of this toolbox is to extract informations from data [= features], to classify them and to find the best features combination from wide variety of features. Here is the list of the current implemented modules and there respectiv description:
 - bpstudy : managed features / file database
 - Extract physiological informations using mni/talairach coordonates of electrodes
 - feature : extract power, phase, phase-amplitude coupling features
@@ -35,7 +35,9 @@ Classify each time resolved features using parallel computing. There is also sev
 	- full randomization
 	- intra-class shuffling
 
-The classification modules provide the basics classifiers and cross-validations implemented in scikit-learn with an optimization for large array (which is convenient for features classification)
+The classification modules provide the basics classifiers and cross-validations implemented in scikit-learn with an optimization for large array (which is convenient for features classification).
+The classification module also include:
+- Time generalization : generalize the decoding performance of features across time
 
 ### multifeatures
 This module include several well known methods for computing multi-features. It includes :
@@ -52,4 +54,4 @@ v0.0 - compatible with python 3.x only
 (Still in development, final codes versions in xPOO for instance)
 
 ## Keywords
-stereotactic electroencephalography, sEEG, iEEG, intracranial, micro-electrodes, ecog, power, phase-amplitude coupling, pac, phase, entropy, permutations, classification, brodmann, python
+stereotactic electroencephalography, sEEG, iEEG, intracranial, micro-electrodes, ecog, power, phase-amplitude coupling, pac, phase, entropy, permutations, classification, brodmann, python, time generalization
