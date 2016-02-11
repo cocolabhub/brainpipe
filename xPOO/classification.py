@@ -528,11 +528,13 @@ class timegeneralization(object):
         classifier will be defined inside classify. Otherwise, it is
         possible to define a classifier before with defClf and past it in clf.
 
-    cvtype : string / cross-validation object, optional, [def : 'skfold']
-        Define a cross-validation. If cvtype is a string, the
-        cross-validation will be defined inside classify. Otherwise, it is
-        possible to define a cross-validation before with defCv and past it
-        in cvtype.
+    cvtype : string / cross-validation object, optional, [def : None]
+        Define a cross-validation. If cvtype is None, the diagonal of the
+        matrix of decoding accuracy will be set at zero. If cvtype is defined,
+        a cross-validation will be performed on the diagonal. If cvtype is a
+        string, the cross-validation will be defined inside classify.
+        Otherwise, it is possible to define a cross-validation before with
+        defCv and past it in cvtype.
 
     clfArg : dictionnary, optional, [def : {}]
         This dictionnary can be used to define supplementar arguments for the
