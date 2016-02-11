@@ -565,8 +565,10 @@ class timegeneralization(object):
 
         # Define cv if it's not defined :
         if isinstance(cvtype, str) and (cvtype is not None):
-            cvtype = defCv(y, cvtype=cvtype, **cvArg)
+            cvtype = defCv(y, cvtype=cvtype, rep=1, **cvArg)
         self.cv = cvtype
+        if isinstance(cvtype, list):
+            cvtype = cvtype[0]
 
         # Check the size of x:
         npts, ntrials = len(time), len(y)
@@ -586,7 +588,7 @@ class timegeneralization(object):
                 xy = x[:, i, ...]
                 # If cv is defined, do a cv on the diagonal
                 if (k == i) and (cvtype is not None):
-                    da[i, k] = n.mean(cross_val_score(clf, xx, y, cv=cvtype))
+                    da[i, k] = _cvscore(xx, y, clf, cvtype)/100
                 # If cv is not defined, let the diagonal at zero
                 elif (k == i) and (cvtype is None):
                     pass
