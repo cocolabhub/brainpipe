@@ -34,6 +34,7 @@ Classify each time resolved features using parallel computing. There is also sev
 	- shuffle labels
 	- full randomization
 	- intra-class shuffling
+
 The classification modules provide the basics classifiers and cross-validations implemented in scikit-learn with an optimization for large array (which is convenient for features classification)
 
 ### multifeatures
