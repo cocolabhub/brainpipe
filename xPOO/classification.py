@@ -20,7 +20,8 @@ from brainpipe.xPOO._utils._system import groupInList, list2index
 
 __all__ = ['classify',
            'defClf',
-           'defCv'
+           'defCv',
+           'timegeneralization'
            ]
 
 
@@ -499,3 +500,96 @@ def checkXY(x, y, x_col):
     elif x_col == 'sf':
         x = [n.array(x[:, k]) for k in range(x.shape[1])]
     return x, y
+
+
+class timegeneralization(object):
+    """Generalize accross time the decoding performance of features.
+    The time generalization consist of training and testing at diffrents
+    moments. The use is to see if a feature is consistent and performant
+    in diffrents period of time.
+
+    Parameters
+    ----------
+    time : array/list
+        The time vector of dimension npts
+
+    y : array
+        The vector label of dimension ntrials
+
+    x : array
+        The data to generalize. If x is a 2D array, the dimension of x
+        should be (ntrials, npts). If x is 3D array, the third dimension
+        is consider as multi-features. This can be usefull to do time
+        generalization in multi-features.
+
+
+    clf : int / string / classifier object, optional, [def : 0]
+        Define a classifier. If clf is an integer or a string, the
+        classifier will be defined inside classify. Otherwise, it is
+        possible to define a classifier before with defClf and past it in clf.
+
+    cvtype : string / cross-validation object, optional, [def : 'skfold']
+        Define a cross-validation. If cvtype is a string, the
+        cross-validation will be defined inside classify. Otherwise, it is
+        possible to define a cross-validation before with defCv and past it
+        in cvtype.
+
+    clfArg : dictionnary, optional, [def : {}]
+        This dictionnary can be used to define supplementar arguments for the
+        classifier. See the documentation of defClf.
+
+    cvArg : dictionnary, optional, [def : {}]
+        This dictionnary can be used to define supplementar arguments for the
+        cross-validation. See the documentation of defCv.
+
+    Return
+    ----------
+    An array of dimension (npts, npts) containing the decoding accuracy. The y
+    axis is the training time and the x axis is the testing time (also known
+    as "generalization time")
+    """
+    def __init__(time, y, x, clf='lda', cvtype=None, clfArg={},
+                 cvArg={}):
+        pass
+
+    def __new__(self, time, y, x, clf='lda', cvtype=None, clfArg={},
+                cvArg={}):
+
+        self.y = y
+        self.time = time
+
+        # Define clf if it's not defined :
+        if isinstance(clf, (int, str)):
+            clf = defClf(y, clf=clf, **clfArg)
+        self.clf = clf
+
+        # Define cv if it's not defined :
+        if isinstance(cvtype, str) and (cvtype is not None):
+            cvtype = defCv(y, cvtype=cvtype, **cvArg)
+        self.cv = cvtype
+
+        # Check the size of x:
+        npts, ntrials = len(time), len(y)
+        if len(x.shape) == 2:
+            x = n.matrix(x)
+        if x.shape[0] is not ntrials:
+            x = x.swapaxes(n.where(n.array(x.shape) == ntrials)[0], 0)
+        if x.shape[1] is not npts:
+            x = x.swapaxes(n.where(n.array(x.shape) == npts)[0], 1)
+
+        da = n.zeros([npts, npts])
+        # Training dimension
+        for k in range(npts):
+            xx = x[:, k, ...]
+            # Testing dimension
+            for i in range(npts):
+                xy = x[:, i, ...]
+                # If cv is defined, do a cv on the diagonal
+                if (k == i) and (cvtype is not None):
+                    da[i, k] = n.mean(cross_val_score(clf, xx, y, cv=cvtype))
+                # If cv is not defined, let the diagonal at zero
+                elif (k == i) and (cvtype is None):
+                    pass
+                else:
+                    da[i, k] = accuracy_score(y, clf.fit(xx, y).predict(xy))
+        return 100*da
