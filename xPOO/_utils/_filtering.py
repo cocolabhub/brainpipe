@@ -2,11 +2,154 @@ import numpy as n
 from numpy.matlib import repmat
 from math import pi
 from scipy.signal import filtfilt
-
+from scipy.signal import filtfilt, butter, bessel, hilbert, hilbert2, detrend
 
 __all__ = [
-    'fir_order', 'fir_filt', 'morlet',
+    'fir_order',
+    'fir_filt',
+    'morlet',
 ]
+
+
+def _apply_method(x, fMeth, dtrd, method, wltCorr, wltWidth):
+    npts, ntrial = x.shape
+    nFce = len(fMeth)
+    xf = n.zeros((nFce, npts, ntrial))
+
+    # Detrend the signal :
+    if dtrd:
+        x = detrend(x, axis=0)
+
+    # Apply methods :
+    for k in range(nFce):  # For each frequency in the tuple
+        xf[k, ...] = fMeth[k](x)
+
+    # Correction for the wavelet (due to the wavelet width):
+    if (method == 'wavelet') and (wltCorr is not None):
+        w = 3*wltWidth
+        xf[:, 0:w, :] = xf[:, w+1:2*w+1, :]
+        xf[:, npts-w:npts, :] = xf[:, npts-2*w-1:npts-w-1, :]
+
+    return xf
+
+
+def _get_method(sf, f, npts, filtname, cycle, order, axis, method, wltWidth,
+                kind):
+    """Get a list of functions of combinaitions: kind // transformation // design
+    """
+    # Get the kind (power, phase, signal, amplitude)
+    fcnKind = _getKind(kind)
+    fmeth = []
+    for k in f:
+        def fme(x, fce=k):
+            return fcnKind(_getTransform(sf, fce, npts, method, wltWidth,
+                                         filtname, cycle, order, axis)(x))
+        fmeth.append(fme)
+    return fmeth
+
+
+def _getFiltDesign(sf, f, npts, filtname, cycle, order, axis):
+    """Get the designed filter
+    sf : sample frequency
+    f : frequency vector/list [ex : f = [2,4]]
+    npts : number of points
+    - 'fir1'
+    - 'butter'
+    - 'bessel'
+    """
+
+    if type(f) != n.ndarray:
+        f = n.array(f)
+
+    # fir1 filter :
+    if filtname == 'fir1':
+        fOrder = fir_order(sf, npts, f[0], cycle=cycle)
+        b, a = fir1(fOrder, f/(sf / 2))
+
+    # butterworth filter :
+    elif filtname == 'butter':
+        b, a = butter(order, [(2*f[0])/sf, (2*f[1])/sf], btype='bandpass')
+        fOrder = None
+
+    # bessel filter :
+    elif filtname == 'bessel':
+        b, a = bessel(order, [(2*f[0])/sf, (2*f[1])/sf], btype='bandpass')
+        fOrder = None
+
+    def filtSignal(x):
+        return filtfilt(b, a, x, padlen=fOrder, axis=axis)
+
+    return filtSignal
+
+
+def _getTransform(sf, f, npts, method, wltWidth, *arg):
+    """Return a fuction which contain a transformation
+    - 'hilbert'
+    - 'hilbert1'
+    - 'hilbert2'
+    - 'wavelet'
+    """
+    # Get the design of the filter :
+    fDesign = _getFiltDesign(sf, f, npts, *arg)
+
+    # Hilbert method
+    if method == 'hilbert':
+        def hilb(x):
+            xH = n.zeros(x.shape)*1j
+            xF = fDesign(x)
+            for k in range(x.shape[1]):
+                xH[:, k] = hilbert(xF[:, k])
+            return xH
+        return hilb
+
+    # Hilbert method 1
+    elif method == 'hilbert1':
+        def hilb1(x): return hilbert(fDesign(x))
+        return hilb1
+
+    # Hilbert method 2
+    elif method == 'hilbert2':
+        def hilb2(x): return hilbert2(fDesign(x))
+        return hilb2
+
+    # Wavelet method
+    elif method == 'wavelet':
+        def wav(x): return morlet(x, sf, (f[0]+f[1])/2, wavelet_width=wltWidth)
+        return wav
+
+    # Filter the signal
+    elif method == 'filter':
+        def fm(x): return fDesign(x)
+        return fm
+
+
+def _getKind(kind):
+    """Return a function to modify or not, the original signal.
+    The implemented functions are:
+    - 'signal' : original signal
+    - 'phase' : phase of the signal
+    - 'amplitude' : amplitude of the signal
+    - 'power' : power of the signal
+    """
+    # Unmodified signal
+    if kind == 'signal':
+        def sig_k(x): return x
+        return sig_k
+
+    # Phase of the signal
+    elif kind == 'phase':
+        def phase_k(x): return n.angle(x)
+        return phase_k
+
+    # Amplitude of the signal
+    elif kind == 'amplitude':
+        def amp_k(x): return abs(x)
+        return amp_k
+
+    # Power of the signal
+    elif kind == 'power':
+        def pow_k(x): return n.square(abs(x))
+        return pow_k
 
 
 ####################################################################
