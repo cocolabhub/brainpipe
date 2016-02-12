@@ -4,15 +4,22 @@ from brainpipe.xPOO._utils._feat import (_manageWindow, _manageFrequencies,
 from brainpipe.xPOO._utils._plot import _2Dplot
 from brainpipe.xPOO.tools import binarize, binArray
 from brainpipe.xPOO.filtering import fextract
+from brainpipe.xPOO._utils._filtering import _apply_method, _get_method
+from joblib import Parallel, delayed
 
 __all__ = [
-            'power',
-            'phase',
-            'cfc'
-          ]
+    'power',
+    'phase',
+    'cfc'
+]
 
+
+# ----------------------------------------------------------------------------
+#                                   POWER
+# ----------------------------------------------------------------------------
 
 class power(_featC):
+
     """Compute the power of multiple signals.
 
     Parameters
@@ -80,20 +87,23 @@ class power(_featC):
     def __init__(self, sf, f, npts, baseline=(1, 2), norm=0, method='hilbert1',
                  window=None, width=None, step=None, split=None, time=None,
                  **kwargs):
-        self.baseline = baseline
-        self.norm = norm
+
+        # Define windows and frequency :
         self.filter = fextract(kind='power', method=method, **kwargs)
         self.window, self.xvec = _manageWindow(
             npts, window=window, width=width, step=step, time=time)
-        self.f, self.fSplit, self.__fSplitIndex = _manageFrequencies(
+        self.f, self.fSplit, self._fSplitIndex = _manageFrequencies(
             f, split=split)
+
+        # Get variables :
+        self.baseline = baseline
+        self.norm = norm
         self.width = width
         self.step = step
         self.split = split
-        self.__nf = len(self.f)
-        self.__sf = sf
-        self.__npts = npts
-        self.fMeth = self.filter.getMeth(sf, self.fSplit, npts)
+        self._nf = len(self.f)
+        self._sf = sf
+        self._npts = npts
         self.yvec = [round((k[0]+k[1])/2) for k in self.f]
         self.featKind = 'Power'
 
@@ -105,22 +115,17 @@ class power(_featC):
 
         return powStr+extractStr+')'
 
-    def _get(self, x):
-        npts, ntrial = x.shape
-        # Get power :
-        xF = self.filter.applyMeth(x, self.fMeth)
-        # Normalize power :
-        xF = normalize(xF, n.tile(n.mean(xF[:, self.baseline[0]:self.baseline[
-            1], :], 1)[:, n.newaxis, :], [1, xF.shape[1], 1]), norm=self.norm)
-        # Mean Frequencies :
-        xF, _ = binArray(xF, self.__fSplitIndex, axis=0)
-        # Mean time :
-        if self.window is not None:
-            xF, self.xvec = binArray(xF, self.window, axis=1)
+    def get(self, x, n_jobs=-1):
+        if len(x.shape) == 2:
+            x = x[n.newaxis, ...]
+        nfeat = x.shape[0]
 
-        return xF
+        xF = Parallel(n_jobs=n_jobs)(
+            delayed(_get)(x[k, ...], self) for k in range(nfeat))
 
-    def tf(self, x, f=None):
+        return n.squeeze(xF)
+
+    def tf(self, x, f=None, n_jobs=-1):
         """Compute the Time-frequency map
 
         x : array
@@ -135,42 +140,28 @@ class power(_featC):
             f is to specified a particular frequency vector for the tf.
             It must be: f=(fstart, fend, fwidth, fstep)
         """
-        dimLen = len(x.shape)
-        if dimLen == 2:
-            return self._tf(x, f=f)
-        elif dimLen == 3:
-            return [self._tf(x[k, :, :], f=f) for k in range(0, x.shape[0])]
-
-    def _tf(self, x, f=None):
+        # Define variables :
+        if len(x.shape) == 2:
+            x = x[n.newaxis, ...]
+        nfeat = x.shape[0]
+        bkp_win, bkp_norm = self.window, self.norm
         window = self.window
         self.window = None
+
+        # Define a frequency a vector :
         if f is not None:
             self.f = binarize(f[0], f[1], f[2], f[3], kind='list')
-            self.__nf = len(self.f)
-            _, self.fSplit, self.__fSplitIndex = _manageFrequencies(
+            self._nf = len(self.f)
+            _, self.fSplit, self._fSplitIndex = _manageFrequencies(
                 self.f, split=None)
-            self.fMeth = self.filter.getMeth(self.__sf, self.fSplit,
-                                             self.__npts)
             self.yvec = [((k[0]+k[1])/2).astype(int) for k in self.f]
 
-        backNorm = self.norm
-        self.norm = 0
-        tf = self.get(x)
-        self.norm = backNorm
-        if (self.norm != 0) or (self.baseline != (1, 1)):
-            X = n.mean(tf, 2)
-            Y = n.matlib.repmat(n.mean(X[:, self.baseline[0]:self.baseline[
-                1]], 1), X.shape[1], 1).T
-            tfn = normalize(X, Y, norm=self.norm)
-        else:
-            tfn = n.mean(tf, 2)
+        # Compute tf in parallele :
+        tF = Parallel(n_jobs=n_jobs)(
+            delayed(_tf)(x[k, ...], self, bkp_win,
+                         bkp_norm) for k in range(nfeat))
 
-        # Mean time :
-        if window is not None:
-            tfn, _ = binArray(tfn, window, axis=1)
-        self.window = window
-
-        return tfn
+        return tF
 
     def tfplot(self, tf, title='Time-frequency map', xlabel='Time',
                ylabel='Frequency', cblabel='Power modulations', interp=(1, 1),
@@ -180,7 +171,58 @@ class power(_featC):
                        cblabel=cblabel, interp=interp, **kwargs)
 
 
+def _get(x, self):
+    """Sub-tf function
+    """
+    # Get the filter properties and apply:
+    fMeth = self.filter.get(self._sf, self.fSplit, self._npts)
+    xF = self.filter.apply(x, fMeth)
+
+    # Normalize power :
+    if self.norm is not 0:
+        xF = normalize(xF, n.tile(n.mean(xF[:, self.baseline[0]:self.baseline[
+            1], :], 1)[:, n.newaxis, :], [1, xF.shape[1], 1]), norm=self.norm)
+
+    # Mean Frequencies :
+    xF, _ = binArray(xF, self._fSplitIndex, axis=0)
+
+    # Mean time :
+    if self.window is not None:
+        xF, xvec = binArray(xF, self.window, axis=1)
+
+    return xF
+
+
+def _tf(x, self, bkp_win, bkp_norm):
+    """Sub-tf function
+    """
+    # Get the power :
+    self.window, self.norm = None, 0
+    tf = self.get(x, n_jobs=1)
+    self.window, self.norm = bkp_win, bkp_norm
+
+    # Normalize the power or not :
+    if (self.norm != 0) or (self.baseline != (1, 1)):
+        X = n.mean(tf, 2)
+        Y = n.matlib.repmat(n.mean(X[:, self.baseline[0]:self.baseline[
+            1]], 1), X.shape[1], 1).T
+        tfn = normalize(X, Y, norm=self.norm)
+    else:
+        tfn = n.mean(tf, 2)
+
+    # Mean time :
+    if self.window is not None:
+        tfn, _ = binArray(tfn, bkp_win, axis=1)
+
+    return tfn
+
+
+# ----------------------------------------------------------------------------
+#                                   PHASE
+# ----------------------------------------------------------------------------
+
 class phase(_featC):
+
     """Compute the phase of multiple signals.
 
     Parameters
@@ -226,6 +268,7 @@ class phase(_featC):
     plot : simple power plot
     tfplot : time-frequency plot
     """
+
     def __init__(self, sf, f, npts, method='hilbert', window=None,
                  width=None, step=None, time=None, **kwargs):
         self.filter = fextract(kind='phase', method=method, **kwargs)
@@ -234,10 +277,10 @@ class phase(_featC):
         self.f, _, _ = _manageFrequencies(f, split=None)
         self.width = width
         self.step = step
-        self.__nf = len(self.f)
+        self._nf = len(self.f)
         self.__sf = sf
-        self.__npts = npts
-        self.fMeth = self.filter.getMeth(sf, self.f, npts)
+        self._npts = npts
+        self.fMeth = self.filter.get(sf, self.f, npts)
         self.yvec = [round((k[0]+k[1])/2) for k in self.f]
         self.featKind = 'Phase'
 
@@ -251,7 +294,7 @@ class phase(_featC):
     def _get(self, x):
         npts, ntrial = x.shape
         # Get power :
-        xF = self.filter.applyMeth(x, self.fMeth)
+        xF = self.filter.apply(x, self.fMeth)
         # Mean time :
         if self.window is not None:
             xF, _ = binArray(xF, self.window, axis=1)
@@ -259,5 +302,6 @@ class phase(_featC):
 
 
 class cfc(object):
+
     def __init__(self):
         pass
