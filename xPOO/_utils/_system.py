@@ -7,7 +7,8 @@ __all__ = ['savefile',
            'loadfile',
            'jobsMngmt',
            'list2index',
-           'groupInList'
+           'groupInList',
+           'adaptsize'
            ]
 
 
@@ -93,3 +94,34 @@ def groupInList(x, idx):
     uelmt = list(set(idx))
     idx = n.array(idx)
     return [list(x[n.where(idx == k)]) for k in uelmt]
+
+
+def adaptsize(x, dim, whre=None):
+    """Adapt the dimension of an array depending of the tuple dim
+    x : the signal for swaping axis
+    dim : the dim dimensions
+    whre : a list to define where to put this new dimension
+
+    Example :
+    x.shape = (2, 4001, 160)
+    x2 = adaptsize(x, (4001, 2), whre=[2,1])
+    x2.shape = (160, 2, 4001)
+    """
+    if isinstance(dim, int):
+        goto = 1
+        dim = [dim]
+    else:
+        if len(dim) < len(x.shape):
+            goto = len(dim)
+        else:
+            goto = len(dim)-1
+    if not isinstance(dim, list):
+        dim = list(dim)
+    if not whre:
+        whre = list(n.arange(len(x.shape)))
+    if isinstance(whre, int):
+        whre = [whre]
+
+    for k in range(goto):
+        x = x.swapaxes(n.where(n.array(x.shape) == dim[k])[0], whre[k])
+    return x
