@@ -14,8 +14,6 @@ __all__ = [
     'fextract'
 ]
 
-__author__ = 'Etienne Combrisson'
-
 
 class fdesign(object):
 
