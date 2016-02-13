@@ -1,7 +1,7 @@
 import numpy as n
 from brainpipe.xPOO._utils._feat import (_manageWindow, _manageFrequencies,
-                                         normalize, _featC)
-from brainpipe.xPOO._utils._plot import _2Dplot
+                                         normalize)
+from brainpipe.xPOO._utils._plot import _plot, _2Dplot
 from brainpipe.xPOO.tools import binarize, binArray
 from brainpipe.xPOO.filtering import fextract
 from brainpipe.xPOO._utils._filtering import _apply_method, _get_method
@@ -9,6 +9,7 @@ from joblib import Parallel, delayed
 
 __all__ = [
     'power',
+    'TF',
     'phase',
     'cfc'
 ]
@@ -17,23 +18,9 @@ __all__ = [
 # ----------------------------------------------------------------------------
 #                                   POWER
 # ----------------------------------------------------------------------------
+class _powerDoc(object):
 
-class power(_featC):
-
-    """Compute the power of multiple signals.
-
-    Parameters
-    ----------
-    sf : int
-        Sampling frequency
-
-    f : list
-        List containing the couple of frequency bands.
-        Each couple can be either a list or a tuple.
-
-    npts : int
-        Number of points of the time serie
-
+    """
     norm : int, optional [def : 0]
         Number to choose the normalization method
             0 : No normalisation
@@ -59,10 +46,10 @@ class power(_featC):
         None and the width and step paameters will be considered
 
     width : int, optional [def : None]
-        width of a single window
+        width of a single window.
 
     step : int, optional [def : None]
-        Each window will be spaced by the "step" value
+        Each window will be spaced by the "step" value.
 
     split : int or list of int, optional [def: None]
         Split the frequency band f in "split" band width.
@@ -74,38 +61,34 @@ class power(_featC):
 
     **kwargs : additional arguments for filtering
         See of description of the filtsig module
-
-    Method
-    ----------
-    get : compute the power of a signal
-    freqvec : define a frequency vector
-    tf : time-frequency map
-    plot : simple power plot
-    tfplot : time-frequency plot
     """
 
-    def __init__(self, sf, f, npts, baseline=(1, 2), norm=0, method='hilbert1',
-                 window=None, width=None, step=None, split=None, time=None,
-                 **kwargs):
 
-        # Define windows and frequency :
-        self.filter = fextract(kind='power', method=method, **kwargs)
-        self.window, self.xvec = _manageWindow(
-            npts, window=window, width=width, step=step, time=time)
-        self.f, self.fSplit, self._fSplitIndex = _manageFrequencies(
-            f, split=split)
+class power(_powerDoc):
 
-        # Get variables :
-        self.baseline = baseline
-        self.norm = norm
-        self.width = width
-        self.step = step
-        self.split = split
-        self._nf = len(self.f)
-        self._sf = sf
-        self._npts = npts
-        self.yvec = [round((k[0]+k[1])/2) for k in self.f]
-        self.featKind = 'Power'
+    """Compute the power of multiple signals.
+
+    Parameters
+    ----------
+    sf : int
+        Sampling frequency
+
+    npts : int
+        Number of points of the time serie
+
+    f : tuple/list, optional, [def : [60,200]]
+        List containing the couple of frequency bands.
+        Each couple can be either a list or a tuple.
+        Example : f=[ [2,4], [5,7], [60,250] ] will compute
+        the power in three frequency bands
+    """
+    __doc__ += _powerDoc.__doc__
+
+    def __init__(self, sf, npts, f=[60, 200], baseline=(1, 2), norm=0,
+                 method='hilbert1', window=None, width=None, step=None,
+                 split=None, time=None, **kwargs):
+        self = feat_init(self, sf, f, npts, baseline, norm, method,
+                         window, width, step, split, time, 'power', **kwargs)
 
     def __str__(self):
         extractStr = str(self.filter)
@@ -116,8 +99,27 @@ class power(_featC):
         return powStr+extractStr+')'
 
     def get(self, x, n_jobs=-1):
+        """Get the power of the signal x. This method is optimized
+        for 3D matrix x.
+
+        Parameters
+        ----------
+        x : array
+            - If x is a 2D array of size (npts, ntrial) and f, the frequency
+            vector has a length of nf, the "get" method will return a
+            (nf, npts, ntrial) array
+            - If x is a 3D array of size (N, npts, ntrial), power is calculated
+            for each N and a list of length N is return and each element of it
+            have a size of (nf, npts, ntrial).
+
+        n_jobs : integer
+            Control the number of jobs for parallel computing. Use 1, 2, ...
+            depending of your number or cores. -1 for all the cores.
+        """
         if len(x.shape) == 2:
             x = x[n.newaxis, ...]
+        if x.shape[1] != self._npts:
+            raise ValueError('The second dimension must be '+str(self._npts))
         nfeat = x.shape[0]
 
         xF = Parallel(n_jobs=n_jobs)(
@@ -125,54 +127,123 @@ class power(_featC):
 
         return n.squeeze(xF)
 
-    def tf(self, x, f=None, n_jobs=-1):
-        """Compute the Time-frequency map
+    def plot(self, x, title=' feature', xlabel='Time',
+             ylabel=' modulations', **kwargs):
+        """Simple plot
+        """
+        return _plot(self.xvec, x, title=self.featKind+title, xlabel=xlabel,
+                     ylabel=self.featKind+ylabel,
+                     **kwargs)
 
+
+class TF(_powerDoc):
+
+    """Compute the time-frequency map of multiple signals.
+
+    Parameters
+    ----------
+    sf : int
+        Sampling frequency
+
+    npts : int
+        Number of points of the time serie
+
+    f : tuple/list, optional, [def : (2, 200, 20, 10)]
+        Define the frequency vector to compute the time-frequency maps.
+        This tuple is define like thos f=(fstart, fend, fwidth, fstep)
+        where :
+        fstart, fend : starting and ending frequency
+        fwidth, fstep : sliding frequency window of length fwidth and
+                        fstep sliding. For example, if fwidth=20 and
+                        fstep=10, this mean there is a 50% covering
+    """
+    __doc__ += _powerDoc.__doc__
+
+    def __init__(self, sf, npts, f=(2, 200, 20, 10), baseline=(1, 2), norm=0,
+                 method='hilbert1', window=None, width=None, step=None,
+                 time=None, **kwargs):
+        f = binarize(f[0], f[1], f[2], f[3], kind='list')
+        self = feat_init(self, sf, f, npts, baseline, norm, method,
+                         window, width, step, None, time, 'power', **kwargs)
+
+    def __str__(self):
+        extractStr = str(self.filter)
+        powStr = 'tf(norm='+str(self.norm)+', step='+str(
+            self.step)+', width='+str(self.width)+', split='+str(
+            self.split)+',\n'
+
+        return powStr+extractStr+')'
+
+    def get(self, x, n_jobs=-1):
+        """Get the time frequency map of a signal x. This method is optimized
+        for 3D matrix x.
+
+        Parameters
+        ----------
         x : array
             - If x is a 2D array of size (npts, ntrial) and f, the frequency
-            vector has a length of nf, the "tf" method will return the mean
-            time-frequency map of size (nf, npts).
-            - If x is a 3D array of size (N, npts, ntrial), tf is calculated
+            vector has a length of nf, the "get" method will return a
+            (nf, npts, ntrial) array
+            - If x is a 3D array of size (N, npts, ntrial), power is calculated
             for each N and a list of length N is return and each element of it
-            have a size of (nf, npts).
+            have a size of (nf, npts, ntrial).
 
-        f : tuple/list, optional, [def: None]
-            f is to specified a particular frequency vector for the tf.
-            It must be: f=(fstart, fend, fwidth, fstep)
+        n_jobs : integer
+            Control the number of jobs for parallel computing. Use 1, 2, ...
+            depending of your number or cores. -1 for all the cores.
         """
-        # Define variables :
         if len(x.shape) == 2:
             x = x[n.newaxis, ...]
+        if x.shape[1] != self._npts:
+            raise ValueError('The second dimension must be '+str(self._npts))
         nfeat = x.shape[0]
-        bkp_win, bkp_norm = self.window, self.norm
-        window = self.window
-        self.window = None
-
-        # Define a frequency a vector :
-        if f is not None:
-            self.f = binarize(f[0], f[1], f[2], f[3], kind='list')
-            self._nf = len(self.f)
-            _, self.fSplit, self._fSplitIndex = _manageFrequencies(
-                self.f, split=None)
-            self.yvec = [((k[0]+k[1])/2).astype(int) for k in self.f]
 
         # Compute tf in parallele :
+        bkp_win, bkp_norm = self.window, self.norm
         tF = Parallel(n_jobs=n_jobs)(
             delayed(_tf)(x[k, ...], self, bkp_win,
                          bkp_norm) for k in range(nfeat))
 
         return tF
 
-    def tfplot(self, tf, title='Time-frequency map', xlabel='Time',
-               ylabel='Frequency', cblabel='Power modulations', interp=(1, 1),
-               **kwargs):
+    def plot(self, tf, title='Time-frequency map', xlabel='Time',
+             ylabel='Frequency', cblabel='Power modulations', interp=(1, 1),
+             **kwargs):
         return _2Dplot(tf, self.xvec, self.yvec, title=title,
                        xlabel=xlabel, ylabel=ylabel,
                        cblabel=cblabel, interp=interp, **kwargs)
 
 
-def _get(x, self):
+def _tf(x, self, bkp_win, bkp_norm):
     """Sub-tf function
+
+    Compute the tf for a single x.
+    """
+    # Get the power :
+    self.window, self.norm = None, 0
+    tf = _get(x, self)
+    self.window, self.norm = bkp_win, bkp_norm
+
+    # Normalize the power or not :
+    if (self.norm != 0) or (self.baseline != (1, 1)):
+        X = n.mean(tf, 2)
+        Y = n.matlib.repmat(n.mean(X[:, self.baseline[0]:self.baseline[
+            1]], 1), X.shape[1], 1).T
+        tfn = normalize(X, Y, norm=self.norm)
+    else:
+        tfn = n.mean(tf, 2)
+
+    # Mean time :
+    if self.window is not None:
+        tfn, _ = binArray(tfn, bkp_win, axis=1)
+
+    return tfn
+
+
+def _get(x, self):
+    """Sub get function.
+
+    Get the power of a signal x.
     """
     # Get the filter properties and apply:
     fMeth = self.filter.get(self._sf, self.fSplit, self._npts)
@@ -193,35 +264,41 @@ def _get(x, self):
     return xF
 
 
-def _tf(x, self, bkp_win, bkp_norm):
-    """Sub-tf function
+def feat_init(self, sf, f, npts, baseline, norm, method, window, width, step,
+              split, time, kind, **kwargs):
+    """Initialize power objects.
+
+    I defined a function to initialize power objects because the parallel
+    cumputing doesn't accept objects initialize using an othr class.
+    May be not esthetic but it works...
     """
-    # Get the power :
-    self.window, self.norm = None, 0
-    tf = self.get(x, n_jobs=1)
-    self.window, self.norm = bkp_win, bkp_norm
+    # Define windows and frequency :
+    self.filter = fextract(kind=kind, method=method, **kwargs)
+    self.window, self.xvec = _manageWindow(
+        npts, window=window, width=width, step=step, time=time)
+    self.f, self.fSplit, self._fSplitIndex = _manageFrequencies(
+        f, split=split)
 
-    # Normalize the power or not :
-    if (self.norm != 0) or (self.baseline != (1, 1)):
-        X = n.mean(tf, 2)
-        Y = n.matlib.repmat(n.mean(X[:, self.baseline[0]:self.baseline[
-            1]], 1), X.shape[1], 1).T
-        tfn = normalize(X, Y, norm=self.norm)
-    else:
-        tfn = n.mean(tf, 2)
+    # Get variables :
+    self.baseline = baseline
+    self.norm = norm
+    self.width = width
+    self.step = step
+    self.split = split
+    self._nf = len(self.f)
+    self._sf = sf
+    self._npts = npts
+    self.yvec = [round((k[0]+k[1])/2) for k in self.f]
+    self.featKind = 'Power'
 
-    # Mean time :
-    if self.window is not None:
-        tfn, _ = binArray(tfn, bkp_win, axis=1)
-
-    return tfn
+    return self
 
 
 # ----------------------------------------------------------------------------
 #                                   PHASE
 # ----------------------------------------------------------------------------
 
-class phase(_featC):
+class phase(object):
 
     """Compute the phase of multiple signals.
 
@@ -230,59 +307,21 @@ class phase(_featC):
     sf : int
         Sampling frequency
 
-    f : list
-        List containing the couple of frequency bands.
-        Each couple can be either a list or a tuple.
-
     npts : int
         Number of points of the time serie
 
-    method : string
-        Method to transform the signal. Possible values are:
-            - 'hilbert' : apply a hilbert transform to each column
-            - 'hilbert1' : hilbert transform to a whole matrix
-            - 'hilbert2' : 2D hilbert transform
-
-    window : tuple, list, None, optional [def: None]
-        List/tuple: [100,1500]
-        List of list/tuple: [(100,500),(200,4000)]
-        None and the width and step paameters will be considered
-
-    width : int, optional [def : None]
-        width of a single window
-
-    step : int, optional [def : None]
-        Each window will be spaced by the "step" value
-
-    time : list/array, optional [def: None]
-        Define a specific time vector
-
-    **kwargs : additional arguments for filtering
-        See of description of the filtsig module
-
-    Method
-    ----------
-    get : compute the power of a signal
-    freqvec : define a frequency vector
-    tfmap : time-frequency map
-    plot : simple power plot
-    tfplot : time-frequency plot
+    f : tuple/list, optional, [def : [60,200]]
+        List containing the couple of frequency bands.
+        Each couple can be either a list or a tuple.
+        Example : f=[ [2,4], [5,7], [60,250] ] will compute
+        the phase in three frequency bands
     """
+    __doc__ += _powerDoc.__doc__
 
-    def __init__(self, sf, f, npts, method='hilbert', window=None,
+    def __init__(self, sf, npts, f=[60, 200], method='hilbert', window=None,
                  width=None, step=None, time=None, **kwargs):
-        self.filter = fextract(kind='phase', method=method, **kwargs)
-        self.window, self.xvec = _manageWindow(
-            npts, window=window, width=width, step=step)
-        self.f, _, _ = _manageFrequencies(f, split=None)
-        self.width = width
-        self.step = step
-        self._nf = len(self.f)
-        self.__sf = sf
-        self._npts = npts
-        self.fMeth = self.filter.get(sf, self.f, npts)
-        self.yvec = [round((k[0]+k[1])/2) for k in self.f]
-        self.featKind = 'Phase'
+        self = feat_init(self, sf, f, npts, None, 0, method,
+                         window, width, step, None, time, 'phase', **kwargs)
 
     def __str__(self):
         extractStr = str(self.filter)
@@ -291,14 +330,38 @@ class phase(_featC):
 
         return phaStr+extractStr+')'
 
-    def _get(self, x):
-        npts, ntrial = x.shape
-        # Get power :
-        xF = self.filter.apply(x, self.fMeth)
-        # Mean time :
-        if self.window is not None:
-            xF, _ = binArray(xF, self.window, axis=1)
-        return xF
+    def get(self, x, n_jobs=-1):
+        """Get the phase of the signal x. This method is optimized
+        for 3D matrix x.
+
+        Parameters
+        ----------
+        x : array
+            - If x is a 2D array of size (npts, ntrial) and f, the frequency
+            vector has a length of nf, the "get" method will return a
+            (nf, npts, ntrial) array
+            - If x is a 3D array of size (N, npts, ntrial), phase is calculated
+            for each N and a list of length N is return and each element of it
+            have a size of (nf, npts, ntrial).
+
+        n_jobs : integer
+            Control the number of jobs for parallel computing. Use 1, 2, ...
+            depending of your number or cores. -1 for all the cores.
+        """
+        if len(x.shape) == 2:
+            x = x[n.newaxis, ...]
+        if x.shape[1] != self._npts:
+            raise ValueError('The second dimension must be '+str(self._npts))
+        nfeat = x.shape[0]
+
+        xF = Parallel(n_jobs=n_jobs)(
+            delayed(_get)(x[k, ...], self) for k in range(nfeat))
+
+        return n.squeeze(xF)
+
+# ----------------------------------------------------------------------------
+#                          CROSS-FREQUENCY COUPLING
+# ----------------------------------------------------------------------------
 
 
 class cfc(object):
