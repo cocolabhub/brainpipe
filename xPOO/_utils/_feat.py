@@ -8,7 +8,6 @@ __all__ = [
             '_manageWindow',
             '_manageFrequencies',
             'normalize',
-            '_featC'
           ]
 
 
@@ -117,62 +116,17 @@ def normalize(A, B, norm=0):
         3 : Substract then divide
         4 : Z-score
     """
+    # No normalisation
     if norm == 0:
         return A
+    # Substraction
     elif norm == 1:
-        return A - B  # 1 = Substraction
-    elif norm == 2:
-        return A / B  # 2 = Division
+        return A - B
+    # Division
+        return A / B
+    # Substract then divide
     elif norm == 3:
-        return (A - B) / B  # 3 - Substract then divide
+        return (A - B) / B
+    # Z-score
     elif norm == 4:
-        return (A - B) / n.std(B, axis=0)  # 4 - Z-score
-
-
-class _featC(object):
-
-    def __init__(self):
-        pass
-
-    def get(self, x):
-        """Compute the selected kind of feature of a signal x
-
-        x : array
-            - If x is a 2D array of size (npts, ntrial) and f, the frequency
-            vector has a length of nf, the "get" method will return a
-            (nf, npts, ntrial) array
-            - If x is a 3D array of size (N, npts, ntrial), power is calculated
-            for each N and a list of length N is return and each element of it
-            have a size of (nf, npts, ntrial).
-        """
-        dimLen = len(x.shape)
-        if dimLen == 2:
-            return self._get(x)
-        elif dimLen == 3:
-            return [self._get(x[k, :, :]) for k in range(0, x.shape[0])]
-
-    def plot(self, x, title=' feature', xlabel='Time',
-             ylabel=' modulations', **kwargs):
-        """Simple plot
-        """
-        return _plot(self.xvec, x, title=self.featKind+title, xlabel=xlabel,
-                     ylabel=self.featKind+ylabel,
-                     **kwargs)
-
-    @staticmethod
-    def freqvec(fstart, fend, fwidth, fstep):
-        """Generate a window to binarize a signal
-
-        fstart : int
-            Start at "fstart"
-
-        fend : int
-            End at "fend"
-
-        fwidth : int, optional [def : None]
-            fwidth of a single window
-
-        step : int, optional [def : None]
-            Each window will be spaced by the "step" value
-        """
-        return binarize(fstart, fend, fwidth, fstep, kind='list')
+        return (A - B) / n.std(B, axis=0)
