@@ -16,7 +16,7 @@ from sklearn.base import clone
 from joblib import Parallel, delayed
 
 from brainpipe.xPOO.statistics import binostatinv, perm2pval, permIntraClass
-from brainpipe.xPOO._utils._system import groupInList, list2index
+from brainpipe.xPOO._utils._system import groupInList, list2index, adaptsize
 
 __all__ = ['classify',
            'defClf',
@@ -576,10 +576,7 @@ class timegeneralization(object):
         npts, ntrials = len(time), len(y)
         if len(x.shape) == 2:
             x = n.matrix(x)
-        if x.shape[0] is not ntrials:
-            x = x.swapaxes(n.where(n.array(x.shape) == ntrials)[0], 0)
-        if x.shape[1] is not npts:
-            x = x.swapaxes(n.where(n.array(x.shape) == npts)[0], 1)
+        x = adaptsize(x, (ntrials, npts))
 
         da = n.zeros([npts, npts])
         # Training dimension
