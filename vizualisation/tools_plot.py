@@ -224,7 +224,7 @@ def _mapplot(signal, x=None, y=None, vmin=None, vmax=None, cmap='jet', axes=None
     #---------------------------------------------------------------------
     # Imshow the CfcMap : 
     #---------------------------------------------------------------------
-    im = ax.imshow(signali, cmap=cmap, extent=[xvec[0],xvec[-1],yvec[-1],yvec[0]], aspect='auto', vmin=vmin, vmax=vmax)
+    im = ax.imshow(signali, cmap=cmap, extent=[xvec[0],xvec[-1],yvec[-1],yvec[0]], aspect='auto', vmin=vmin, vmax=vmax, interpolation='None')
     
     AxesPos = ax.get_position()
     def textResize(txt):
