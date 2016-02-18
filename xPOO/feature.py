@@ -1,11 +1,16 @@
 import numpy as n
+
 from brainpipe.xPOO._utils._feat import (_manageWindow, _manageFrequencies,
                                          normalize)
 from brainpipe.xPOO._utils._plot import _plot, _2Dplot
 from brainpipe.xPOO.tools import binarize, binArray
 from brainpipe.xPOO.filtering import fextract
 from brainpipe.xPOO._utils._filtering import _apply_method, _get_method
+from brainpipe.xPOO._utils._system import groupInList, list2index, adaptsize
+from brainpipe.xPOO.cfc.methods import *
+
 from joblib import Parallel, delayed
+
 
 __all__ = [
     'power',
@@ -289,7 +294,7 @@ def feat_init(self, sf, f, npts, baseline, norm, method, window, width, step,
     self._sf = sf
     self._npts = npts
     self.yvec = [round((k[0]+k[1])/2) for k in self.f]
-    self.featKind = 'Power'
+    self.featKind = kind
 
     return self
 
@@ -359,6 +364,15 @@ class phase(object):
 
         return n.squeeze(xF)
 
+    def plot(self, x, title=' feature', xlabel='Time',
+             ylabel=' modulations', **kwargs):
+        """Simple plot
+        """
+        return _plot(self.xvec, x, title=self.featKind+title, xlabel=xlabel,
+                     ylabel=self.featKind+ylabel,
+                     **kwargs)
+
+
 # ----------------------------------------------------------------------------
 #                          CROSS-FREQUENCY COUPLING
 # ----------------------------------------------------------------------------
@@ -366,5 +380,70 @@ class phase(object):
 
 class cfc(object):
 
-    def __init__(self):
-        pass
+    def __init__(self, sf, npts, Id='114', phase=[2, 4], amplitude=[60, 200],
+                 method_phase='hilbert', method_amp='hilbert',
+                 cycle=(3, 6), nbins=18, window=None, width=None, step=None,
+                 time=None, **kwargs):
+
+        # Define windows and frequency :
+        self.pha = fextract(kind='phase', method=method_phase,
+                            cycle=cycle[0], **kwargs)
+        self.amp = fextract(kind='amplitude', method=method_amp,
+                            cycle=cycle[1], **kwargs)
+        self.window, self.xvec = _manageWindow(npts, window=window,
+                                               width=width, step=step,
+                                               time=time)
+        self.pha.f, _, _ = _manageFrequencies(phase, split=None)
+        self.amp.f, _, _ = _manageFrequencies(amplitude, split=None)
+        if self.window is None:
+            self.window = [(0, npts)]
+            self.xvec = [0, npts]
+
+        # Get variables :
+        self.Id = Id
+        self.nbins = nbins
+        self.width = width
+        self.step = step
+        self._nPha = len(self.pha.f)
+        self._nAmp = len(self.amp.f)
+        self._sf = sf
+        self._npts = npts
+
+    def get(self, x, n_jobs=-1, xPha=None, xAmp=None):
+        """Get the cfc mesure of an input signal.
+        """
+        # Check input variables :
+        if xPha is None:
+            xPha = x
+        if xAmp is None:
+            xAmp = x
+        npts, ntrial = xPha.shape
+        W = self.window
+        nwin = len(W)
+
+        # Get the filter for phase/amplitude properties :
+        phaMeth = self.pha.get(self._sf, self.pha.f, self._npts)
+        ampMeth = self.amp.get(self._sf, self.amp.f, self._npts)
+
+        # Filt the phase and amplitude :
+        xPha = self.pha.apply(xPha, phaMeth)
+        xAmp = self.amp.apply(xAmp, ampMeth)
+
+        claIdx, listWin, listTrial = list2index(nwin, ntrial)
+
+        # Run the classification :
+        uCfc = Parallel(n_jobs=n_jobs)(delayed(_cfcGet)(
+            n.squeeze(xPha[:, W[k[0]][0]:W[k[0]][1], k[1]]),
+            n.squeeze(xAmp[:, W[k[0]][0]:W[k[0]][1], k[1]]),
+            self) for k in claIdx)
+        uCfc = n.array(groupInList(uCfc, listWin))
+
+        return uCfc
+
+
+def _cfcGet(pha, amp, self):
+
+    # Get the cfc model :
+    Model, Sur, Norm, ModelStr, SurStr, NormStr = CfcSettings(self.Id)
+
+    return Model(n.matrix(pha), n.matrix(amp))
