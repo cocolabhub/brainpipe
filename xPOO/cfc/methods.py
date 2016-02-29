@@ -1,8 +1,10 @@
 import numpy as n
+from itertools import product
+from brainpipe.xPOO.tools import binarize
 
 __all__ = [
-            'CfcSettings',
-          ]
+    'CfcSettings',
+]
 
 
 # ----------------------------------------------------------------------------
@@ -53,36 +55,32 @@ def CfcMethodList(Id, nbins=18):
     """
     # Modulation Index (Canolty, 2006)
     if Id == 1:
-        def CfcModel(pha, amp):
+        def CfcModel(pha, amp, *arg):
             return ModulationIndex(pha, amp)
         CfcModelStr = 'Modulation Index (Canolty, 2006)'
 
     # Kullback-Leiber divergence (Tort, 2010)
     elif Id == 2:
-        def CfcModel(pha, amp, nbins):
-            return KullbackLeiblerDistance(pha, amp, nbins=nbins)
-        CfcModelStr = 'Kullback-Leibler Distance (Tort, 2010) ['+str(
-            nbins)+'bins]'
+        def CfcModel(pha, amp, nbins=nbins):
+            return KullbackLeiblerDistance(pha, amp, nbins)
+        CfcModelStr = 'Kullback-Leibler Distance ['+str(
+            nbins)+' bins] (Tort, 2010)'
+
+    # Heights ratio
+    elif Id == 3:
+        def CfcModel(pha, amp, nbins=nbins):
+            return HeightsRatio(pha, amp, nbins)
+        CfcModelStr = 'Heights ratio ['+str(nbins)+' bins]'
 
     # Phase synchrony
-    elif Id == 3:
-        def CfcModel(pha, amp):
+    elif Id == 4:
+        def CfcModel(pha, amp, *arg):
             return PhaseSynchrony(pha, amp)
         CfcModelStr = 'Phase synchrony'
 
-    # Amplitude PSD
-    elif Id == 4:
-        CfcModelStr = 'Amplitude PSD'
-
-    # Heights ratio
-    elif Id == 5:
-        def CfcModel(pha, amp, nbins):
-            return HeightsRatio(pha, amp, nbins=nbins)
-        CfcModelStr = 'Heights ratio'
-
     # ndPac (Ozkurt, 2012)
-    elif Id == 6:
-        def CfcModel(pha, amp):
+    elif Id == 5:
+        def CfcModel(pha, amp, *arg):
             return ndCfc(pha, amp)
         CfcModelStr = 'Normalized direct Pac (Ozkurt, 2012)'
 #         Cfcsup.CfcstatMeth = 1
@@ -92,9 +90,61 @@ def CfcMethodList(Id, nbins=18):
 
 def ModulationIndex(pha, amp):
     """Modulation index (Canolty, 2006)
+
+    Method :
+    abs(amplitude x exp(phase)) <-> sum modulations of the
+    complex radius accross time. MI = resultant radius
     """
     return n.array(abs(amp*n.exp(1j*pha).T)/pha.shape[1])
 
+
+def KullbackLeiblerDistance(pha, amp, nbins):
+    """Kullback Leibler Distance (Tort, 2010)
+    """
+    # Get the phase locked binarized amplitude :
+    abin, abinsum = _kl_hr(pha, amp, nbins)
+    abin = n.divide(abin, n.rollaxis(abinsum, 0, start=3))
+    abin[abin == 0] = 1
+    abin = abin * n.log2(abin)
+
+    return (1 + abin.sum(axis=2)/n.log2(nbins))
+
+
+def HeightsRatio(pha, amp, nbins):
+    """Heights Ratio
+    """
+    # Get the phase locked binarized amplitude :
+    abin, abinsum = _kl_hr(pha, amp, nbins)
+    M, m = abin.max(axis=2), abin.min(axis=2)
+    MDown = M.copy()
+    MDown[MDown == 0] = 1
+
+    return (M-m)/MDown
+
+
+def _kl_hr(pha, amp, nbins):
+    nPha, npts, nAmp = *pha.shape, amp.shape[0]
+    step = 2*n.pi/nbins
+    vecbin = binarize(-n.pi, n.pi+step, step, step)
+    if len(vecbin) > nbins:
+        vecbin = vecbin[0:-1]
+
+    abin = n.zeros((nAmp, nPha, nbins))
+    for k, i in enumerate(vecbin):
+        # Find where phase take vecbin values :
+        pL, pC = n.where((pha >= i[0]) & (pha < i[1]))
+
+        # Matrix to do amp x binMat :
+        binMat = n.zeros((npts, nPha))
+        binMat[pC, pL] = 1
+        meanMat = n.matlib.repmat(binMat.sum(axis=0), nAmp, 1)
+        meanMat[meanMat == 0] = 1
+
+        # Multiply matrix :
+        abin[:, :, k] = n.divide(n.dot(amp, binMat), meanMat)
+    abinsum = n.array([abin.sum(axis=2) for k in range(nbins)])
+
+    return abin, abinsum
 
 # ----------------------------------------------------------------------------
 #                                 SURROGATES
@@ -167,16 +217,16 @@ def CfcShuffle(xfP, xfA, CfcModel, n_perm=200):
 
     perm = [n.random.permutation(timeL) for k in range(n_perm)]
     # Compute surrogates :
-    Suro = n.zeros((nAmp, nPha, nbTrials, n_perm))
+    Suro = n.zeros((nbTrials, nAmp, nPha, n_perm))
     for k in range(nbTrials):
         CurPha, curAmp = xfP[:, :, k], n.matrix(xfA[:, :, k])
         for i in range(n_perm):
-            # Randpmly permutate phase values :
+            # Randomly permutate phase values :
             CurPhaShuffle = CurPha[:, perm[i]]
             # compute new Cfc :
-            Suro[:, :, k, i] = CfcModel(n.matrix(CurPhaShuffle), curAmp)
-    # Return surrogates,mean & deviation for each surrogate distribution :
-    return Suro, n.mean(Suro, 3), n.std(Suro, 3)
+            Suro[k, :, :, i] = CfcModel(n.matrix(CurPhaShuffle), curAmp)
+
+    return Suro
 
 
 # ----------------------------------------------------------------------------
@@ -217,13 +267,15 @@ def CfcNormalizationList(Id):
     # Substract then divide
     if Id == 3:
         def CfcNormModel(uCfc, SuroMean, SuroStd):
+            SuroMean[SuroMean == 0] = 1
             return (uCfc-SuroMean)/SuroMean
         CfcNormModelStr = 'Substract then divide by the mean of surrogates'
 
     # Z-score
     if Id == 4:
         def CfcNormModel(uCfc, SuroMean, SuroStd):
+            SuroStd[SuroStd == 0] = 1
             return (uCfc-SuroMean)/SuroStd
-        CfcNormModelStr = 'Z-score: substract the mean and divide by the deviation of the surrogates'
+        CfcNormModelStr = 'Z-score'
 
     return CfcNormModel, CfcNormModelStr

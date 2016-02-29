@@ -6,10 +6,14 @@ from brainpipe.xPOO._utils._plot import _plot, _2Dplot
 from brainpipe.xPOO.tools import binarize, binArray
 from brainpipe.xPOO.filtering import fextract
 from brainpipe.xPOO._utils._filtering import _apply_method, _get_method
-from brainpipe.xPOO._utils._system import groupInList, list2index, adaptsize
+
 from brainpipe.xPOO.cfc.methods import *
+from brainpipe.xPOO.cfc._cfc import *
 
 from joblib import Parallel, delayed
+from psutil import cpu_count
+
+from itertools import product
 
 
 __all__ = [
@@ -379,6 +383,10 @@ class phase(object):
 
 
 class cfc(object):
+    """
+
+    Authors: Etienne Combrisson & Juan LP Soto
+    """
 
     def __init__(self, sf, npts, Id='114', phase=[2, 4], amplitude=[60, 200],
                  method_phase='hilbert', method_amp='hilbert',
@@ -401,6 +409,9 @@ class cfc(object):
 
         # Get variables :
         self.Id = Id
+        _, _, _, ModelStr, SurStr, NormStr = CfcSettings(Id, nbins)
+        self.model = ['Method : '+ModelStr, 'Surrogates : '+SurStr,
+                      'Normalization : '+NormStr]
         self.nbins = nbins
         self.width = width
         self.step = step
@@ -408,42 +419,58 @@ class cfc(object):
         self._nAmp = len(self.amp.f)
         self._sf = sf
         self._npts = npts
+        self._nwin = len(self.window)
+
+    def __str__(self):
+        phafilt = 'Phase : '+str(self.pha)
+        ampfilt = 'Amplitude : '+str(self.amp)
+        met = self.model[0]+',\n'+self.model[1]+',\n'+self.model[2]+',\n'
+        cfcStr = 'Cross-frequency Coupling(step='+str(self.step)+', width='+str(
+            self.width)+', Id='+self.Id+', nbins='+str(self.nbins)+',\n'+met
+
+        return cfcStr+phafilt+',\n'+ampfilt+')'
 
     def get(self, x, n_jobs=-1, xPha=None, xAmp=None):
         """Get the cfc mesure of an input signal.
         """
-        # Check input variables :
-        if xPha is None:
-            xPha = x
-        if xAmp is None:
-            xAmp = x
-        npts, ntrial = xPha.shape
-        W = self.window
-        nwin = len(W)
+        # Check the inputs variables :
+        xPha, xAmp = _cfcCheck(x, xPha, xAmp, self._npts)
+        N = xPha.shape[0]
 
-        # Get the filter for phase/amplitude properties :
-        phaMeth = self.pha.get(self._sf, self.pha.f, self._npts)
-        ampMeth = self.amp.get(self._sf, self.amp.f, self._npts)
-
-        # Filt the phase and amplitude :
-        xPha = self.pha.apply(xPha, phaMeth)
-        xAmp = self.amp.apply(xAmp, ampMeth)
-
-        claIdx, listWin, listTrial = list2index(nwin, ntrial)
-
-        # Run the classification :
-        uCfc = Parallel(n_jobs=n_jobs)(delayed(_cfcGet)(
-            n.squeeze(xPha[:, W[k[0]][0]:W[k[0]][1], k[1]]),
-            n.squeeze(xAmp[:, W[k[0]][0]:W[k[0]][1], k[1]]),
-            self) for k in claIdx)
-        uCfc = n.array(groupInList(uCfc, listWin))
+        # Get the unormalized cfc:
+        uCfc = Parallel(n_jobs=n_jobs)(delayed(_cfcFilt)(
+            xPha[k, ...], xAmp[k, ...], self) for k in range(N))
 
         return uCfc
 
+    def statget(self, x, n_jobs=-1, xPha=None, xAmp=None, n_perm=200):
+        """Get the cfc mesure of an input signal.
+        """
+        # Check the inputs variables :
+        xPha, xAmp = _cfcCheck(x, xPha, xAmp, self._npts)
+        self.n_perm = n_perm
+        self.p = 1/n_perm
+        N = xPha.shape[0]
 
-def _cfcGet(pha, amp, self):
+        # Manage jobs repartition :
+        if (N < cpu_count()) and (n_jobs != 1):
+            surJob = n_jobs
+            elecJob = 1
+        elif (N >= cpu_count()) and (n_jobs != 1):
+            surJob = 1
+            elecJob = n_jobs
+        else:
+            surJob, elecJob = 1, 1
 
-    # Get the cfc model :
-    Model, Sur, Norm, ModelStr, SurStr, NormStr = CfcSettings(self.Id)
+        # Get the unormalized cfc and surogates:
+        cfcsu = Parallel(n_jobs=elecJob)(delayed(_cfcFiltSuro)(
+            xPha[k, ...], xAmp[k, ...], surJob, self) for k in range(N))
 
-    return Model(n.matrix(pha), n.matrix(amp))
+        # Normalize each cfc:
+        _, _, Norm, _, _, _ = CfcSettings(self.Id)
+        nCfc = [Norm(k[0], k[2], k[3]) for k in cfcsu]
+
+        # Confidence interval :
+        pvalue = [_cfcPvalue(nCfc[k], cfcsu[k][1]) for k in range(len(nCfc))]
+
+        return nCfc, pvalue
