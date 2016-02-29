@@ -71,7 +71,7 @@ def timegeneralizationMap(da, time=None, interp=None, xlabel='Generalization tim
         Label = []
         for k in range(0,len(cue)): 
             plt.plot((cue[k][0], cue[k][0]), (time[0], time[-1]), '-',linewidth=cue[k][3], color=cue[k][2])
-            plt.text(cue[k][0]-120, -400, cue[k][1], rotation=90, color='w', size=20, weight='bold')
+            plt.text(cue[k][0]-120, -120, cue[k][1], rotation=90, color='w', size=20, weight='bold')
             Label.append(cue[k][0])
 #         plt.autoscale(tight=True)
         ax.set_xticklabels(Label), ax.set_yticklabels(Label), ax.set_xticks(Label), ax.set_yticks(Label)

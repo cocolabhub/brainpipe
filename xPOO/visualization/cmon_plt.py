@@ -28,27 +28,28 @@ class _pltutils(object):
             self._xType = int
         if not hasattr(self, '_yType'):
             self._yType = int
-        if not n.array(xlim).size:
-            xlim = list(ax.get_xlim())
-        if not n.array(ylim).size:
-            ylim = list(ax.get_ylim())
-        if not n.array(xticks).size:
-            xticks = n.array(ax.get_xticks()).astype(self._xType)
-        if not n.array(yticks).size:
-            yticks = n.array(ax.get_yticks()).astype(self._yType)
-        if not xticklabels:
-            xticklabels = xticks
-        if not yticklabels:
-            yticklabels = yticks
+        # Axes ticks :
+        if n.array(xticks).size:
+            ax.set_xticks(xticks)
+        if n.array(yticks).size:
+            ax.set_yticks(yticks)
+        # Axes ticklabels :
+        if xticklabels:
+            ax.set_xticklabels(xticklabels)
+        if yticklabels:
+            ax.set_yticklabels(yticklabels)
+        # Axes labels :
+        if xlabel:
+            ax.set_xlabel(xlabel)
+        if ylabel:
+            ax.set_ylabel(ylabel)
+        # Axes limit :
+        if n.array(xlim).size:
+            ax.set_xlim(xlim)
+        if n.array(ylim).size:
+            ax.set_ylim(ylim)
         ax.set_title(title, y=1.02)
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-        ax.set_xticks(xticks)
-        ax.set_yticks(yticks)
-        ax.set_xticklabels(xticklabels)
-        ax.set_yticklabels(yticklabels)
-        ax.set_xlim(xlim)
-        ax.set_ylim(ylim)
+        # Style :
         plt.style.use(style)
 
 
@@ -169,10 +170,6 @@ class BorderPlot(_pltutils):
     ncol : integer, optional, [def : 1]
         Number of colums for the legend
 
-    loc : integer, optional, [def : 0]
-        The location of the legend. By default, matplotlib try to find an
-        optimized location.
-
     Return
     ----------
     The axes of the plot.
@@ -180,11 +177,11 @@ class BorderPlot(_pltutils):
     __doc__ += _pltutils.__doc__
 
     def __init__(self, time, x, y=n.array([]), kind='sem', color='', alpha=0.2,
-                 linewidth=2, legend='', ncol=1, loc=0, **kwargs):
+                 linewidth=2, legend='', ncol=1, **kwargs):
         pass
 
     def __new__(self, time, x, y=n.array([]), kind='sem', color='', alpha=0.2,
-                linewidth=2, legend='', ncol=1, loc=0, **kwargs):
+                linewidth=2, legend='', ncol=1, **kwargs):
 
         self.xType = type(time[0])
         self.yType = type(x[0, 0])
@@ -218,8 +215,6 @@ class BorderPlot(_pltutils):
             _BorderPlot(time, x[:, n.where(y == k)[0]], color[k], kind=kind,
                         alpha=alpha, linewidth=linewidth, legend=legend[k])
         ax = plt.gca()
-        if legend[0]:
-            ax.legend(loc=loc, frameon=False, ncol=ncol)
         plt.axis('tight')
 
         _pltutils.__init__(self, ax, **kwargs)
