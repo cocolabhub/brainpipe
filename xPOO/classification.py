@@ -10,13 +10,15 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.cross_validation import (StratifiedKFold, KFold,
                                       StratifiedShuffleSplit, ShuffleSplit,
                                       cross_val_score, permutation_test_score)
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.base import clone
 
 from joblib import Parallel, delayed
 
 from brainpipe.xPOO.statistics import binostatinv, perm2pval, permIntraClass
 from brainpipe.xPOO._utils._system import groupInList, list2index, adaptsize
+
+from itertools import product
 
 __all__ = ['classify',
            'defClf',
@@ -134,7 +136,8 @@ class classify(object):
         ----------
         An array containing the decoding accuracy.
         """
-        da, _, _ = _fit(x, self.y, self.clf, self.cv, xcol, n_jobs)
+        da, _, _, self._ytrue, self._ypred = _fit(x, self.y, self.clf, self.cv,
+                                                  xcol, n_jobs)
         return da
 
     def fit_stat(self, x, xcol='sf', method='bino', n_perm=200, n_jobs=-1,
@@ -198,7 +201,8 @@ class classify(object):
         J Neurosci Methods, doi: 10.1016/j.jneurmeth.2015.01.010.
         """
         # Get the current da
-        da, x, y = _fit(x, self.y, self.clf, self.cv, xcol, n_jobs)
+        da, x, y, self._ytrue, self._ypred = _fit(x, self.y, self.clf,
+                                                  self.cv, xcol, n_jobs)
         score = n.array([n.mean(k) for k in da])
         rndstate = n.random.RandomState(rndstate)
 
@@ -245,6 +249,64 @@ class classify(object):
 
         return da, n.array(pvalue), daPerm
 
+    def confusion_matrix(self, x, xcol='sf', n_jobs=-1, normalize=True,
+                         update=True):
+        """Get confusion matrix.
+
+        Parameters
+        ----------
+        x : array
+            Data to classify. Consider that x.shape = (N, M), N is the number
+            of trials (which should be the length of y). M, the number of
+            colums, is a supplementar dimension for classifying data. If M = 1,
+            the data is consider as a single feature. If M > 1, use the
+            parameter xcol to say if x should be consider as a single feature
+            (xcol='sf') or multi-features (xcol='mf')
+
+        xcol : string, optional, [def : 'sf']
+            If xcol='mf', the returned decoding accuracy (da) will have a
+            shape of (1, rep) where rep, is the number of repetitions.
+            This mean that all the features are used together. If xcol='sf',
+            da.shape = (M, rep), where M is the number of columns of x.
+
+        n_jobs : integer, optional, [def : -1]
+            Control the number of jobs to cumpute the decoding accuracy. If
+            n_jobs = -1, all the jobs are used.
+
+        normalize : bool, optional, [def : True]
+            Normalize or not the confusion matrix
+
+        update : bool, optional, [def : True]
+            If update is True, the data will be re-classified. But, if update
+            is set to False, and if the methods .fit() or .fit_stat() have been
+            run before, the data won't we re-classified. Instead, the labels
+            previously found will be used to get confusion matrix.
+
+        Returns
+        ----------
+        A list of confusion matrix, depending of the size of x.
+        """
+        # Re-classify data or use the already existing labels :
+        if update:
+            _, _, _, self._ytrue, self._ypred = _fit(x, self.y, self.clf,
+                                                     self.cv, xcol, n_jobs)
+        else:
+            if not ((hasattr(self, '_ytrue')) and (hasattr(self, '_ypred'))):
+                raise ValueError("No labels found. Please either run .fit()"
+                                 "or .fit_stat() before or set update=True")
+
+        # Get variables and compute confusion matrix:
+        y_pred, y_true = self._ypred, self._ytrue
+        nfeat, nrep = len(y_true), len(y_true[0])
+        cm = [n.mean(n.array([confusion_matrix(y_true[k][i], y_pred[
+            k][i]) for i in range(nrep)]), 0) for k in range(nfeat)]
+
+        # Normalize the confusion matrix :
+        if normalize:
+            cm = [100*k/k.sum(axis=1)[:, n.newaxis] for k in cm]
+
+        return cm
+
 
 def _fit(x, y, clf, cv, xcol, n_jobs):
     """Sub function for fitting
@@ -258,25 +320,30 @@ def _fit(x, y, clf, cv, xcol, n_jobs):
     claIdx, listRep, listFeat = list2index(rep, nfeat)
 
     # Run the classification :
-    da = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
+    cvs = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
         x[k[1]], y, clone(clf), cv[k[0]]) for k in claIdx)
+    da, y_true, y_pred = zip(*cvs)
 
-    # Reconstruct the da :
-    return n.array(groupInList(da, listFeat)), x, y
+    # Reconstruct elements :
+    da = n.array(groupInList(da, listFeat))
+    y_true = groupInList(y_true, listFeat)
+    y_pred = groupInList(y_pred, listFeat)
+
+    return da, x, y, y_true, y_pred
 
 
 def _cvscore(x, y, clf, cvS):
     """Get the decoding accuracy of one cross-validation
     """
-    predictions = []
-    ypred = []
+    y_pred = []
+    y_true = []
     for trainidx, testidx in cvS:
         xtrain, xtest = x[trainidx, ...], x[testidx, ...]
         ytrain, ytest = y[trainidx, ...], y[testidx, ...]
         clf.fit(xtrain, ytrain)
-        predictions.extend(clf.predict(xtest))
-        ypred.extend(ytest)
-    return 100*accuracy_score(ypred, predictions)
+        y_pred.extend(clf.predict(xtest))
+        y_true.extend(ytest)
+    return 100*accuracy_score(y_true, y_pred), y_true, y_pred
 
 
 class defClf(object):
