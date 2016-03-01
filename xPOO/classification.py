@@ -573,6 +573,7 @@ def _define(y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
 
 def checkXY(x, y, mf, grp):
     """Prepare the inputs x and y
+    x.shape = (ntrials, nfeat)
     """
     x, y = n.matrix(x), n.ravel(y)
     if x.shape[0] is not len(y):
@@ -583,8 +584,12 @@ def checkXY(x, y, mf, grp):
         elif (grp.size != 0) and (grp.size == x.shape[1]):
             ugrp = list(set(grp))
             x = [n.array(x[:, n.where(grp == k)[0]]) for k in ugrp]
+        elif (grp.size != 0) and (grp.size != x.shape[1]):
+            raise ValueError('The grp parameter must have the same size as the'
+                             ' number of features ('+str(x.shape[1])+')')
     else:
         x = [n.array(x[:, k]) for k in range(x.shape[1])]
+
     return x, y
 
 
