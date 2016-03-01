@@ -8,8 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.cross_validation import (StratifiedKFold, KFold,
-                                      StratifiedShuffleSplit, ShuffleSplit,
-                                      cross_val_score, permutation_test_score)
+                                      StratifiedShuffleSplit, ShuffleSplit)
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.base import clone
 
