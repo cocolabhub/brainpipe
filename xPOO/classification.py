@@ -107,7 +107,7 @@ class classify(object):
     def __str__(self):
         return str(self.cv[0].lgStr)+' with a '+str(self.clf.lgStr)
 
-    def fit(self, x, xcol='sf', n_jobs=-1):
+    def fit(self, x, mf=False, grp=n.array([]), n_jobs=-1):
         """Apply the classification and cross-validation objects to the array x.
         this method return an array containing the decoding accuracy. The
         dimension of this arry depend of the input x.
@@ -119,14 +119,19 @@ class classify(object):
             of trials (which should be the length of y). M, the number of
             colums, is a supplementar dimension for classifying data. If M = 1,
             the data is consider as a single feature. If M > 1, use the
-            parameter xcol to say if x should be consider as a single feature
-            (xcol='sf') or multi-features (xcol='mf')
+            parameter mf to say if x should be consider as a single feature
+            (mf=False) or multi-features (mf=True)
 
-        xcol : string, optional, [def : 'sf']
-            If xcol='mf', the returned decoding accuracy (da) will have a
+        mf : bool, optional, [def : False]
+            If mf=False, the returned decoding accuracy (da) will have a
             shape of (1, rep) where rep, is the number of repetitions.
-            This mean that all the features are used together. If xcol='sf',
+            This mean that all the features are used together. If mf=True,
             da.shape = (M, rep), where M is the number of columns of x.
+
+        grp : array, optional, [def : n.array([])]
+            If mf=True, the grp parameter allow to define group of features.
+            If x.shape = (N, 5) and grp=n.array([0,0,1,2,1]), this mean that
+            3 groups of features will be considered : (0,1,2)
 
         n_jobs : integer, optional, [def : -1]
             Control the number of jobs to cumpute the decoding accuracy. If
@@ -137,11 +142,11 @@ class classify(object):
         An array containing the decoding accuracy.
         """
         da, _, _, self._ytrue, self._ypred = _fit(x, self.y, self.clf, self.cv,
-                                                  xcol, n_jobs)
+                                                  mf, grp, n_jobs)
         return da
 
-    def fit_stat(self, x, xcol='sf', method='bino', n_perm=200, n_jobs=-1,
-                 rndstate=0):
+    def fit_stat(self, x, mf=False, grp=n.array([]), method='bino', n_perm=200,
+                 rndstate=0, n_jobs=-1):
         """Evaluate the statistical significiancy of the decoding accuracy.
 
         Parameters
@@ -151,14 +156,19 @@ class classify(object):
             of trials (which should be the length of y). M, the number of
             colums, is a supplementar dimension for classifying data. If M = 1,
             the data is consider as a single feature. If M > 1, use the
-            parameter xcol to say if x should be consider as a single feature
-            (xcol='sf') or multi-features (xcol='mf')
+            parameter mf to say if x should be consider as a single feature
+            (mf=False) or multi-features (mf=True)
 
-        xcol : string, optional, [def : 'sf']
-            If xcol='mf', the returned decoding accuracy (da) will have a
+        mf : bool, optional, [def : False]
+            If mf=False, the returned decoding accuracy (da) will have a
             shape of (1, rep) where rep, is the number of repetitions.
-            This mean that all the features are used together. If xcol='sf',
+            This mean that all the features are used together. If mf=True,
             da.shape = (M, rep), where M is the number of columns of x.
+
+        grp : array, optional, [def : n.array([])]
+            If mf=True, the grp parameter allow to define group of features.
+            If x.shape = (N, 5) and grp=n.array([0,0,1,2,1]), this mean that
+            3 groups of features will be considered : (0,1,2)
 
         method : string, optional, [def : 'bino']
             Four methods are implemented to test the statistical significiance
@@ -168,18 +178,18 @@ class classify(object):
                 3 - 'full_rnd' : randomly shuffle the whole array x
                 4 - 'intra_rnd' : randomly shuffle x inside each class and each
                                   feature
-        Methods 2, 3 and 4 are based on permutations. The method 2 and 3 should
-        provide similar results. But 4 should be more conservative.
+            Methods 2, 3 and 4 are based on permutations. The method 2 and 3
+            should provide similar results. But 4 should be more conservative.
 
         n_perm : integer, optional, [def : 200]
             Number of permutations for the methods 2, 3 and 4
 
+        rndstate : integer, optional, [def : 0]
+            Fix the random state of the machine. Usefull to reproduce results.
+
         n_jobs : integer, optional, [def : -1]
             Control the number of jobs to cumpute the decoding accuracy. If
             n_jobs = -1, all the jobs are used.
-
-        rndstate : integer, optional, [def : 0]
-            Fix the random state of the machine. Usefull to reproduce results.
 
         Returns
         ----------
@@ -202,7 +212,7 @@ class classify(object):
         """
         # Get the current da
         da, x, y, self._ytrue, self._ypred = _fit(x, self.y, self.clf,
-                                                  self.cv, xcol, n_jobs)
+                                                  self.cv, mf, grp, n_jobs)
         score = n.array([n.mean(k) for k in da])
         rndstate = n.random.RandomState(rndstate)
 
@@ -249,8 +259,8 @@ class classify(object):
 
         return da, n.array(pvalue), daPerm
 
-    def confusion_matrix(self, x, xcol='sf', n_jobs=-1, normalize=True,
-                         update=True):
+    def confusion_matrix(self, x, mf=False, grp=n.array([]), n_jobs=-1,
+                         normalize=True, update=True):
         """Get confusion matrix.
 
         Parameters
@@ -260,14 +270,19 @@ class classify(object):
             of trials (which should be the length of y). M, the number of
             colums, is a supplementar dimension for classifying data. If M = 1,
             the data is consider as a single feature. If M > 1, use the
-            parameter xcol to say if x should be consider as a single feature
-            (xcol='sf') or multi-features (xcol='mf')
+            parameter mf to say if x should be consider as a single feature
+            (mf=False) or multi-features (mf=True)
 
-        xcol : string, optional, [def : 'sf']
-            If xcol='mf', the returned decoding accuracy (da) will have a
+        mf : bool, optional, [def : False]
+            If mf=False, the returned decoding accuracy (da) will have a
             shape of (1, rep) where rep, is the number of repetitions.
-            This mean that all the features are used together. If xcol='sf',
+            This mean that all the features are used together. If mf=True,
             da.shape = (M, rep), where M is the number of columns of x.
+
+        grp : array, optional, [def : n.array([])]
+            If mf=True, the grp parameter allow to define group of features.
+            If x.shape = (N, 5) and grp=n.array([0,0,1,2,1]), this mean that
+            3 groups of features will be considered : (0,1,2)
 
         n_jobs : integer, optional, [def : -1]
             Control the number of jobs to cumpute the decoding accuracy. If
@@ -289,7 +304,7 @@ class classify(object):
         # Re-classify data or use the already existing labels :
         if update:
             _, _, _, self._ytrue, self._ypred = _fit(x, self.y, self.clf,
-                                                     self.cv, xcol, n_jobs)
+                                                     self.cv, mf, grp, n_jobs)
         else:
             if not ((hasattr(self, '_ytrue')) and (hasattr(self, '_ypred'))):
                 raise ValueError("No labels found. Please either run .fit()"
@@ -308,11 +323,11 @@ class classify(object):
         return cm
 
 
-def _fit(x, y, clf, cv, xcol, n_jobs):
+def _fit(x, y, clf, cv, mf, grp, n_jobs):
     """Sub function for fitting
     """
     # Check the inputs size :
-    x, y = checkXY(x, y, xcol)
+    x, y = checkXY(x, y, mf, grp)
     rep, nfeat = len(cv), len(x)
 
     # Tricks : construct a list of tuple containing the index of
@@ -556,15 +571,19 @@ def _define(y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
     return cvT
 
 
-def checkXY(x, y, x_col):
+def checkXY(x, y, mf, grp):
     """Prepare the inputs x and y
     """
     x, y = n.matrix(x), n.ravel(y)
     if x.shape[0] is not len(y):
         x = x.T
-    if x_col == 'mf':
-        x = [x]
-    elif x_col == 'sf':
+    if mf:
+        if grp.size == 0:
+            x = [x]
+        elif (grp.size != 0) and (grp.size == x.shape[1]):
+            ugrp = list(set(grp))
+            x = [n.array(x[:, n.where(grp == k)[0]]) for k in ugrp]
+    else:
         x = [n.array(x[:, k]) for k in range(x.shape[1])]
     return x, y
 
