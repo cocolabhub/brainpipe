@@ -233,23 +233,24 @@ class classify(object):
             # -> Shuffle the labels :
             if method == 'label_rnd':
                 y_sh = [rndstate.permutation(y) for k in range(n_perm)]
-                daPerm = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
+                cvs = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
                         x[k[1]], y_sh[k[0]], clone(self.clf), self.cv[0])
                         for k in claIdx)
 
             # -> Full randomization :
             elif method == 'full_rnd':
-                daPerm = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
+                cvs = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
                         rndstate.permutation(x[k[1]]), y, clone(self.clf),
                         self.cv[0]) for k in claIdx)
 
             # -> Shuffle intra-class :
             elif method == 'intra_rnd':
-                daPerm = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
+                cvs = Parallel(n_jobs=n_jobs)(delayed(_cvscore)(
                         permIntraClass(x[k[1]], y, k[0]), y, clone(self.clf),
                         self.cv[0]) for k in claIdx)
 
             # Reconstruct daPerm and get the associated p-value:
+            daPerm, _, _ = zip(*cvs)
             daPerm = n.array(groupInList(daPerm, listFeat))
             pvalue = perm2pval(score, daPerm)
 
@@ -538,14 +539,14 @@ def _define(y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
         cvT = StratifiedKFold(y, n_folds=n_folds, shuffle=True,
                               random_state=rndstate, **kwargs)
         cvT.lgStr = str(rep)+'-times, '+str(n_folds)+' Stratified k-folds'
-        cvT.shStr = str(rep)+'rep x'+str(n_folds)+' '+cvtype
+        cvT.shStr = str(rep)+' rep x'+str(n_folds)+' '+cvtype
 
     # k-fold :
     elif cvtype == 'kfold':
         cvT = KFold(len(y), n_folds=n_folds, shuffle=True,
                     random_state=rndstate, **kwargs)
         cvT.lgStr = str(rep)+'-times, '+str(n_folds)+' k-folds'
-        cvT.shStr = str(rep)+'rep x'+str(n_folds)+' '+cvtype
+        cvT.shStr = str(rep)+' rep x'+str(n_folds)+' '+cvtype
 
     # Shuffle stratified k-fold :
     elif cvtype == 'sss':
@@ -554,7 +555,7 @@ def _define(y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
                                      random_state=rndstate, **kwargs)
         cvT.lgStr = str(rep)+'-times, test size 1/' + \
             str(n_folds)+' Shuffle Stratified Split'
-        cvT.shStr = str(rep)+'rep x'+str(n_folds)+' '+cvtype
+        cvT.shStr = str(rep)+' rep x'+str(n_folds)+' '+cvtype
 
     # Shuffle stratified :
     elif cvtype == 'ss':
@@ -562,7 +563,7 @@ def _define(y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
                            random_state=rndstate, **kwargs)
         cvT.lgStr = str(rep)+'-times, test size 1/' + \
             str(n_folds)+' Shuffle Stratified'
-        cvT.shStr = str(rep)+'rep x'+str(n_folds)+' '+cvtype
+        cvT.shStr = str(rep)+' rep x'+str(n_folds)+' '+cvtype
 
     else:
         raise ValueError('No cross-validation "'+cvtype+'"" found')
@@ -578,6 +579,8 @@ def checkXY(x, y, mf, grp):
     if x.shape[0] is not len(y):
         x = x.T
     if mf:
+        if not isinstance(grp, n.ndarray):
+            grp = n.ravel(grp)
         if grp.size == 0:
             x = [x]
         elif (grp.size != 0) and (grp.size == x.shape[1]):
