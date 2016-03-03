@@ -7,3 +7,4 @@ from brainpipe.xPOO.physiology import *
 from brainpipe.xPOO.tools import *
 
 from brainpipe.xPOO.classification import *
+from brainpipe.xPOO.multifeatures import *
