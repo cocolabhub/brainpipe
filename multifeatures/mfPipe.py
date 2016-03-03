@@ -15,7 +15,7 @@ __all__ = ['mf']
 ####################################################################
 
 
-def mf(x, y, Id=0, clfIn=0, clfOut=0, p=0.05,
+def mf(x, y, Id='0', clfIn=0, clfOut=0, p=0.05,
         n_knn=3, n_tree=100, kern='rbf', cvIn='sss', n_foldsIn=10, repIn=1,
         cvOut='skfold', n_foldsOut=3, repOut=10, probOccur='rpercent',
         display=True, threshold=None, direction='forward', nbest=10,
