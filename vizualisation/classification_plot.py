@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as n
 from matplotlib.colors import Normalize
 from brainpipe.vizualisation.tools_plot import mapplot, mapinterpolation
