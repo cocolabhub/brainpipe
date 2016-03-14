@@ -128,8 +128,8 @@ class mf(object):
     def str(self):
         pass
 
-    def fit(self, x, grp=[], combine=False, grpas='single', grplen=[],
-            n_jobs=-1, display=True):
+    def fit(self, x, grp=[], center=False, combine=False, grpas='single',
+            grplen=[], n_jobs=-1, display=True):
         """Run the model on the matrix of features x
 
         Parameters
@@ -142,6 +142,11 @@ class mf(object):
             Group features by using a list of strings. The length of grp must
             be the same as the number of features. If grp is not empty, the
             program will run the feature selection inside each group.
+
+        center : optional, bool, [def : False]
+            Normalize fatures with a zero mean by substracting then dividing
+            by the mean. The center parameter should be set to True if the
+            classifier is a svm.
 
         combine : boolean, optional, [def : False]
             If a group of features is specified using the grp parameter,
@@ -194,6 +199,11 @@ class mf(object):
             x = x.T
         y = n.ravel(y)
         ntrial, nfeat = x.shape
+
+        # Normalize features :
+        if center:
+            x_m = n.tile(n.mean(x, 0), (x.shape[0], 1))
+            x = (x-x_m)/x_m
 
         # Combine groups :
         grp_c = combineGroups(grp, nfeat, combine, grpas=grpas, grplen=grplen)

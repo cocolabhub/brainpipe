@@ -106,7 +106,7 @@ class classify(object):
     def __str__(self):
         return str(self.cv[0].lgStr)+' with a '+str(self.clf.lgStr)
 
-    def fit(self, x, mf=False, grp=n.array([]), n_jobs=-1):
+    def fit(self, x, mf=False, center=False, grp=n.array([]), n_jobs=-1):
         """Apply the classification and cross-validation objects to the array x.
         this method return an array containing the decoding accuracy. The
         dimension of this arry depend of the input x.
@@ -127,7 +127,12 @@ class classify(object):
             This mean that all the features are used together. If mf=True,
             da.shape = (M, rep), where M is the number of columns of x.
 
-        grp : array, optional, [def : n.array([])]
+        center : optional, bool, [def : False]
+            Normalize fatures with a zero mean by substracting then dividing
+            by the mean. The center parameter should be set to True if the
+            classifier is a svm.
+
+        grp : array, optional, [def : array()]
             If mf=True, the grp parameter allow to define group of features.
             If x.shape = (N, 5) and grp=n.array([0,0,1,2,1]), this mean that
             3 groups of features will be considered : (0,1,2)
@@ -141,11 +146,11 @@ class classify(object):
         An array containing the decoding accuracy.
         """
         da, _, _, self._ytrue, self._ypred = _fit(x, self.y, self.clf, self.cv,
-                                                  mf, grp, n_jobs)
+                                                  mf, grp, center, n_jobs)
         return da
 
-    def fit_stat(self, x, mf=False, grp=n.array([]), method='bino', n_perm=200,
-                 rndstate=0, n_jobs=-1):
+    def fit_stat(self, x, mf=False, center=False, grp=n.array([]),
+                 method='bino', n_perm=200, rndstate=0, n_jobs=-1):
         """Evaluate the statistical significiancy of the decoding accuracy.
 
         Parameters
@@ -164,7 +169,12 @@ class classify(object):
             This mean that all the features are used together. If mf=True,
             da.shape = (M, rep), where M is the number of columns of x.
 
-        grp : array, optional, [def : n.array([])]
+        center : optional, bool, [def : False]
+            Normalize fatures with a zero mean by substracting then dividing
+            by the mean. The center parameter should be set to True if the
+            classifier is a svm.
+
+        grp : array, optional, [def : array()]
             If mf=True, the grp parameter allow to define group of features.
             If x.shape = (N, 5) and grp=n.array([0,0,1,2,1]), this mean that
             3 groups of features will be considered : (0,1,2)
@@ -211,7 +221,8 @@ class classify(object):
         """
         # Get the current da
         da, x, y, self._ytrue, self._ypred = _fit(x, self.y, self.clf,
-                                                  self.cv, mf, grp, n_jobs)
+                                                  self.cv, mf, grp, center,
+                                                  n_jobs)
         score = n.array([n.mean(k) for k in da])
         rndstate = n.random.RandomState(rndstate)
 
@@ -259,8 +270,8 @@ class classify(object):
 
         return da, n.array(pvalue), daPerm
 
-    def confusion_matrix(self, x, mf=False, grp=n.array([]), n_jobs=-1,
-                         normalize=True, update=True):
+    def confusion_matrix(self, x, mf=False, center=False, grp=n.array([]),
+                         n_jobs=-1, normalize=True, update=True):
         """Get confusion matrix.
 
         Parameters
@@ -279,7 +290,12 @@ class classify(object):
             This mean that all the features are used together. If mf=True,
             da.shape = (M, rep), where M is the number of columns of x.
 
-        grp : array, optional, [def : n.array([])]
+        center : optional, bool, [def : False]
+            Normalize fatures with a zero mean by substracting then dividing
+            by the mean. The center parameter should be set to True if the
+            classifier is a svm.
+
+        grp : array, optional, [def : array()]
             If mf=True, the grp parameter allow to define group of features.
             If x.shape = (N, 5) and grp=n.array([0,0,1,2,1]), this mean that
             3 groups of features will be considered : (0,1,2)
@@ -304,7 +320,8 @@ class classify(object):
         # Re-classify data or use the already existing labels :
         if update:
             _, _, _, self._ytrue, self._ypred = _fit(x, self.y, self.clf,
-                                                     self.cv, mf, grp, n_jobs)
+                                                     self.cv, mf, grp, center,
+                                                     n_jobs)
         else:
             if not ((hasattr(self, '_ytrue')) and (hasattr(self, '_ypred'))):
                 raise ValueError("No labels found. Please either run .fit()"
@@ -323,11 +340,11 @@ class classify(object):
         return cm
 
 
-def _fit(x, y, clf, cv, mf, grp, n_jobs):
+def _fit(x, y, clf, cv, mf, grp, center, n_jobs):
     """Sub function for fitting
     """
     # Check the inputs size :
-    x, y = checkXY(x, y, mf, grp)
+    x, y = checkXY(x, y, mf, grp, center)
     rep, nfeat = len(cv), len(x)
 
     # Tricks : construct a list of tuple containing the index of
@@ -571,13 +588,20 @@ def _define(y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
     return cvT
 
 
-def checkXY(x, y, mf, grp):
+def checkXY(x, y, mf, grp, center):
     """Prepare the inputs x and y
     x.shape = (ntrials, nfeat)
     """
     x, y = n.matrix(x), n.ravel(y)
-    if x.shape[0] is not len(y):
+    if x.shape[0] != len(y):
         x = x.T
+
+    # Normalize features :
+    if center:
+        x_m = n.tile(n.mean(x, 0), (x.shape[0], 1))
+        x = (x-x_m)/x_m
+
+    # Group parameter :
     if mf:
         if not isinstance(grp, n.ndarray):
             grp = n.ravel(grp)
@@ -680,7 +704,7 @@ class timegeneralization(object):
                 xy = x[:, i, ...]
                 # If cv is defined, do a cv on the diagonal
                 if (k == i) and (cvtype is not None):
-                    da[i, k] = _cvscore(xx, y, clf, cvtype)/100
+                    da[i, k] = _cvscore(xx, y, clf, cvtype)[0]/100
                 # If cv is not defined, let the diagonal at zero
                 elif (k == i) and (cvtype is None):
                     pass
