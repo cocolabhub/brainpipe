@@ -217,6 +217,11 @@ class dataset(object):
     def __init__(self):
         pass
 
+    def add():
+        pass
+
+    def
+
 
 class feature(object):
     """
