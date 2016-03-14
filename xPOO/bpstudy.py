@@ -217,14 +217,21 @@ class dataset(object):
     def __init__(self):
         pass
 
-    def add():
+    def add(self):
         pass
 
-    def
+    def load(self):
+        pass
 
 
 class feature(object):
     """
     """
     def __init__(self):
+        pass
+
+    def add(self):
+        pass
+
+    def load(self):
         pass
