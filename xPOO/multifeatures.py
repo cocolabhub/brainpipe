@@ -129,7 +129,7 @@ class mf(object):
         pass
 
     def fit(self, x, grp=[], center=False, combine=False, grpas='single',
-            grplen=[], n_jobs=-1, display=True):
+            grplen=[], display=True, n_jobs=-1):
         """Run the model on the matrix of features x
 
         Parameters
@@ -171,13 +171,13 @@ class mf(object):
             consider combinations of groups only with a length of 1 and 3 and
             remove combinations of 2 elements: [[1],[2],[3],[1,2,3]]
 
-        n_jobs : integer, optional, [def : -1]
-            Control the number of jobs to cumpute the decoding accuracy. If
-            n_jobs = -1, all the jobs are used.
-
         display : boolean, optional, [def : True]
             Display informations for each step of the mf selection. If n_jobs
             is -1, it is advise to set the display to False.
+
+        n_jobs : integer, optional, [def : -1]
+            Control the number of jobs to cumpute the decoding accuracy. If
+            n_jobs = -1, all the jobs are used.
 
         Returns
         ----------
