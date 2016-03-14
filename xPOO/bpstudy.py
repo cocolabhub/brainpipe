@@ -209,3 +209,17 @@ class study(object):
         """Update the list of studies
         """
         _update_bpsettings()
+
+
+class dataset(object):
+    """
+    """
+    def __init__(self):
+        pass
+
+
+class feature(object):
+    """
+    """
+    def __init__(self):
+        pass
