@@ -12,16 +12,21 @@ __all__ = ['savefile',
            ]
 
 
-def savefile(name, **kwargs):
+def savefile(name, *arg, **kwargs):
     """Save a file without carrying of extension.
     """
     name = _safetySave(name)
     fileName, fileExt = splitext(name)
+    # Pickle :
     if fileExt == '.pickle':
         with open(name, 'wb') as f:
             pickle.dump(kwargs, f)
+    # Matlab :
     elif fileExt == '.mat':
         data = savemat(name, kwargs)
+    # Numpy (single array) :
+    elif fileExt == '.npy':
+        data = n.save(name, arg)
 
 
 def loadfile(name):
@@ -29,12 +34,16 @@ def loadfile(name):
     a dictionnary data.
     """
     fileName, fileExt = splitext(name)
+    # Pickle :
     if fileExt == '.pickle':
         with open(name, "rb") as f:
             data = pickle.load(f)
+    # Matlab :
     elif fileExt == '.mat':
         data = loadmat(name)
-
+    # Numpy (single array)
+    elif fileExt == '.npy':
+        data = n.load(name)
     return data
 
 

@@ -5,6 +5,7 @@ from datetime import datetime
 from shutil import rmtree
 from scipy.io import loadmat
 import pickle
+import matplotlib.pyplot as plt
 
 import brainpipe
 from brainpipe.xPOO._utils._system import loadfile, savefile
@@ -26,10 +27,10 @@ class study(object):
 
     Methods
     ----------
-    -> add_study(path) : add a new study located in path and automatically
+    -> add(path) : add a new study located in path and automatically
        generate a list of folders that will be use to analyse data.
 
-    -> delete_study() : delete the current study and all the database.
+    -> delete() : delete the current study and all the database.
 
     -> file(*filters, folder='', lower=True) : return the list of files.
        Possibility filters, to define a folder for searching and comparing
@@ -50,8 +51,8 @@ class study(object):
 
     # Create a study object :
     studObj = study(name=studyName)
-    studObj.add(path) # Create the study
-    studObj.studies()       # Print the list of studies
+    studObj.add(path)   # Create the study
+    studObj.studies()   # Print the list of studies
 
     # Manage files in your study :
     fileList = studObj.search('filter1', 'filter2', folder='features')
@@ -66,6 +67,9 @@ class study(object):
             _check_bpsettings_exist()
             _check_study_exist(self)
             _update_bpsettings()
+            self.dataset = dataset()
+            self.feature = feature(join(self.path, 'feature'))
+            self.figure = figure(join(self.path, 'figure'))
 
     def __str__(self):
         return 'Study name: '+self.name+', path = '
@@ -84,25 +88,27 @@ class study(object):
         The following folders are going to be created :
             - name : the root folder of the study. Same name as the study
             - /database : datasets of the study
-            - /features : features extracted from the diffrents datasets
+            - /feature : features extracted from the diffrents datasets
             - /classified : classified features
-            - /multifeatures : multifeatures files
+            - /multifeature : multifeatures files
             - /figure : figures of the study
             - /physiology : physiological informations
-            - /backup : some backup files
-            - /settings : save some settings
+            - /backup : backup files
+            - /setting : study settings
+            - /other : any other kind of files
         """
         # Main studyName directory :
         _bpfolders(join(path, self.name))
         # Subfolders :
         _bpfolders(join(path, self.name, 'database'))
-        _bpfolders(join(path, self.name, 'features'))
+        _bpfolders(join(path, self.name, 'feature'))
         _bpfolders(join(path, self.name, 'classified'))
-        _bpfolders(join(path, self.name, 'multifeatures'))
-        _bpfolders(join(path, self.name, 'figures'))
+        _bpfolders(join(path, self.name, 'multifeature'))
+        _bpfolders(join(path, self.name, 'figure'))
         _bpfolders(join(path, self.name, 'backup'))
         _bpfolders(join(path, self.name, 'physiology'))
-        _bpfolders(join(path, self.name, 'settings'))
+        _bpfolders(join(path, self.name, 'setting'))
+        _bpfolders(join(path, self.name, 'other'))
         # Add the study to the bpsetting file:
         now = datetime.now()
         creation = (str(now.month)+'/'+str(now.day)+'/'+str(now.year),
@@ -156,8 +162,8 @@ class study(object):
             return ListFeat
         else:
             filterFeat = n.zeros((len(args), len(ListFeat)))
-            for k in range(0, len(args)):
-                for i in range(0, len(ListFeat)):
+            for k in range(len(args)):
+                for i in range(len(ListFeat)):
                     # Case of lower case :
                     if lower:
                         strCmp = ListFeat[i].lower().find(
@@ -188,8 +194,8 @@ class study(object):
         """
         return loadfile(join(self.path, folder, name))
 
-    def save(self, folder, name, **kwargs):
-        savefile(join(self.path, folder, name), **kwargs)
+    def save(self, folder, name, *arg, **kwargs):
+        savefile(join(self.path, folder, name), *arg, **kwargs)
 
     # -------------------------------------------------------------
     # Static methods :
@@ -217,7 +223,7 @@ class dataset(object):
     def __init__(self):
         pass
 
-    def add(self):
+    def save(self):
         pass
 
     def load(self):
@@ -227,11 +233,37 @@ class dataset(object):
 class feature(object):
     """
     """
-    def __init__(self):
-        pass
+    def __init__(self, path):
+        self._path = path
 
-    def add(self):
+    def save(self):
         pass
 
     def load(self):
         pass
+
+
+class figure(object):
+    """
+    """
+    def __init__(self, path):
+        self._path = path
+
+    def save(self, name, dpi=None, gcf=None, bbox_inches='tight', **kwargs):
+        fname = join(self._path, name)
+        if not gcf:
+            plt.savefig(fname, dpi=dpi, bbox_inches=bbox_inches)
+        if gcf:
+            gcf.savefig(fname, dpi=dpi, bbox_inches=bbox_inches)
+        print('Saved to '+fname)
+
+    def load(self, name):
+        return plt.imread(join(self._path, name))
+
+    def show(self, name, **kwargs):
+        im = self.load(name)
+        plt.box('off')
+        plt.xticks([])
+        plt.yticks([])
+        plt.imshow(im, **kwargs)
+        plt.show()
