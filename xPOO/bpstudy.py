@@ -67,7 +67,7 @@ class study(object):
             _check_bpsettings_exist()
             _check_study_exist(self)
             _update_bpsettings()
-            self.dataset = dataset()
+            self.dataset = dataset(join(self.path, 'dataset'))
             self.feature = feature(join(self.path, 'feature'))
             self.figure = figure(join(self.path, 'figure'))
 
