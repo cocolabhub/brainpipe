@@ -218,7 +218,7 @@ class study(object):
 
 
 class dataset(object):
-    """
+    """Manage dataset
     """
     def __init__(self):
         pass
@@ -231,7 +231,7 @@ class dataset(object):
 
 
 class feature(object):
-    """
+    """Manage feature
     """
     def __init__(self, path):
         self._path = path
@@ -244,7 +244,7 @@ class feature(object):
 
 
 class figure(object):
-    """
+    """Manage figure
     """
     def __init__(self, path):
         self._path = path
