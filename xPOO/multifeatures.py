@@ -104,7 +104,7 @@ class mf(object):
                  cvOut={'cvtype': 'skfold', 'n_folds': 10, 'rep': 10}):
         self._Id = Id
         self._stat = stat
-        self._y = y
+        self._y = n.ravel(y)
         if threshold is not None:
             p = binostatinv(y, threshold)
         self._p = p
