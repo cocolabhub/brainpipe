@@ -384,7 +384,9 @@ class phase(object):
 
 class cfc(object):
 
-    """Compute the cross-frequency coupling (cfc)
+    """Compute the cross-frequency coupling (cfc). The cfc module allow to
+    compute phase-amplitude coupling (PAC), phase synchrony or amplitude
+    synchrony either in local or distant coupling.
 
     Parameters
     ----------
@@ -429,30 +431,72 @@ class cfc(object):
         time lag ('2') and finally, the true cfc value will be normalized by
         substracting then dividing by the mean of surrogates.
 
-    phase : tuple/list, optional, [def : [60,200]]
-            List containing the couple of frequency bands.
-            Each couple can be either a list or a tuple.
-            Example : f=[ [2,4], [5,7], [60,250] ] will compute
-            the phase in three frequency bands
+    pha_f : tuple/list, optional, [def : [2,4]]
+            List containing the couple of frequency bands for the phase.
+            Each couple can be either a list or a tuple. Example :
+            f=[ [2,4], [5,7], [60,250] ] will compute the phase in three
+            frequency bands.
 
-    Authors: Etienne Combrisson & Juan LP Soto
+    pha_meth : string, optional, [def : 'hilbert']
+        Method for the phase extraction.
+
+    pha_cycle : integer, optional, [def : 3]
+        Number of cycles for filtering the phase.
+
+    amp_f : tuple/list, optional, [def : [60,200]]
+            List containing the couple of frequency bands for the amplitude.
+            Each couple can be either a list or a tuple.
+
+    amp_meth : string, optional, [def : 'hilbert']
+        Method for the amplitude extraction.
+
+    amp_cycle : integer, optional, [def : 6]
+        Number of cycles for filtering the amplitude.
+
+    nbins : integer, optional, [def : 18]
+        Some cfc method (like Kullback-Leibler Distance or Heights Ratio) need
+        a binarization of the phase. nbins control the number of bins.
+
+    window : tuple, list, None, optional [def: None]
+        List/tuple: [100,1500]
+        List of list/tuple: [(100,500),(200,4000)]
+        None of the width and step parameters will be considered
+
+    width : int, optional [def : None]
+        width of a single window.
+
+    step : int, optional [def : None]
+        Each window will be spaced by the "step" value.
+
+    time : list/array, optional [def: None]
+        Define a specific time vector
+
+
+    Methods
+    ----------
+    -> get : get the cfc without statistique (no surrogates and no
+    normalization just the true cfc mesure)
+    -> statget : get the normalized cfc
+
+    Contributor: Juan LP Soto
     """
 
-    def __init__(self, sf, npts, Id='114', phase=[2, 4], amplitude=[60, 200],
-                 method_phase='hilbert', method_amp='hilbert',
-                 cycle=(3, 6), nbins=18, window=None, width=None, step=None,
+    def __init__(self, sf, npts, Id='114',
+                 pha_f=[2, 4], pha_meth='hilbert', pha_cycle=3,
+                 amp_f=[60, 200], amp_meth='hilbert', amp_cycle=6,
+                 nbins=18, window=None, width=None, step=None,
                  time=None, **kwargs):
 
         # Define windows and frequency :
-        self.pha = fextract(kind='phase', method=method_phase,
-                            cycle=cycle[0], **kwargs)
-        self.amp = fextract(kind='amplitude', method=method_amp,
-                            cycle=cycle[1], **kwargs)
+        self.pha = fextract(kind='phase', method=pha_meth,
+                            cycle=pha_cycle, **kwargs)
+        self.amp = fextract(kind='amplitude', method=amp_meth,
+                            cycle=amp_cycle, **kwargs)
         self.window, self.xvec = _manageWindow(npts, window=window,
                                                width=width, step=step,
                                                time=time)
-        self.pha.f, _, _ = _manageFrequencies(phase, split=None)
-        self.amp.f, _, _ = _manageFrequencies(amplitude, split=None)
+        self.pha.f, _, _ = _manageFrequencies(pha_f, split=None)
+        self.amp.f, _, _ = _manageFrequencies(amp_f, split=None)
         if self.window is None:
             self.window = [(0, npts)]
             self.xvec = [0, npts]
@@ -475,32 +519,88 @@ class cfc(object):
         phafilt = 'Phase : '+str(self.pha)
         ampfilt = 'Amplitude : '+str(self.amp)
         met = self.model[0]+',\n'+self.model[1]+',\n'+self.model[2]+',\n'
-        cfcStr = 'Cross-frequency Coupling(step='+str(self.step)+', width='+str(
+        cfcStr = 'Crossfrequency Coupling(step='+str(self.step)+', width='+str(
             self.width)+', Id='+self.Id+', nbins='+str(self.nbins)+',\n'+met
 
         return cfcStr+phafilt+',\n'+ampfilt+')'
 
-    def get(self, x, n_jobs=-1, xPha=None, xAmp=None):
-        """Get the cfc mesure of an input signal.
+    def get(self, xpha, xamp, n_jobs=-1):
+        """Get the true cfc mesure between an xpha and xamp signals.
+
+        Parameters
+        ----------
+        xpha : array
+            Signal for phase. The shape of xpha should be :
+            (n_electrodes x npts x n_trials)
+
+        xamp : array
+            Signal for amplitude. The shape of xamp should be :
+            (n_electrodes x npts x n_trials)
+
+        n_jobs : integer
+            Control the number of jobs for parallel computing. Use 1, 2, ...
+            depending of your number or cores. -1 for all the cores.
+
+        If the same signal is used (example : xpha=x and xamp=x), this mean
+        the program compute local cfc.
+
+        Returns
+        ----------
+        ucfc : array
+            The unormalized cfc mesure. The size of ucfc depends of parameters
+            but in general it is :
+            (n_electrodes x n_windows x n_trials x n_amplitude x n_phase)
         """
         # Check the inputs variables :
-        xPha, xAmp = _cfcCheck(x, xPha, xAmp, self._npts)
-        N = xPha.shape[0]
+        xpha, xamp = _cfcCheck(xpha, xamp, self._npts)
+        N = xpha.shape[0]
 
         # Get the unormalized cfc:
         uCfc = Parallel(n_jobs=n_jobs)(delayed(_cfcFilt)(
-            xPha[k, ...], xAmp[k, ...], self) for k in range(N))
+            xpha[k, ...], xamp[k, ...], self) for k in range(N))
 
-        return uCfc
+        return n.array(uCfc)
 
-    def statget(self, x, n_jobs=-1, xPha=None, xAmp=None, n_perm=200):
-        """Get the cfc mesure of an input signal.
+    def statget(self, xpha, xamp, n_jobs=-1, n_perm=200):
+        """Get the normalized cfc mesure between an xpha and xamp signals.
+
+        Parameters
+        ----------
+        xpha : array
+            Signal for phase. The shape of xpha should be :
+            (n_electrodes x npts x n_trials)
+
+        xamp : array
+            Signal for amplitude. The shape of xamp should be :
+            (n_electrodes x npts x n_trials)
+
+        n_perm : integer, optional, [def : 200]
+            Number of permutations for normalizing the cfc mesure.
+
+        n_jobs : integer, optional, [def : -1]
+            Control the number of jobs for parallel computing. Use 1, 2, ...
+            depending of your number or cores. -1 for all the cores.
+
+        If the same signal is used (example : xpha=x and xamp=x), this mean
+        the program compute local cfc.
+
+        Returns
+        ----------
+        ncfc : array
+            The unormalized cfc mesure. The size of ncfc depends of parameters
+            but in general it is :
+            (n_electrodes x n_windows x n_trials x n_amplitude x n_phase)
+
+        pvalue : array
+            The associated pvalues. The size of pvalue depends of parameters
+            but in general it is :
+            (n_electrodes x n_windows x n_trials x n_amplitude x n_phase)
         """
         # Check the inputs variables :
-        xPha, xAmp = _cfcCheck(x, xPha, xAmp, self._npts)
+        xpha, xamp = _cfcCheck(xpha, xamp, self._npts)
         self.n_perm = n_perm
         self.p = 1/n_perm
-        N = xPha.shape[0]
+        N = xpha.shape[0]
 
         # Manage jobs repartition :
         if (N < cpu_count()) and (n_jobs != 1):
@@ -514,14 +614,20 @@ class cfc(object):
 
         # Get the unormalized cfc and surogates:
         cfcsu = Parallel(n_jobs=elecJob)(delayed(_cfcFiltSuro)(
-            xPha[k, ...], xAmp[k, ...], surJob, self) for k in range(N))
+            xpha[k, ...], xamp[k, ...], surJob, self) for k in range(N))
+        uCfc, Suro, mSuro, stdSuro = zip(*cfcsu)
+        uCfc = n.array(uCfc)
+        Suro = n.array(Suro)
+        mSuro = n.array(mSuro)
+        stdSuro = n.array(stdSuro)
 
         # Normalize each cfc:
         _, _, Norm, _, _, _ = CfcSettings(self.Id)
-        nCfc = [Norm(k[0], k[2], k[3]) for k in cfcsu]
+        nCfc = Norm(uCfc, mSuro, stdSuro)
 
         # Confidence interval :
-        pvalue = [_cfcPvalue(nCfc[k], cfcsu[k][1]) for k in range(len(nCfc))]
+        pvalue = n.array([_cfcPvalue(nCfc[k, ...], Suro[
+            k, ...]) for k in range(N)])
 
         return nCfc, pvalue
 
