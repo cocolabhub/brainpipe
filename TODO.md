@@ -5,7 +5,7 @@
 
 ## Modules
 ### Commun :
--Output comme array serait plus claire (features et classification) 
+- Output comme array serait plus claire (features et classification) 
 
 ### bpstudy
 - add_dataset
@@ -13,6 +13,7 @@
 
 ### Features
 - Cfc :
+	- Changer la façon de gérer les signaux d'entrée car cfc ne calcul pas juste du couplage phase amplitude. inclure x1={'kind':'phase', 'cycle':3}, x2={'kind':'amplitude', 'cycle':6} et dans le get() et statget() virer la possibilité de calculer en local qui n'est qu'un cas particulier
 	- Méthodes CFC :
 		- Phase synchrony (WARNING : CFC en double phase)
 		- Amplitude PSD (WARNING : CFC en double amplitude)
