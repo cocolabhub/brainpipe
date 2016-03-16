@@ -476,6 +476,7 @@ class cfc(object):
     ----------
     -> get : get the cfc without statistique (no surrogates and no
     normalization just the true cfc mesure)
+
     -> statget : get the normalized cfc
 
     Contributor: Juan LP Soto
@@ -592,7 +593,7 @@ class cfc(object):
             (n_electrodes x n_windows x n_trials x n_amplitude x n_phase)
 
         pvalue : array
-            The associated pvalues. The size of pvalue depends of parameters
+            The associated p-values. The size of pvalue depends of parameters
             but in general it is :
             (n_electrodes x n_windows x n_trials x n_amplitude x n_phase)
         """
