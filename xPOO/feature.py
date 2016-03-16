@@ -383,7 +383,57 @@ class phase(object):
 
 
 class cfc(object):
-    """
+
+    """Compute the cross-frequency coupling (cfc)
+
+    Parameters
+    ----------
+    sf : int
+        Sampling frequency
+
+    npts : int
+        Number of points of the time serie
+
+    Id : string, optional, [def : '114']
+        The Id correspond to the way of computing cfc. Id is composed with
+        three digits [ex : Id='210']
+            - First digit : refer to the method of cfc. Here is the list of
+            cfc mesure implemented :
+                '1' - Modulation Index (See Canolty, 2006)
+                '2' - Kullback-Leibler Distance (See Tort, 2010)
+                '3' - Phase synchrony
+                '4' - Amplitude PSD
+                '5' - Heights Ratio
+                '6' - ndPAC (See Ozkurt, 2012)
+            - Second digit : cfc mesures are usually sensible to noise. In
+            consequence, the second digit refer to the method for computing
+            surrogates. List of surrogates methods :
+                '0' - No surrogates
+                '1' - Shuffle phase values
+                '2' - Time lag
+                '3' - Swap phase/amplitude through trials
+                '4' - Swap amplitude
+                '5' - circular shifting
+            - Third digit : after computing surrogates, the true cfc mesure
+            will be normalized by surrogates. So the third digit refer to the
+            way of normalizing cfc by surrogates :
+                '0' - No normalization
+                '1' - Substraction : substract the mean of surrogates
+                '2' - Divide : divide by the mean of surrogates
+                '3' - Substract then divide : substract then divide by the mean
+                of surrogates
+                '4' - Z-score : substract the mean and divide by the deviation
+                of the surrogates
+        So, if Id='123', this mean that cfc will be evaluate using the
+        Modulation Index ('1'), then surrogates will be find by introducing a
+        time lag ('2') and finally, the true cfc value will be normalized by
+        substracting then dividing by the mean of surrogates.
+
+    phase : tuple/list, optional, [def : [60,200]]
+            List containing the couple of frequency bands.
+            Each couple can be either a list or a tuple.
+            Example : f=[ [2,4], [5,7], [60,250] ] will compute
+            the phase in three frequency bands
 
     Authors: Etienne Combrisson & Juan LP Soto
     """
@@ -474,3 +524,31 @@ class cfc(object):
         pvalue = [_cfcPvalue(nCfc[k], cfcsu[k][1]) for k in range(len(nCfc))]
 
         return nCfc, pvalue
+
+
+# ----------------------------------------------------------------------------
+#                          Prefered-phase
+# ----------------------------------------------------------------------------
+
+
+class preferedphase(object):
+
+    """
+    """
+
+    def __init__(self):
+        pass
+
+
+# ----------------------------------------------------------------------------
+#                          Permutation entropie
+# ----------------------------------------------------------------------------
+
+
+class pentropy(object):
+
+    """
+    """
+
+    def __init__(self):
+        pass
