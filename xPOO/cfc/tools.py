@@ -1,9 +1,9 @@
 import numpy as n
 
-__all__ = ['rndCfcSignals']
+__all__ = ['cfcRndSignals', 'cfcVec']
 
 
-def rndCfcSignals(fPha=2, fAmp=100, sf=1024, ndatasets=10,
+def cfcRndSignals(fPha=2, fAmp=100, sf=1024, ndatasets=10,
                   tmax=1, chi=0, noise=1, dPha=0, dAmp=0):
     """Generate randomly phase-amplitude coupled signals.
 
@@ -89,7 +89,7 @@ def rndCfcSignals(fPha=2, fAmp=100, sf=1024, ndatasets=10,
     return data, time
 
 
-def CfcVectors(pha=(2, 30, 2, 1), amp=(60, 200, 10, 5)):
+def cfcVec(pha=(2, 30, 2, 1), amp=(60, 200, 10, 5)):
     """Generate cross-frequency coupling vectors.
 
         Parameters

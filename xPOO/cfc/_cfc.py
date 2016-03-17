@@ -109,12 +109,11 @@ def _cfcPvalue(nCfc, perm):
     """Get the pvalue of the cfc using permutations
     """
     nW, nT, nA, nP = nCfc.shape
-    nperm = perm.shape[3]
+    nperm = perm.shape[4]
+
     pvalue = n.ones(nCfc.shape)
     for i, j, k, l in product(range(nW), range(nT), range(nA), range(nP)):
-        data = nCfc[i, j, k, l]
-        permD = perm[i, j, k, l, :]
-        pv = (n.sum(permD >= data)) / nperm
+        pv = (n.sum(perm[i, j, k, l, :] >= nCfc[i, j, k, l])) / nperm
         if pv == 0:
             pvalue[i, j, k, l] = 1/nperm
         else:
