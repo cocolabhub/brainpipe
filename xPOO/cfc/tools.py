@@ -87,3 +87,52 @@ def rndCfcSignals(fPha=2, fAmp=100, sf=1024, ndatasets=10,
         data[k, :] = (ah*xh) + (al*xl) + e
 
     return data, time
+
+
+def CfcVectors(pha=(2, 30, 2, 1), amp=(60, 200, 10, 5)):
+    """Generate cross-frequency coupling vectors.
+
+        Parameters
+        ----------
+        pha : tuple, optional, [def : (2, 30, 2, 1)]
+            Frequency parameters for phase. Each argument inside the tuple
+            mean (starting fcy, ending fcy, width, step)
+
+        amp : tuple, optional, [def : (60, 200, 10, 5)]
+            Frequency parameters for amplitude. Each argument inside the tuple
+            mean (starting fcy, ending fcy, width, step)
+
+        Returns
+        ----------
+        pVec : array
+            Centered-frequency vector for the phase
+
+        aVec : array
+            Centered-frequency vector for the amplitude
+
+        pTuple : list
+            List of tuple. Each tuple contain the (starting, ending) frequency
+            for phase.
+
+        aTuple : list
+            List of tuple. Each tuple contain the (starting, ending) frequency
+            for amplitude.
+    """
+    # Get values from tuple:
+    pStart, pEnd, pWidth, pStep = pha[0], pha[1], pha[2], pha[3]
+    aStart, aEnd, aWidth, aStep = amp[0], amp[1], amp[2], amp[3]
+
+    # Generate two array for phase and amplitude :
+    pDown, pUp = n.arange(pStart-pWidth/2, pEnd-pWidth/2+1, pStep), n.arange(
+        pStart+pWidth/2, pEnd+pWidth/2+1, pStep)
+    aDown, aUp = n.arange(aStart-aWidth/2, aEnd-aWidth/2+1, aStep), n.arange(
+        aStart+aWidth/2, aEnd+aWidth/2+1, aStep)
+
+    # Generate the center frequency vector :
+    pVec, aVec = (pUp+pDown)/2, (aUp+aDown)/2
+
+    # Generate the tuple for the CrossFrequencyCoupling function :
+    pTuple = [(pDown[k], pUp[k]) for k in range(pDown.shape[0])]
+    aTuple = [(aDown[k], aUp[k]) for k in range(aDown.shape[0])]
+
+    return pVec, aVec, pTuple, aTuple
