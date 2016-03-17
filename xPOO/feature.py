@@ -640,10 +640,20 @@ class cfc(object):
 
 class preferedphase(object):
 
-    """
+    """For a given amplitude, get the prefered phase activation.
     """
 
     def __init__(self):
+        pass
+
+    def get(self):
+        """
+        """
+        pass
+
+    def statget(self):
+        """
+        """
         pass
 
 
@@ -658,4 +668,14 @@ class pentropy(object):
     """
 
     def __init__(self):
+        pass
+
+    def get(self):
+        """
+        """
+        pass
+
+    def statget(self):
+        """
+        """
         pass
