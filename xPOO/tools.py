@@ -31,11 +31,9 @@ def binarize(starttime, endtime, width, step, kind='tuple'):
     if kind == 'array':
         return X
     if kind == 'list':
-        return [[X[0][k], X[1][k]] for k in range(0,
-                                                  X.shape[1])]
+        return [[X[0][k], X[1][k]] for k in range(X.shape[1])]
     elif kind == 'tuple':
-        return [(X[0][k], X[1][k]) for k in range(0,
-                                                  X.shape[1])]
+        return [(X[0][k], X[1][k]) for k in range(X.shape[1])]
 
 
 def binArray(x, binList, axis=0):

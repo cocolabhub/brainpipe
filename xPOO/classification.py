@@ -143,7 +143,8 @@ class classify(object):
 
         Returns
         ----------
-        An array containing the decoding accuracy.
+        da : array
+            The decoding accuracy.
         """
         da, _, _, self._ytrue, self._ypred = _fit(x, self.y, self.clf, self.cv,
                                                   mf, grp, center, n_jobs)
@@ -202,6 +203,9 @@ class classify(object):
 
         Returns
         ----------
+        da : array
+            The decoding accuracy.
+
         pvalue : array
             Array of associated pvalue
 
@@ -693,7 +697,7 @@ class timegeneralization(object):
         npts, ntrials = len(time), len(y)
         if len(x.shape) == 2:
             x = n.matrix(x)
-        x = adaptsize(x, (ntrials, npts))
+        x = adaptsize(x, (1, 0, 2))
 
         da = n.zeros([npts, npts])
         # Training dimension

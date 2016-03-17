@@ -6,6 +6,7 @@ from brainpipe.xPOO._utils._plot import _plot, _2Dplot
 from brainpipe.xPOO.tools import binarize, binArray
 from brainpipe.xPOO.filtering import fextract
 from brainpipe.xPOO._utils._filtering import _apply_method, _get_method
+from brainpipe.xPOO._utils._system import adaptsize
 
 from brainpipe.xPOO.cfc.methods import *
 from brainpipe.xPOO.cfc._cfc import *
@@ -20,7 +21,10 @@ __all__ = [
     'power',
     'TF',
     'phase',
-    'cfc'
+    'pac',
+    'plv',
+    'preferedphase',
+    'pentropy'
 ]
 
 
@@ -86,10 +90,9 @@ class power(_powerDoc):
         Number of points of the time serie
 
     f : tuple/list, optional, [def : [60,200]]
-        List containing the couple of frequency bands.
-        Each couple can be either a list or a tuple.
-        Example : f=[ [2,4], [5,7], [60,250] ] will compute
-        the power in three frequency bands
+        List containing the couple of frequency bands. Each couple can be
+        either a list or a tuple. Example : f=[ [2,4], [5,7], [60,250] ]
+        will compute the power in three frequency bands
     """
     __doc__ += _powerDoc.__doc__
 
@@ -114,16 +117,19 @@ class power(_powerDoc):
         Parameters
         ----------
         x : array
-            - If x is a 2D array of size (npts, ntrial) and f, the frequency
-            vector has a length of nf, the "get" method will return a
-            (nf, npts, ntrial) array
-            - If x is a 3D array of size (N, npts, ntrial), power is calculated
-            for each N and a list of length N is return and each element of it
-            have a size of (nf, npts, ntrial).
+            Data for computing power. x should have a shape of
+            (n_electrodes x n_pts x n_trials)
 
-        n_jobs : integer
+        n_jobs : integer, optional, [def : -1]
             Control the number of jobs for parallel computing. Use 1, 2, ...
-            depending of your number or cores. -1 for all the cores.
+            depending of your number or cores. -1 for all cores.
+
+        Returns
+        ----------
+        xF : array
+            The un/normalized power of x, with a shape of
+            (n_frequency x n_electrodes x n_window x n_trials)
+
         """
         if len(x.shape) == 2:
             x = x[n.newaxis, ...]
@@ -134,7 +140,7 @@ class power(_powerDoc):
         xF = Parallel(n_jobs=n_jobs)(
             delayed(_get)(x[k, ...], self) for k in range(nfeat))
 
-        return n.squeeze(xF)
+        return n.swapaxes(n.array(xF), 0, 1)
 
     def plot(self, x, title=' feature', xlabel='Time',
              ylabel=' modulations', **kwargs):
@@ -147,7 +153,7 @@ class power(_powerDoc):
 
 class TF(_powerDoc):
 
-    """Compute the time-frequency map of multiple signals.
+    """Compute the time-frequency map (TF) of multiple signals.
 
     Parameters
     ----------
@@ -190,16 +196,19 @@ class TF(_powerDoc):
         Parameters
         ----------
         x : array
-            - If x is a 2D array of size (npts, ntrial) and f, the frequency
-            vector has a length of nf, the "get" method will return a
-            (nf, npts, ntrial) array
-            - If x is a 3D array of size (N, npts, ntrial), power is calculated
-            for each N and a list of length N is return and each element of it
-            have a size of (nf, npts, ntrial).
+            Data for computing the TF. x should have a shape of
+            (n_electrodes x n_pts x n_trials)
 
-        n_jobs : integer
+        n_jobs : integer, optional, [def : -1]
             Control the number of jobs for parallel computing. Use 1, 2, ...
-            depending of your number or cores. -1 for all the cores.
+            depending of your number or cores. -1 for all cores.
+
+        Returns
+        ----------
+        tF : array
+            The un/normalized time-frequency map of x, with a shape of
+            (n_frequency x n_electrodes x n_window)
+
         """
         if len(x.shape) == 2:
             x = x[n.newaxis, ...]
@@ -213,7 +222,7 @@ class TF(_powerDoc):
             delayed(_tf)(x[k, ...], self, bkp_win,
                          bkp_norm) for k in range(nfeat))
 
-        return tF
+        return n.array(tF)
 
     def plot(self, tf, title='Time-frequency map', xlabel='Time',
              ylabel='Frequency', cblabel='Power modulations', interp=(1, 1),
@@ -278,13 +287,13 @@ def feat_init(self, sf, f, npts, baseline, norm, method, window, width, step,
     """Initialize power objects.
 
     I defined a function to initialize power objects because the parallel
-    cumputing doesn't accept objects initialize using an othr class.
+    cumputing doesn't accept objects initialize using an other class.
     May be not esthetic but it works...
     """
     # Define windows and frequency :
     self.filter = fextract(kind=kind, method=method, **kwargs)
-    self.window, self.xvec = _manageWindow(
-        npts, window=window, width=width, step=step, time=time)
+    self.window, self.xvec = _manageWindow(npts, window=window, width=width,
+                                           step=step, time=time)
     self.f, self.fSplit, self._fSplitIndex = _manageFrequencies(
         f, split=split)
 
@@ -346,16 +355,18 @@ class phase(object):
         Parameters
         ----------
         x : array
-            - If x is a 2D array of size (npts, ntrial) and f, the frequency
-            vector has a length of nf, the "get" method will return a
-            (nf, npts, ntrial) array
-            - If x is a 3D array of size (N, npts, ntrial), phase is calculated
-            for each N and a list of length N is return and each element of it
-            have a size of (nf, npts, ntrial).
+            Data for computing phase. x should have a shape of
+            (n_electrodes x n_pts x n_trials)
 
-        n_jobs : integer
+        n_jobs : integer, optional, [def : -1]
             Control the number of jobs for parallel computing. Use 1, 2, ...
-            depending of your number or cores. -1 for all the cores.
+            depending of your number or cores. -1 for all cores.
+
+        Returns
+        ----------
+        tF : array
+            The un/normalized time-frequency map of x, with a shape of
+            (n_frequency x n_electrodes x n_window x n_trials)
         """
         if len(x.shape) == 2:
             x = x[n.newaxis, ...]
@@ -366,7 +377,7 @@ class phase(object):
         xF = Parallel(n_jobs=n_jobs)(
             delayed(_get)(x[k, ...], self) for k in range(nfeat))
 
-        return n.squeeze(xF)
+        return n.swapaxes(n.array(xF), 0, 1)
 
     def plot(self, x, title=' feature', xlabel='Time',
              ylabel=' modulations', **kwargs):
@@ -382,27 +393,121 @@ class phase(object):
 # ----------------------------------------------------------------------------
 
 
-class cfc(object):
+class pac(object):
+
+    """Compute the phase-amplitude coupling (pac) either in local or
+    distant coupling.
+
+    Parameters
+    ----------
+    sf : int
+        Sampling frequency
+
+    npts : int
+        Number of points of the time serie
+
+    Id : string, optional, [def : '114']
+        The Id correspond to the way of computing cfc. Id is composed with
+        three digits [ex : Id='210']
+            - First digit : refer to the method of cfc. Here is the list of
+            cfc mesure implemented :
+                '1' - Modulation Index (See Canolty, 2006)
+                '2' - Kullback-Leibler Distance (See Tort, 2010)
+                '3' - Phase synchrony
+                '4' - Amplitude PSD
+                '5' - Heights Ratio
+                '6' - ndPAC (See Ozkurt, 2012)
+            - Second digit : cfc mesures are usually sensible to noise. In
+            consequence, the second digit refer to the method for computing
+            surrogates. List of surrogates methods :
+                '0' - No surrogates
+                '1' - Shuffle phase values
+                '2' - Time lag
+                '3' - Swap phase/amplitude through trials
+                '4' - Swap amplitude
+                '5' - circular shifting
+            - Third digit : after computing surrogates, the true cfc mesure
+            will be normalized by surrogates. So the third digit refer to the
+            way of normalizing cfc by surrogates :
+                '0' - No normalization
+                '1' - Substraction : substract the mean of surrogates
+                '2' - Divide : divide by the mean of surrogates
+                '3' - Substract then divide : substract then divide by the mean
+                of surrogates
+                '4' - Z-score : substract the mean and divide by the deviation
+                of the surrogates
+        So, if Id='123', this mean that cfc will be evaluate using the
+        Modulation Index ('1'), then surrogates will be find by introducing a
+        time lag ('2') and finally, the true cfc value will be normalized by
+        substracting then dividing by the mean of surrogates.
+
+    pha_f : tuple/list, optional, [def : [2,4]]
+            List containing the couple of frequency bands for the phase.
+            Each couple can be either a list or a tuple. Example :
+            f=[ [2,4], [5,7], [60,250] ] will compute the phase in three
+            frequency bands.
+
+    pha_meth : string, optional, [def : 'hilbert']
+        Method for the phase extraction.
+
+    pha_cycle : integer, optional, [def : 3]
+        Number of cycles for filtering the phase.
+
+    amp_f : tuple/list, optional, [def : [60,200]]
+            List containing the couple of frequency bands for the amplitude.
+            Each couple can be either a list or a tuple.
+
+    amp_meth : string, optional, [def : 'hilbert']
+        Method for the amplitude extraction.
+
+    amp_cycle : integer, optional, [def : 6]
+        Number of cycles for filtering the amplitude.
+
+    nbins : integer, optional, [def : 18]
+        Some cfc method (like Kullback-Leibler Distance or Heights Ratio) need
+        a binarization of the phase. nbins control the number of bins.
+
+    window : tuple, list, None, optional [def: None]
+        List/tuple: [100,1500]
+        List of list/tuple: [(100,500),(200,4000)]
+        None of the width and step parameters will be considered
+
+    width : int, optional [def : None]
+        width of a single window.
+
+    step : int, optional [def : None]
+        Each window will be spaced by the "step" value.
+
+    time : list/array, optional [def: None]
+        Define a specific time vector
+
+
+    Methods
+    ----------
+    -> get : get the cfc without statistique (no surrogates and no
+    normalization just the true cfc mesure)
+
+    -> statget : get the normalized cfc
+
+    Contributor: Juan LP Soto
     """
 
-    Authors: Etienne Combrisson & Juan LP Soto
-    """
-
-    def __init__(self, sf, npts, Id='114', phase=[2, 4], amplitude=[60, 200],
-                 method_phase='hilbert', method_amp='hilbert',
-                 cycle=(3, 6), nbins=18, window=None, width=None, step=None,
+    def __init__(self, sf, npts, Id='114',
+                 pha_f=[2, 4], pha_meth='hilbert', pha_cycle=3,
+                 amp_f=[60, 200], amp_meth='hilbert', amp_cycle=6,
+                 nbins=18, window=None, width=None, step=None,
                  time=None, **kwargs):
 
         # Define windows and frequency :
-        self.pha = fextract(kind='phase', method=method_phase,
-                            cycle=cycle[0], **kwargs)
-        self.amp = fextract(kind='amplitude', method=method_amp,
-                            cycle=cycle[1], **kwargs)
+        self.pha = fextract(kind='phase', method=pha_meth,
+                            cycle=pha_cycle, **kwargs)
+        self.amp = fextract(kind='amplitude', method=amp_meth,
+                            cycle=amp_cycle, **kwargs)
         self.window, self.xvec = _manageWindow(npts, window=window,
                                                width=width, step=step,
                                                time=time)
-        self.pha.f, _, _ = _manageFrequencies(phase, split=None)
-        self.amp.f, _, _ = _manageFrequencies(amplitude, split=None)
+        self.pha.f, _, _ = _manageFrequencies(pha_f, split=None)
+        self.amp.f, _, _ = _manageFrequencies(amp_f, split=None)
         if self.window is None:
             self.window = [(0, npts)]
             self.xvec = [0, npts]
@@ -425,32 +530,88 @@ class cfc(object):
         phafilt = 'Phase : '+str(self.pha)
         ampfilt = 'Amplitude : '+str(self.amp)
         met = self.model[0]+',\n'+self.model[1]+',\n'+self.model[2]+',\n'
-        cfcStr = 'Cross-frequency Coupling(step='+str(self.step)+', width='+str(
+        cfcStr = 'Crossfrequency Coupling(step='+str(self.step)+', width='+str(
             self.width)+', Id='+self.Id+', nbins='+str(self.nbins)+',\n'+met
 
         return cfcStr+phafilt+',\n'+ampfilt+')'
 
-    def get(self, x, n_jobs=-1, xPha=None, xAmp=None):
-        """Get the cfc mesure of an input signal.
+    def get(self, xpha, xamp, n_jobs=-1):
+        """Get the true cfc mesure between an xpha and xamp signals.
+
+        Parameters
+        ----------
+        xpha : array
+            Signal for phase. The shape of xpha should be :
+            (n_electrodes x n_pts x n_trials)
+
+        xamp : array
+            Signal for amplitude. The shape of xamp should be :
+            (n_electrodes x n_pts x n_trials)
+
+        n_jobs : integer, optional, [def : -1]
+            Control the number of jobs for parallel computing. Use 1, 2, ...
+            depending of your number or cores. -1 for all cores.
+
+        If the same signal is used (example : xpha=x and xamp=x), this mean
+        the program compute a local cfc.
+
+        Returns
+        ----------
+        ucfc : array
+            The unormalized cfc mesure. The size of ucfc depends of parameters
+            but in general it is :
+            (n_phase x n_amplitude x n_electrodes x n_windows x n_trials)
         """
         # Check the inputs variables :
-        xPha, xAmp = _cfcCheck(x, xPha, xAmp, self._npts)
-        N = xPha.shape[0]
+        xpha, xamp = _cfcCheck(xpha, xamp, self._npts)
+        N = xpha.shape[0]
 
         # Get the unormalized cfc:
         uCfc = Parallel(n_jobs=n_jobs)(delayed(_cfcFilt)(
-            xPha[k, ...], xAmp[k, ...], self) for k in range(N))
+            xpha[k, ...], xamp[k, ...], self) for k in range(N))
 
-        return uCfc
+        return adaptsize(n.array(uCfc), (2, 3, 4, 1, 0))
 
-    def statget(self, x, n_jobs=-1, xPha=None, xAmp=None, n_perm=200):
-        """Get the cfc mesure of an input signal.
+    def statget(self, xpha, xamp, n_jobs=-1, n_perm=200):
+        """Get the normalized cfc mesure between an xpha and xamp signals.
+
+        Parameters
+        ----------
+        xpha : array
+            Signal for phase. The shape of xpha should be :
+            (n_electrodes x n_pts x n_trials)
+
+        xamp : array
+            Signal for amplitude. The shape of xamp should be :
+            (n_electrodes x n_pts x n_trials)
+
+        n_perm : integer, optional, [def : 200]
+            Number of permutations for normalizing the cfc mesure.
+
+        n_jobs : integer, optional, [def : -1]
+            Control the number of jobs for parallel computing. Use 1, 2, ...
+            depending of your number or cores. -1 for all the cores.
+
+        If the same signal is used (example : xpha=x and xamp=x), this mean
+        the program compute a local cfc.
+
+        Returns
+        ----------
+        ncfc : array
+            The unormalized cfc mesure. The size of ncfc depends of parameters
+            but in general it is :
+            (n_electrodes x n_windows x n_trials x n_amplitude x n_phase)
+
+        pvalue : array
+            The associated p-values. The size of pvalue depends of parameters
+            but in general it is :
+            (n_electrodes x n_windows x n_trials x n_amplitude x n_phase)
         """
         # Check the inputs variables :
-        xPha, xAmp = _cfcCheck(x, xPha, xAmp, self._npts)
+        xpha, xamp = _cfcCheck(xpha, xamp, self._npts)
         self.n_perm = n_perm
         self.p = 1/n_perm
-        N = xPha.shape[0]
+        N = xpha.shape[0]
 
         # Manage jobs repartition :
         if (N < cpu_count()) and (n_jobs != 1):
@@ -464,13 +625,91 @@ class cfc(object):
 
         # Get the unormalized cfc and surogates:
         cfcsu = Parallel(n_jobs=elecJob)(delayed(_cfcFiltSuro)(
-            xPha[k, ...], xAmp[k, ...], surJob, self) for k in range(N))
+            xpha[k, ...], xamp[k, ...], surJob, self) for k in range(N))
+        uCfc, Suro, mSuro, stdSuro = zip(*cfcsu)
+        uCfc = n.array(uCfc)
+        Suro = n.array(Suro)
+        mSuro = n.array(mSuro)
+        stdSuro = n.array(stdSuro)
 
         # Normalize each cfc:
         _, _, Norm, _, _, _ = CfcSettings(self.Id)
-        nCfc = [Norm(k[0], k[2], k[3]) for k in cfcsu]
+        nCfc = Norm(uCfc, mSuro, stdSuro)
 
         # Confidence interval :
-        pvalue = [_cfcPvalue(nCfc[k], cfcsu[k][1]) for k in range(len(nCfc))]
+        pvalue = n.array([_cfcPvalue(nCfc[k, ...], Suro[
+            k, ...]) for k in range(N)])
+        nsz = (2, 3, 4, 1, 0)
 
-        return nCfc, pvalue
+        return adaptsize(nCfc, nsz), adaptsize(pvalue, nsz)
+
+
+# ----------------------------------------------------------------------------
+#                          Phase-locking value
+# ----------------------------------------------------------------------------
+
+
+class plv(object):
+
+    """Compute the phase synchrony between two signals.
+    """
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """
+        """
+        pass
+
+    def statget(self):
+        """
+        """
+        pass
+
+# ----------------------------------------------------------------------------
+#                          Prefered-phase
+# ----------------------------------------------------------------------------
+
+
+class preferedphase(object):
+
+    """For a given amplitude, get the prefered phase activation.
+    """
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """
+        """
+        pass
+
+    def statget(self):
+        """
+        """
+        pass
+
+
+# ----------------------------------------------------------------------------
+#                          Permutation entropie
+# ----------------------------------------------------------------------------
+
+
+class pentropy(object):
+
+    """
+    """
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """
+        """
+        pass
+
+    def statget(self):
+        """
+        """
+        pass

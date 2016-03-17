@@ -90,24 +90,17 @@ def _cfcGetSuro(pha, amp, Id, n_perm, nbins):
     return Sur(pha, amp, Model, n_perm)
 
 
-def _cfcCheck(x, xPha, xAmp, npts):
-    """Manage x, xPha and xAmp size
+def _cfcCheck(xPha, xAmp, npts):
+    """Manage xPha and xAmp size
     """
-    if xPha is None and xAmp is None:
-        if len(x.shape) == 2:
-            x = x[n.newaxis, ...]
-        if x.shape[1] != npts:
+    if xPha.shape == xAmp.shape:
+        if len(xPha.shape) == 2:
+            xPha = xPha[n.newaxis, ...]
+            xAmp = xAmp[n.newaxis, ...]
+        if xPha.shape[1] != npts:
             raise ValueError('Second dimension must be '+str(npts))
-        xPha, xAmp = x, x
     else:
-        if xPha.shape == xAmp.shape:
-            if len(xPha.shape) == 2:
-                xPha = xPha[n.newaxis, ...]
-                xAmp = xAmp[n.newaxis, ...]
-            if xPha.shape[1] != npts:
-                raise ValueError('Second dimension must be '+str(npts))
-        else:
-            raise ValueError('xPha and xAmp must have the same size')
+        raise ValueError('xPha and xAmp must have the same size')
 
     return xPha, xAmp
 
@@ -116,12 +109,11 @@ def _cfcPvalue(nCfc, perm):
     """Get the pvalue of the cfc using permutations
     """
     nW, nT, nA, nP = nCfc.shape
-    nperm = perm[0].shape[3]
+    nperm = perm.shape[4]
+
     pvalue = n.ones(nCfc.shape)
     for i, j, k, l in product(range(nW), range(nT), range(nA), range(nP)):
-        data = nCfc[i, j, k, l]
-        permD = perm[i][j, k, l, :]
-        pv = (n.sum(permD >= data)) / nperm
+        pv = (n.sum(perm[i, j, k, l, :] >= nCfc[i, j, k, l])) / nperm
         if pv == 0:
             pvalue[i, j, k, l] = 1/nperm
         else:
