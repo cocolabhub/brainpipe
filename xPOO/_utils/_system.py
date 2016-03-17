@@ -105,32 +105,26 @@ def groupInList(x, idx):
     return [list(x[n.where(idx == k)]) for k in uelmt]
 
 
-def adaptsize(x, dim, whre=None):
+def adaptsize(x, where):
     """Adapt the dimension of an array depending of the tuple dim
     x : the signal for swaping axis
-    dim : the dim dimensions
-    whre : a list to define where to put this new dimension
+    where : where each dimension should be put
 
     Example :
-    x.shape = (2, 4001, 160)
-    x2 = adaptsize(x, (4001, 2), whre=[2,1])
-    x2.shape = (160, 2, 4001)
+    x = n.random.rand(2,4001,160)
+    adaptsize(x, (1,2,0)).shape -> (160, 2, 4001)
     """
-    if isinstance(dim, int):
-        goto = 1
-        dim = [dim]
-    else:
-        if len(dim) < len(x.shape):
-            goto = len(dim)
-        else:
-            goto = len(dim)-1
-    if not isinstance(dim, list):
-        dim = list(dim)
-    if not whre:
-        whre = list(n.arange(len(x.shape)))
-    if isinstance(whre, int):
-        whre = [whre]
+    if not isinstance(where, n.ndarray):
+        where = n.array(where)
 
-    for k in range(goto):
-        x = x.swapaxes(n.where(n.array(x.shape) == dim[k])[0], whre[k])
+    where_t = list(where)
+    for k in range(len(x.shape)-1):
+        # Find where "where" is equal to "k" :
+        idx = n.where(where == k)[0]
+        # Roll axis :
+        x = n.rollaxis(x, idx, k)
+        # Update the where variable :
+        where_t.remove(k)
+        where = n.array(list(n.arange(k+1)) + where_t)
+
     return x
