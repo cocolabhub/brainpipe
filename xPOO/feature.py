@@ -641,7 +641,7 @@ class pac(object):
             k, ...]) for k in range(N)])
         nsz = (2, 3, 4, 1, 0)
 
-        return adaptsize(nCfc, nsz), adaptsize(pvalue, nsz)
+        return adaptsize(nCfc, nsz), adaptsize(pvalue, (2, 3, 1, 0))
 
 
 # ----------------------------------------------------------------------------
