@@ -108,14 +108,15 @@ def _cfcCheck(xPha, xAmp, npts):
 def _cfcPvalue(nCfc, perm):
     """Get the pvalue of the cfc using permutations
     """
-    nW, nT, nA, nP = nCfc.shape
-    nperm = perm.shape[4]
+    nCfc, perm = n.mean(nCfc, 1), n.mean(perm, 1)
+    nW, nA, nP = nCfc.shape
+    nperm = perm.shape[3]
 
     pvalue = n.ones(nCfc.shape)
-    for i, j, k, l in product(range(nW), range(nT), range(nA), range(nP)):
-        pv = (n.sum(perm[i, j, k, l, :] >= nCfc[i, j, k, l])) / nperm
+    for i, k, l in product(range(nW), range(nA), range(nP)):
+        pv = (n.sum(perm[i, k, l, :] >= nCfc[i, k, l])) / nperm
         if pv == 0:
-            pvalue[i, j, k, l] = 1/nperm
+            pvalue[i, k, l] = 1/nperm
         else:
-            pvalue[i, j, k, l] = pv
+            pvalue[i, k, l] = pv
     return pvalue
