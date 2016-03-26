@@ -293,7 +293,7 @@ def morlet(x, Fs, f, wavelet_width=7):
     xMorlet = n.zeros((N, nepoch))
     for k in range(0, nepoch):
         y = 2*n.abs(n.convolve(x[:, k], m))/Fs
-        xMorlet[:, k] = y[
-            int(n.ceil(len(m)/2))-1:int(len(y)-n.floor(len(m)/2))]
+        xMorlet[:, k] = y[int(n.ceil(len(m)/2))-1:int(len(y)-n.floor(
+            len(m)/2))]
 
     return xMorlet

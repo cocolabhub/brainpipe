@@ -9,18 +9,8 @@ from brainpipe.xPOO.cfc.methods import *
 __all__ = [
             '_cfcCheck',
             '_cfcPvalue',
-            '_cfcFilt',
             '_cfcFiltSuro'
           ]
-
-
-def _cfcFilt(xPha, xAmp, self):
-    """SUP: get only the cfc from the subfunction _cfcFiltSub
-    """
-    # Get the unormalized cfc :
-    _, _, uCfc = _cfcFiltSub(xPha, xAmp, self)
-
-    return uCfc
 
 
 def _cfcFiltSuro(xPha, xAmp, surJob, self):
@@ -31,22 +21,6 @@ def _cfcFiltSuro(xPha, xAmp, surJob, self):
         - All the surrogates (for pvalue)
         - The mean of surrogates (for normalization)
         - The deviation of surrogates (for normalization)
-    """
-    # Get the unormalized cfc :
-    xPha, xAmp, uCfc = _cfcFiltSub(xPha, xAmp, self)
-
-    # Run surogates on each window :
-    Suro = Parallel(n_jobs=surJob)(delayed(_cfcGetSuro)(
-        xPha[:, k[0]:k[1], :], xAmp[:, k[0]:k[1], :],
-        self.Id, self.n_perm, self.nbins) for k in self.window)
-    mSuro = [n.mean(k, 3) for k in Suro]
-    stdSuro = [n.std(k, 3) for k in Suro]
-
-    return uCfc, Suro, mSuro, stdSuro
-
-
-def _cfcFiltSub(xPha, xAmp, self):
-    """SUB: get the phase, amplitude and the asociated cfc
     """
     # Check input variables :
     npts, ntrial = xPha.shape
@@ -64,12 +38,23 @@ def _cfcFiltSub(xPha, xAmp, self):
     # 2D loop trick :
     claIdx, listWin, listTrial = list2index(nwin, ntrial)
 
-    # Get the cfc :
+    # Get the unormalized cfc :
     uCfc = [_cfcGet(n.squeeze(xPha[:, W[k[0]][0]:W[k[0]][1], k[1]]),
                     n.squeeze(xAmp[:, W[k[0]][0]:W[k[0]][1], k[1]]),
                     self.Id, self.nbins) for k in claIdx]
+    uCfc = n.array(groupInList(uCfc, listWin))
 
-    return xPha, xAmp, n.array(groupInList(uCfc, listWin))
+    # Run surogates on each window :
+    if self.n_perm != 0:
+        Suro = Parallel(n_jobs=surJob)(delayed(_cfcGetSuro)(
+            xPha[:, k[0]:k[1], :], xAmp[:, k[0]:k[1], :],
+            self.Id, self.n_perm, self.nbins) for k in self.window)
+        mSuro = [n.mean(k, 3) for k in Suro]
+        stdSuro = [n.std(k, 3) for k in Suro]
+    else:
+        Suro, mSuro, stdSuro = None, None, None
+
+    return uCfc, Suro, mSuro, stdSuro
 
 
 def _cfcGet(pha, amp, Id, nbins):
