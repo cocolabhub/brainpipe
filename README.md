@@ -1,6 +1,6 @@
 # brainpipe
 
-Version : 0.0.1
+Version : 0.0.2
 
 ## Description
 Brainpipe is a toolbox to analyse neuro-physiological signals. For instance, it's specialised for eeg, seeg and ecog signals. The aim of this toolbox is to extract informations from data [= features], to classify them and to find the best features combination from wide variety of features. Here is the list of the current implemented modules and there respectiv description:
