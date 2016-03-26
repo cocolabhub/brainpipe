@@ -143,7 +143,8 @@ class classify(object):
 
         Returns
         ----------
-        An array containing the decoding accuracy.
+        da : array
+            The decoding accuracy.
         """
         da, _, _, self._ytrue, self._ypred = _fit(x, self.y, self.clf, self.cv,
                                                   mf, grp, center, n_jobs)
@@ -202,6 +203,9 @@ class classify(object):
 
         Returns
         ----------
+        da : array
+            The decoding accuracy.
+
         pvalue : array
             Array of associated pvalue
 
@@ -674,7 +678,7 @@ class timegeneralization(object):
     def __new__(self, time, y, x, clf='lda', cvtype=None, clfArg={},
                 cvArg={}):
 
-        self.y = y
+        self.y = n.ravel(y)
         self.time = time
 
         # Define clf if it's not defined :
@@ -693,15 +697,15 @@ class timegeneralization(object):
         npts, ntrials = len(time), len(y)
         if len(x.shape) == 2:
             x = n.matrix(x)
-        x = adaptsize(x, (ntrials, npts))
+        x = adaptsize(x, (2, 0, 1))
 
         da = n.zeros([npts, npts])
         # Training dimension
         for k in range(npts):
-            xx = x[:, k, ...]
+            xx = x[k, ...]
             # Testing dimension
             for i in range(npts):
-                xy = x[:, i, ...]
+                xy = x[i, ...]
                 # If cv is defined, do a cv on the diagonal
                 if (k == i) and (cvtype is not None):
                     da[i, k] = _cvscore(xx, y, clf, cvtype)[0]/100

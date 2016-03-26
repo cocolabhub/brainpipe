@@ -8,7 +8,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 import brainpipe
-from brainpipe.xPOO._utils._system import loadfile, savefile
+from brainpipe.xPOO._utils._system import loadfile, savefile, _safetySave
 from brainpipe.xPOO._utils._bpstudy import *
 
 import numpy as n
@@ -67,7 +67,7 @@ class study(object):
             _check_bpsettings_exist()
             _check_study_exist(self)
             _update_bpsettings()
-            self.dataset = dataset()
+            self.dataset = dataset(join(self.path, 'dataset'))
             self.feature = feature(join(self.path, 'feature'))
             self.figure = figure(join(self.path, 'figure'))
 
@@ -220,7 +220,7 @@ class study(object):
 class dataset(object):
     """Manage dataset
     """
-    def __init__(self):
+    def __init__(self, path):
         pass
 
     def save(self):
@@ -252,9 +252,9 @@ class figure(object):
     def save(self, name, dpi=None, gcf=None, bbox_inches='tight', **kwargs):
         fname = join(self._path, name)
         if not gcf:
-            plt.savefig(fname, dpi=dpi, bbox_inches=bbox_inches)
+            plt.savefig(_safetySave(fname), dpi=dpi, bbox_inches=bbox_inches)
         if gcf:
-            gcf.savefig(fname, dpi=dpi, bbox_inches=bbox_inches)
+            gcf.savefig(_safetySave(fname), dpi=dpi, bbox_inches=bbox_inches)
         print('Saved to '+fname)
 
     def load(self, name):

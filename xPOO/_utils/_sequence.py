@@ -45,7 +45,7 @@ def _sequence(x, y, clfObj, direction, grp, n_jobs, display, cwi):
     old_score = 0
     k = 0
     flist = []
-    while k <= nfeat - 1 and old_score <= new_score:
+    while k <= nfeat - 1 and old_score < new_score:
         # Classify all combinations :
         old_score = new_score
         new_score, indu, all_scores = clfcombi(clfObj, x, combi, n_jobs=n_jobs)

@@ -9,18 +9,8 @@ from brainpipe.xPOO.cfc.methods import *
 __all__ = [
             '_cfcCheck',
             '_cfcPvalue',
-            '_cfcFilt',
             '_cfcFiltSuro'
           ]
-
-
-def _cfcFilt(xPha, xAmp, self):
-    """SUP: get only the cfc from the subfunction _cfcFiltSub
-    """
-    # Get the unormalized cfc :
-    _, _, uCfc = _cfcFiltSub(xPha, xAmp, self)
-
-    return uCfc
 
 
 def _cfcFiltSuro(xPha, xAmp, surJob, self):
@@ -31,22 +21,6 @@ def _cfcFiltSuro(xPha, xAmp, surJob, self):
         - All the surrogates (for pvalue)
         - The mean of surrogates (for normalization)
         - The deviation of surrogates (for normalization)
-    """
-    # Get the unormalized cfc :
-    xPha, xAmp, uCfc = _cfcFiltSub(xPha, xAmp, self)
-
-    # Run surogates on each window :
-    Suro = Parallel(n_jobs=surJob)(delayed(_cfcGetSuro)(
-        xPha[:, k[0]:k[1], :], xAmp[:, k[0]:k[1], :],
-        self.Id, self.n_perm, self.nbins) for k in self.window)
-    mSuro = [n.mean(k, 3) for k in Suro]
-    stdSuro = [n.std(k, 3) for k in Suro]
-
-    return uCfc, Suro, mSuro, stdSuro
-
-
-def _cfcFiltSub(xPha, xAmp, self):
-    """SUB: get the phase, amplitude and the asociated cfc
     """
     # Check input variables :
     npts, ntrial = xPha.shape
@@ -64,12 +38,23 @@ def _cfcFiltSub(xPha, xAmp, self):
     # 2D loop trick :
     claIdx, listWin, listTrial = list2index(nwin, ntrial)
 
-    # Get the cfc :
+    # Get the unormalized cfc :
     uCfc = [_cfcGet(n.squeeze(xPha[:, W[k[0]][0]:W[k[0]][1], k[1]]),
                     n.squeeze(xAmp[:, W[k[0]][0]:W[k[0]][1], k[1]]),
                     self.Id, self.nbins) for k in claIdx]
+    uCfc = n.array(groupInList(uCfc, listWin))
 
-    return xPha, xAmp, n.array(groupInList(uCfc, listWin))
+    # Run surogates on each window :
+    if self.n_perm != 0:
+        Suro = Parallel(n_jobs=surJob)(delayed(_cfcGetSuro)(
+            xPha[:, k[0]:k[1], :], xAmp[:, k[0]:k[1], :],
+            self.Id, self.n_perm, self.nbins) for k in self.window)
+        mSuro = [n.mean(k, 3) for k in Suro]
+        stdSuro = [n.std(k, 3) for k in Suro]
+    else:
+        Suro, mSuro, stdSuro = None, None, None
+
+    return uCfc, Suro, mSuro, stdSuro
 
 
 def _cfcGet(pha, amp, Id, nbins):
@@ -90,24 +75,17 @@ def _cfcGetSuro(pha, amp, Id, n_perm, nbins):
     return Sur(pha, amp, Model, n_perm)
 
 
-def _cfcCheck(x, xPha, xAmp, npts):
-    """Manage x, xPha and xAmp size
+def _cfcCheck(xPha, xAmp, npts):
+    """Manage xPha and xAmp size
     """
-    if xPha is None and xAmp is None:
-        if len(x.shape) == 2:
-            x = x[n.newaxis, ...]
-        if x.shape[1] != npts:
+    if xPha.shape == xAmp.shape:
+        if len(xPha.shape) == 2:
+            xPha = xPha[n.newaxis, ...]
+            xAmp = xAmp[n.newaxis, ...]
+        if xPha.shape[1] != npts:
             raise ValueError('Second dimension must be '+str(npts))
-        xPha, xAmp = x, x
     else:
-        if xPha.shape == xAmp.shape:
-            if len(xPha.shape) == 2:
-                xPha = xPha[n.newaxis, ...]
-                xAmp = xAmp[n.newaxis, ...]
-            if xPha.shape[1] != npts:
-                raise ValueError('Second dimension must be '+str(npts))
-        else:
-            raise ValueError('xPha and xAmp must have the same size')
+        raise ValueError('xPha and xAmp must have the same size')
 
     return xPha, xAmp
 
@@ -115,15 +93,15 @@ def _cfcCheck(x, xPha, xAmp, npts):
 def _cfcPvalue(nCfc, perm):
     """Get the pvalue of the cfc using permutations
     """
-    nW, nT, nA, nP = nCfc.shape
-    nperm = perm[0].shape[3]
+    nCfc, perm = n.mean(nCfc, 1), n.mean(perm, 1)
+    nW, nA, nP = nCfc.shape
+    nperm = perm.shape[3]
+
     pvalue = n.ones(nCfc.shape)
-    for i, j, k, l in product(range(nW), range(nT), range(nA), range(nP)):
-        data = nCfc[i, j, k, l]
-        permD = perm[i][j, k, l, :]
-        pv = (n.sum(permD >= data)) / nperm
+    for i, k, l in product(range(nW), range(nA), range(nP)):
+        pv = (n.sum(perm[i, k, l, :] >= nCfc[i, k, l])) / nperm
         if pv == 0:
-            pvalue[i, j, k, l] = 1/nperm
+            pvalue[i, k, l] = 1/nperm
         else:
-            pvalue[i, j, k, l] = pv
+            pvalue[i, k, l] = pv
     return pvalue
