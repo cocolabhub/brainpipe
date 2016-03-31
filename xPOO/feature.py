@@ -149,7 +149,7 @@ class power(object):
 
         return powStr+extractStr+')'
 
-    def get(self, x, n_jobs=-1):
+    def get(self, x, n_perm=200, n_jobs=-1):
         """Get the power of the signal x. This method is optimized
         for 3D matrix x.
 
@@ -158,6 +158,9 @@ class power(object):
         x : array
             Data for computing power. x should have a shape of
             (n_electrodes x n_pts x n_trials)
+
+        n_perm : integer, optional, [def : 200]
+            Number of permutations for assessing statistical significiancy.
 
         n_jobs : integer, optional, [def : -1]
             Control the number of jobs for parallel computing. Use 1, 2, ...
@@ -527,7 +530,7 @@ class pac(object):
 
         return cfcStr+phafilt+',\n'+ampfilt+')'
 
-    def get(self, xpha, xamp, n_jobs=-1, n_perm=200):
+    def get(self, xpha, xamp, n_perm=200, n_jobs=-1):
         """Get the normalized cfc mesure between an xpha and xamp signals.
 
         Parameters
