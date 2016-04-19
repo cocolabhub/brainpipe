@@ -2,20 +2,18 @@
 Design a filter, filt a signal, extract the phase, amplitude or power
 """
 
-import numpy as n
-from brainpipe.xPOO._utils._filtering import (fir_order,
-                                              fir1,
-                                              morlet,
-                                              _get_method,
-                                              _apply_method)
+import numpy as np
+from psutil import cpu_count
+
+from .utils import _filt
 
 __all__ = [
-    'fdesign',
-    'fextract'
+    'filter',
+    'fdesign'
 ]
 
 
-class fdesign(object):
+class filter(object):
 
     """Design a filter
 
@@ -43,22 +41,22 @@ class fdesign(object):
             raise ValueError('No "filtname" called "'+str(filtname)+'"'
                              ' is defined. Choose between "fir1", "butter", '
                              '"bessel"')
-        self.filtname = filtname
-        self.cycle = cycle
-        self.order = order
-        self.axis = axis
+        self._filtname = filtname
+        self._cycle = cycle
+        self._order = order
+        self._axis = axis
 
     def __str__(self):
-        if self.filtname == 'fir1':
-            filtStr = 'Filter(name='+self.filtname+', cycle='+str(
-                self.cycle)+', axis='+str(self.axis)+')'
+        if self._filtname == 'fir1':
+            filtStr = 'Filter(name='+self._filtname+', cycle='+str(
+                self._cycle)+', axis='+str(self._axis)+')'
         else:
-            filtStr = 'Filter(name='+self.filtname+', order='+str(
-                self.order)+', axis='+str(self.axis)+')'
+            filtStr = 'Filter(name='+self._filtname+', order='+str(
+                self._order)+', axis='+str(self._axis)+')'
         return filtStr
 
 
-class fextract(fdesign):
+class fdesign(filter):
 
     """Extract informations from a signal
 
@@ -129,50 +127,73 @@ class fextract(fdesign):
                              ' Choose between "hilbert", "hilbert1", '
                              '"hilbert2", "wavelet", "filter"')
         if kind not in ['signal', 'phase', 'amplitude', 'power']:
-            raise ValueError('No "kind" called "'+str(self.kind)+'"'
+            raise ValueError('No "kind" called "'+str(kind)+'"'
                              ' is defined. Choose between "signal", "phase", '
                              '"amplitude", "power"')
-        self.method = method
-        self.kind = kind
-        self.wltWidth = wltWidth
-        self.wltCorr = wltCorr
-        self.dtrd = dtrd
-        self.filtname = filtname
-        self.cycle = cycle
-        self.order = order
-        self.axis = axis
+        self._method = method
+        self._kind = kind
+        self._wltWidth = wltWidth
+        self._wltCorr = wltCorr
+        self._dtrd = dtrd
         super().__init__(filtname=filtname, cycle=cycle, order=order,
                          axis=axis)
 
     def __str__(self):
         filtStr = super().__str__()
-        if self.method == 'wavelet':
+        if self._method == 'wavelet':
             supStr = ', wavelet(width='+str(
-                self.wltWidth)+', correction='+str(self.wltCorr)+')'
+                self._wltWidth)+', correction='+str(self._wltCorr)+')'
         else:
             supStr = ''
 
-        return 'Extract(kind='+self.kind+', method='+self.method+', detrend='+str(
-            self.dtrd)+supStr+',\n'+filtStr+')'
+        return 'Extract(kind='+self._kind+', method='+self._method+', detrend='+str(
+            self._dtrd)+supStr+',\n'+filtStr+')'
 
-    def get(self, sf, f, npts):
-        """Get the methods
-        sf : sample frequency
-        f : frequency vector/list [ ex : f = [[2,4],[5,7]] ]
-        npts : number of points
-        -> Return a list of methods
-        """
+    def filt(self, x, sf, f, n_jobs=-1):
+        """"""
+        _bksz = x.shape
+        # Adapt frequency vector :
         if type(f[0]) == int:
             f = [f]
-        fMeth = _get_method(sf, f, npts, self.filtname, self.cycle, self.order,
-                            self.axis, self.method, self.wltWidth, self.kind)
-        return fMeth
+        # Adapt shape of x to 2d array:
+        if len(x.shape) == 1:
+            x = x.reshape(x.shape[0], 1)
+        elif len(x.shape) == 3:
+            x = x.reshape(x.shape[0]*x.shape[1], x.shape[2])
+        # Get the filter :
+        xf = _filt(x, sf, f, x.shape[0], self._filtname, self._cycle,
+                   self._order, self._axis, self._method, self._dtrd,
+                   self._kind, self._wltCorr, self._wltWidth, n_jobs=n_jobs)
+        # Reshape xf :
+        if len(_bksz) == 3:
+            xf = xf.reshape(xf.shape[0], _bksz[0], _bksz[1], _bksz[2])
+        if len(xf.shape) == 2:
+            xf = xf[np.newaxis, ...]
 
-    def apply(self, x, fMeth):
-        """Apply the methods
-        x : array signal
-        fMeth : list of methods
-        -> 3D array of the transform signal
-        """
-        return _apply_method(x, fMeth, self.dtrd, self.method,
-                             self.wltCorr, self.wltWidth)
+        return xf
+
+    def _splitArray(self, x, sf, f, n_jobs=-1):
+        """"""
+        N = x.shape[0]
+
+        if (n_jobs == -1) or (n_jobs == 0) or (n_jobs > cpu_count()):
+            njob = cpu_count()
+        else:
+            njob = n_jobs
+
+        try:
+            step = int((N-N % njob)/njob)
+            if (step == 0) or (step == 1):
+                idx = [list(range(N))]
+            else:
+                idx = [[k+step*q for k in range(step)] for q in range(
+                                                                  int(N/step))]
+                sup = list(range(idx[-1][-1]+1, N))
+                if sup:
+                    idx[-1].extend(sup)
+        except:
+            idx = [list(range(N))]
+
+        xjobs = [x[k, ...] for k in idx]
+        self._split = {'split'+str(k): [str(i.shape)] for k, i in enumerate(xjobs)}
+        return [k.reshape(k.shape[0]*k.shape[1], k.shape[2]) for k in xjobs]
