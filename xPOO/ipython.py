@@ -242,7 +242,6 @@ class workspace(object):
         sleep(3)
         self._LS_txt.visible = False
 
-
     @staticmethod
     def _createTab(var, label):
         """Create each tab of the table"""
