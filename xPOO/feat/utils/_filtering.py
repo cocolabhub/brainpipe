@@ -1,25 +1,25 @@
 import numpy as np
 from numpy.matlib import repmat
 from scipy.signal import filtfilt, butter, bessel, hilbert, hilbert2, detrend
-from joblib import Parallel, delayed
 
 __all__ = [
-    '_filt',
-    'fir_order',
-    'fir_filt',
-    'morlet',
+    '_apply_method',
+    '_get_method'
 ]
 
 
-def _filt(x, sf, f, npts, filtname, cycle, order, axis, method, dtrd, kind,
-          wltCorr, wltWidth, n_jobs=-1):
-    """Get the filter and apply it"""
-    # Run paralelle computation for each frequency :
-    xf = Parallel(n_jobs=n_jobs)(
-        delayed(_filtPara)(x, sf, k, npts, filtname, cycle, order, axis,
-                           method, dtrd, kind, wltCorr,
-                           wltWidth) for k in f)
-    xf = np.array(xf)
+def _apply_method(x, fMeth, dtrd, method, wltCorr, wltWidth):
+    npts, ntrial = x.shape
+    nFce = len(fMeth)
+    xf = np.zeros((nFce, npts, ntrial))
+
+    # Detrend the signal :
+    if dtrd:
+        x = detrend(x, axis=0)
+
+    # Apply methods :
+    for k in range(nFce):
+        xf[k, ...] = fMeth[k](x)
 
     # Correction for the wavelet (due to the wavelet width):
     if (method == 'wavelet') and (wltCorr is not None):
@@ -30,20 +30,19 @@ def _filt(x, sf, f, npts, filtname, cycle, order, axis, method, dtrd, kind,
     return xf
 
 
-def _filtPara(x, sf, f, npts, filtname, cycle, order, axis, method, dtrd, kind,
-              wltCorr, wltWidth):
-    # Get the filter :
+def _get_method(sf, f, npts, filtname, cycle, order, axis, method, wltWidth,
+                kind):
+    """Get a list of functions of combinaitions: kind // transformation // design
+    """
+    # Get the kind (power, phase, signal, amplitude)
     fcnKind = _getKind(kind)
-
-    def fMeth(x, fce=f):
-        return fcnKind(_getTransform(sf, fce, npts, method, wltWidth,
-                                     filtname, cycle, order, axis)(x))
-
-    # Detrend the signal :
-    if dtrd:
-        x = detrend(x, axis=0)
-
-    return fMeth(x)
+    fMeth = []
+    for k in f:
+        def fme(x, fce=k):
+            return fcnKind(_getTransform(sf, fce, npts, method, wltWidth,
+                                         filtname, cycle, order, axis)(x))
+        fMeth.append(fme)
+    return fMeth
 
 
 def _getFiltDesign(sf, f, npts, filtname, cycle, order, axis):
@@ -184,8 +183,8 @@ def NoddFcn(F, M, W, L):  # N is odd
             np.cos(2 * np.pi * k * F[s + 1]) - np.cos(2 * np.pi * k * F[s])
         ) / (k * k)) * abs(np.square(W[round((s + 1) / 2)]))
         b = b + (F[s + 1] * (m * F[s + 1] + b1) * np.sinc(2 * k * F[
-            s + 1]) - F[s] * (m * F[s] + b1) * np.sinc(2 * k * F[
-                s])) * abs(np.square(W[round((s + 1) / 2)]))
+          s + 1]) - F[s] * (m * F[s] + b1) * np.sinc(2 * k * F[s])) * abs(
+            np.square(W[round((s + 1) / 2)]))
 
     b = np.insert(b, 0, b0)
     a = (np.square(W[0])) * 4 * b
@@ -211,7 +210,7 @@ def NevenFcn(F, M, W, L):  # N is even
             s + 1]) - np.cos(2 * np.pi * k * F[s])) / (
             k * k)) * abs(np.square(W[round((s + 1) / 2)]))
         b = b + (F[s + 1] * (m * F[s + 1] + b1) * np.sinc(2 * k * F[
-            s + 1]) - F[s] * (m * F[s] + b1) * np.sinc(2 * k * F[s])) * abs(
+          s + 1]) - F[s] * (m * F[s] + b1) * np.sinc(2 * k * F[s])) * abs(
             np.square(W[round((s + 1) / 2)]))
 
     a = (np.square(W[0])) * 4 * b

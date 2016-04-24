@@ -137,10 +137,6 @@ class fextract(fdesign):
         self.wltWidth = wltWidth
         self.wltCorr = wltCorr
         self.dtrd = dtrd
-        self.filtname = filtname
-        self.cycle = cycle
-        self.order = order
-        self.axis = axis
         super().__init__(filtname=filtname, cycle=cycle, order=order,
                          axis=axis)
 

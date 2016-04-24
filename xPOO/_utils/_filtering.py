@@ -21,8 +21,8 @@ def _apply_method(x, fMeth, dtrd, method, wltCorr, wltWidth):
         x = detrend(x, axis=0)
 
     # Apply methods :
-    for k in range(nFce):  # For each frequency in the tuple
-        xf[k, ...] = fMeth[k](x)
+    for k, i in enumerate(fMeth):
+        xf[k, ...] = i(x)
 
     # Correction for the wavelet (due to the wavelet width):
     if (method == 'wavelet') and (wltCorr is not None):
@@ -39,13 +39,13 @@ def _get_method(sf, f, npts, filtname, cycle, order, axis, method, wltWidth,
     """
     # Get the kind (power, phase, signal, amplitude)
     fcnKind = _getKind(kind)
-    fmeth = []
+    fMeth = []
     for k in f:
         def fme(x, fce=k):
             return fcnKind(_getTransform(sf, fce, npts, method, wltWidth,
                                          filtname, cycle, order, axis)(x))
-        fmeth.append(fme)
-    return fmeth
+        fMeth.append(fme)
+    return fMeth
 
 
 def _getFiltDesign(sf, f, npts, filtname, cycle, order, axis):
