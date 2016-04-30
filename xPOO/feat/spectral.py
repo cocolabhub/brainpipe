@@ -1,5 +1,6 @@
 from .filtering import fextract, docfilter
 from brainpipe.xPOO.tools import binarize, binArray
+from brainpipe.xPOO.visualization.cmon_plt import ndplot
 from .utils._feat import (_manageWindow, _manageFrequencies, normalize,
                           _checkref)
 
@@ -38,7 +39,7 @@ supfilter = """
 # ------------------------------------------------------------
 # MAIN SPECTRAL CLASS
 # ------------------------------------------------------------
-class _spectral(object):
+class _spectral(ndplot):
     """This class is optimized for 3D arrays.
 
     Parameters
@@ -88,6 +89,7 @@ class _spectral(object):
         self.yvec = [round((k[0]+k[1])/2) for k in self.f]
         self._kind = kind
         self._fobj = fextract(method, kind, **kwargs)
+        # ndplot.__init__(self, self._kind)
 
     def __str__(self):
         extractStr = str(self._fobj)
