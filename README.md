@@ -1,6 +1,6 @@
 # brainpipe
 
-.. image:: https://travis-ci.org/EtienneCmb/brainpipe.svg?branch=feature%2FStatOnSpectral
+![alt tag](https://travis-ci.org/EtienneCmb/brainpipe.svg?branch=master)
 
 Version : 0.0.2
 
