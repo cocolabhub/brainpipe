@@ -9,7 +9,7 @@ Welcome to brainpipe's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 6
 
    includeme
 

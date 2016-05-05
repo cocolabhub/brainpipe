@@ -1,0 +1,142 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>&lt;no title&gt; &mdash; brainpipe 0.0.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="brainpipe 0.0.2 documentation" href="index.html" />
+    <link rel="prev" title="Welcome to brainpipe’s documentation!" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <p># brainpipe</p>
+<p>Version : 0.0.2</p>
+<p>## Description
+Brainpipe is a toolbox to analyse neuro-physiological signals. For instance, it&#8217;s specialised for eeg, seeg and ecog signals. The aim of this toolbox is to extract informations from data [= features], to classify them and to find the best features combination from wide variety of features. Here is the list of the current implemented modules and there respectiv description:
+- bpstudy : managed features / file database
+- Extract physiological informations using mni/talairach coordonates of electrodes
+- feature : extract power, phase, phase-amplitude coupling features
+- optimized classification using scikit-learn
+- find the optimal combination of features</p>
+<p>## Modules</p>
+<p>### bpstudy
+Create and manage many studies, without carrying of path, variable names or settings. Everything is going to be self organized in the clearest way as possible.</p>
+<p>### physiology
+This module give the physiological informations of intracranial recordings. It will return the brodmann area, the gyrus, the lobe and the hemisphere for a given list of electrodes&#8217; coordonates.
+The results should be the same as Talairach Daemon</p>
+<p>### feature
+Extract time resolved features from original signals. Here&#8217;s the current list of extractable features:
+- Filtered signal (using butterworth / bessel / eegfilt filters)
+- Power (hilbert / wavelet)
+- Phase (based on hilbert transform)
+- Phase-amplitude coupling (10 methods) with a variety of normalizations and surrogates computing methods
+- Entropy (coming soon)
+- Kurtosis (coming soon)
+- Fractales, C1 // C2 (very futur)</p>
+<p>### classification
+Classify each time resolved features using parallel computing. There is also several methods to evaluate the statistical significiance of decoding accuracies:
+- binomial
+- permutations</p>
+<blockquote>
+<div><ul class="simple">
+<li>shuffle labels</li>
+<li>full randomization</li>
+<li>intra-class shuffling</li>
+</ul>
+</div></blockquote>
+<p>The classification modules provide the basics classifiers and cross-validations implemented in scikit-learn with an optimization for large array (which is convenient for features classification).
+The classification module also include:
+- Time generalization : generalize the decoding performance of features across time</p>
+<p>### multifeatures
+This module include several well known methods for computing multi-features. It includes :
+- Select all the features
+- forward / backward / exhaustif features selection
+- statistical selection (same methods as in classification module)
+- nbest : select nbest features
+All this methods can be used individually or they can be combined in a sequential way. An other interesting feature, is that for a given set of features, you can define groups and do a multi-features inside each group.</p>
+<p>## Installation</p>
+<p>## Version
+v0.0 compatible with python 3.x only
+(Still in development, final codes versions in xPOO for instance)</p>
+<p>## Keywords
+stereotactic electroencephalography, sEEG, iEEG, intracranial, micro-electrodes, ecog, power, phase-amplitude coupling, pac, phase, entropy, permutations, classification, brodmann, python, time generalization</p>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to brainpipe&#8217;s documentation!</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/includeme.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Etienne Combrisson.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/includeme.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

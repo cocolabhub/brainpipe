@@ -141,15 +141,16 @@ latex:
 	@echo "Run \`make' in that directory to run these through (pdf)latex" \
 	      "(use \`make latexpdf' here to do that automatically)."
 
+.PHONY: pdf
 latexpdf:
-    $(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(PDFBUILDDIR)/latex
-    #                                          ^^^
-    @echo "Running LaTeX files through pdflatex..."
-    make -C $(PDFBUILDDIR)/latex all-pdf
-    #         ^^^
-    cp $(PDFBUILDDIR)/latex/*.pdf $(PDF)
-    #^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    @echo "pdflatex finished; see $(PDF)"
+	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(PDFBUILDDIR)/latex
+	#                                          ^^^
+	@echo "Running LaTeX files through pdflatex..."
+	make -C $(PDFBUILDDIR)/latex all-pdf
+	#         ^^^
+	cp $(PDFBUILDDIR)/latex/*.pdf $(PDF)
+	#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	@echo "pdflatex finished; see $(PDF)"
 
 .PHONY: latexpdfja
 latexpdfja:
