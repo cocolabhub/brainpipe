@@ -1,0 +1,552 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Auto generated documentation &mdash; brainpipe 0.0.25 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.25',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="brainpipe 0.0.25 documentation" href="index.html" />
+    <link rel="next" title="&lt;no title&gt;" href="version.html" />
+    <link rel="prev" title="Bug" href="bug.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-feature2">
+<span id="auto-generated-documentation"></span><h1>Auto generated documentation<a class="headerlink" href="#module-feature2" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="feature2.power">
+<em class="property">class </em><code class="descclassname">feature2.</code><code class="descname">power</code><span class="sig-paren">(</span><em>sf, npts, f=[60, 200], baseline=(1, 2), norm=0, method='hilbert1', window=None, width=None, step=None, split=None, time=None, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#power"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.power" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the power of multiple signals. Use the get() method to compute
+power.
+Parameters
+&#8212;&#8212;&#8212;-
+sf : int</p>
+<blockquote>
+<div>Sampling frequency</div></blockquote>
+<dl class="docutils">
+<dt>npts</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int</span><dd>Number of points of the time serie</dd>
+<dt>f</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple/list, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">[60,200]]</span><dd>List containing the couple of frequency bands. Each couple can be
+either a list or a tuple. Example : f=[ [2,4], [5,7], [60,250] ]
+will compute the power in three frequency bands</dd>
+<dt>norm</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">0]</span><dd><dl class="first last docutils">
+<dt>Number to choose the normalization method</dt>
+<dd>0 : No normalisation
+1 : Substraction
+2 : Division
+3 : Substract then divide
+4 : Z-score</dd>
+</dl>
+</dd>
+<dt>baseline</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple/list of int [def: (1,1)]</span><dd>Define a window to normalize the power</dd>
+<dt>method</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">string</span><dd><dl class="first last docutils">
+<dt>Method to transform the signal. Possible values are:</dt>
+<dd><ul class="first last simple">
+<li>&#8216;hilbert&#8217; : apply a hilbert transform to each column</li>
+<li>&#8216;hilbert1&#8217; : hilbert transform to a whole matrix</li>
+<li>&#8216;hilbert2&#8217; : 2D hilbert transform</li>
+<li>&#8216;wavelet&#8217; : wavelet transform</li>
+<li>&#8216;filter&#8217; : filtered signal</li>
+</ul>
+</dd>
+</dl>
+</dd>
+<dt>split</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int or list of int, optional [def: None]</span><dd>Split the frequency band f in &#8220;split&#8221; band width.
+If f is a list which contain couple of frequencies,
+split is a list too.</dd>
+<dt>window</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple, list, None, optional [def: None]</span><dd>List/tuple: [100,1500]
+List of list/tuple: [(100,500),(200,4000)]
+None and the width and step parameters will be considered</dd>
+<dt>width</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">None]</span><dd>width of a single window.</dd>
+<dt>step</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">None]</span><dd>Each window will be spaced by the &#8220;step&#8221; value.</dd>
+<dt>time</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">list/array, optional [def: None]</span><dd>Define a specific time vector</dd>
+<dt><a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">additional arguments for filtering</span><dd>See of description of the filtsig module</dd>
+</dl>
+<dl class="method">
+<dt id="feature2.power.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>x</em>, <em>n_perm=200</em>, <em>n_jobs=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#power.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.power.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the power of the signal x. This method is optimized
+for 3D matrix x.</p>
+<dl class="docutils">
+<dt>x</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>Data for computing power. x should have a shape of
+(n_electrodes x n_pts x n_trials)</dd>
+<dt>n_perm</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">200]</span><dd>Number of permutations for assessing statistical significiancy.</dd>
+<dt>n_jobs</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">-1]</span><dd>Control the number of jobs for parallel computing. Use 1, 2, ...
+depending of your number or cores. -1 for all cores.</dd>
+</dl>
+<dl class="docutils">
+<dt>xF</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>The un/normalized power of x, with a shape of
+(n_frequency x n_electrodes x n_window x n_trials)</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="feature2.power.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>x</em>, <em>title=' feature'</em>, <em>xlabel='Time'</em>, <em>ylabel=' modulations'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#power.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.power.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple plot</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="feature2.TF">
+<em class="property">class </em><code class="descclassname">feature2.</code><code class="descname">TF</code><span class="sig-paren">(</span><em>sf</em>, <em>npts</em>, <em>f=(2</em>, <em>200</em>, <em>20</em>, <em>10)</em>, <em>baseline=(1</em>, <em>2)</em>, <em>norm=0</em>, <em>method='hilbert1'</em>, <em>rejection=False</em>, <em>window=None</em>, <em>width=None</em>, <em>step=None</em>, <em>time=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#TF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.TF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the time-frequency map (TF) of multiple signals. Use the get()
+method to compute the TF.</p>
+<dl class="docutils">
+<dt>sf</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int</span><dd>Sampling frequency</dd>
+<dt>npts</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int</span><dd>Number of points of the time serie</dd>
+<dt>f</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple/list, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">(2, 200, 20, 10)]</span><dd><p class="first">Define the frequency vector to compute the time-frequency maps.
+This tuple is define like thos f=(fstart, fend, fwidth, fstep)
+where :
+fstart, fend : starting and ending frequency
+fwidth, fstep : sliding frequency window of length fwidth and</p>
+<blockquote class="last">
+<div>fstep sliding. For example, if fwidth=20 and
+fstep=10, this mean there is a 50% covering</div></blockquote>
+</dd>
+<dt>norm</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">0]</span><dd><dl class="first last docutils">
+<dt>Number to choose the normalization method</dt>
+<dd>0 : No normalisation
+1 : Substraction
+2 : Division
+3 : Substract then divide
+4 : Z-score</dd>
+</dl>
+</dd>
+<dt>baseline</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple/list of int [def: (1,1)]</span><dd>Define a window to normalize the power</dd>
+<dt>method</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">string</span><dd><dl class="first last docutils">
+<dt>Method to transform the signal. Possible values are:</dt>
+<dd><ul class="first last simple">
+<li>&#8216;hilbert&#8217; : apply a hilbert transform to each column</li>
+<li>&#8216;hilbert1&#8217; : hilbert transform to a whole matrix</li>
+<li>&#8216;hilbert2&#8217; : 2D hilbert transform</li>
+<li>&#8216;wavelet&#8217; : wavelet transform</li>
+<li>&#8216;filter&#8217; : filtered signal</li>
+</ul>
+</dd>
+</dl>
+</dd>
+<dt>split</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int or list of int, optional [def: None]</span><dd>Split the frequency band f in &#8220;split&#8221; band width.
+If f is a list which contain couple of frequencies,
+split is a list too.</dd>
+<dt>window</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple, list, None, optional [def: None]</span><dd>List/tuple: [100,1500]
+List of list/tuple: [(100,500),(200,4000)]
+None and the width and step parameters will be considered</dd>
+<dt>width</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">None]</span><dd>width of a single window.</dd>
+<dt>step</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">None]</span><dd>Each window will be spaced by the &#8220;step&#8221; value.</dd>
+<dt>time</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">list/array, optional [def: None]</span><dd>Define a specific time vector</dd>
+<dt><a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">additional arguments for filtering</span><dd>See of description of the filtsig module</dd>
+</dl>
+<dl class="method">
+<dt id="feature2.TF.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>x</em>, <em>n_jobs=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#TF.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.TF.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the time frequency map of a signal x. This method is optimized
+for 3D matrix x.</p>
+<dl class="docutils">
+<dt>x</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>Data for computing the TF. x should have a shape of
+(n_electrodes x n_pts x n_trials)</dd>
+<dt>n_jobs</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">-1]</span><dd>Control the number of jobs for parallel computing. Use 1, 2, ...
+depending of your number or cores. -1 for all cores.</dd>
+</dl>
+<dl class="docutils">
+<dt>tF</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>The un/normalized time-frequency map of x, with a shape of
+(n_frequency x n_electrodes x n_window)</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="feature2.phase">
+<em class="property">class </em><code class="descclassname">feature2.</code><code class="descname">phase</code><span class="sig-paren">(</span><em>sf, npts, f=[60, 200], method='hilbert', window=None, width=None, step=None, time=None, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#phase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the phase of multiple signals. Use the get() method to compute
+the phase.</p>
+<dl class="docutils">
+<dt>sf</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int</span><dd>Sampling frequency</dd>
+<dt>npts</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int</span><dd>Number of points of the time serie</dd>
+<dt>f</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple/list, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">[60,200]]</span><dd>List containing the couple of frequency bands.
+Each couple can be either a list or a tuple.
+Example : f=[ [2,4], [5,7], [60,250] ] will compute
+the phase in three frequency bands</dd>
+<dt>method</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">string</span><dd><dl class="first last docutils">
+<dt>Method to transform the signal. Possible values are:</dt>
+<dd><ul class="first last simple">
+<li>&#8216;hilbert&#8217; : apply a hilbert transform to each column</li>
+<li>&#8216;hilbert1&#8217; : hilbert transform to a whole matrix</li>
+<li>&#8216;hilbert2&#8217; : 2D hilbert transform</li>
+</ul>
+</dd>
+</dl>
+</dd>
+<dt>window</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple, list, None, optional [def: None]</span><dd>List/tuple: [100,1500]
+List of list/tuple: [(100,500),(200,4000)]
+None and the width and step parameters will be considered</dd>
+<dt>width</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">None]</span><dd>width of a single window.</dd>
+<dt>step</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">None]</span><dd>Each window will be spaced by the &#8220;step&#8221; value.</dd>
+<dt>time</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">list/array, optional [def: None]</span><dd>Define a specific time vector</dd>
+<dt><a href="#id5"><span class="problematic" id="id6">**</span></a>kwargs</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">additional arguments for filtering</span><dd>See of description of the filtsig module</dd>
+</dl>
+<dl class="method">
+<dt id="feature2.phase.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>x</em>, <em>n_jobs=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#phase.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.phase.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the phase of the signal x. This method is optimized
+for 3D matrix x.</p>
+<dl class="docutils">
+<dt>x</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>Data for computing phase. x should have a shape of
+(n_electrodes x n_pts x n_trials)</dd>
+<dt>n_jobs</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">-1]</span><dd>Control the number of jobs for parallel computing. Use 1, 2, ...
+depending of your number or cores. -1 for all cores.</dd>
+</dl>
+<dl class="docutils">
+<dt>tF</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>The un/normalized time-frequency map of x, with a shape of
+(n_frequency x n_electrodes x n_window x n_trials)</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="feature2.phase.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>x</em>, <em>title=' feature'</em>, <em>xlabel='Time'</em>, <em>ylabel=' modulations'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#phase.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.phase.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Simple plot</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="feature2.pac">
+<em class="property">class </em><code class="descclassname">feature2.</code><code class="descname">pac</code><span class="sig-paren">(</span><em>sf, npts, Id='114', pha_f=[2, 4], pha_meth='hilbert', pha_cycle=3, amp_f=[60, 200], amp_meth='hilbert', amp_cycle=6, nbins=18, window=None, width=None, step=None, time=None, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#pac"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.pac" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the phase-amplitude coupling (pac) either in local or
+distant coupling.
+Use the get() method to compute the pac</p>
+<p>Contributor: Juan LP Soto</p>
+<dl class="docutils">
+<dt>sf</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int</span><dd>Sampling frequency</dd>
+<dt>npts</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int</span><dd>Number of points of the time serie</dd>
+<dt>Id</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">string, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">&#8216;114&#8217;]</span><dd><p class="first">The Id correspond to the way of computing pac. Id is composed with
+three digits [ex : Id=&#8216;210&#8217;]</p>
+<blockquote>
+<div><ul class="simple">
+<li>First digit : refer to the method of pac. Here is the list of</li>
+</ul>
+<dl class="docutils">
+<dt>pac mesure implemented :</dt>
+<dd>&#8216;1&#8217; - Modulation Index (See Canolty, 2006)
+&#8216;2&#8217; - Kullback-Leibler Distance (See Tort, 2010)
+&#8216;3&#8217; - Phase synchrony
+&#8216;4&#8217; - Amplitude PSD
+&#8216;5&#8217; - Heights Ratio
+&#8216;6&#8217; - ndPAC (See Ozkurt, 2012)</dd>
+</dl>
+<ul class="simple">
+<li>Second digit : pac mesures are usually sensible to noise. In</li>
+</ul>
+<p>consequence, the second digit refer to the method for computing
+surrogates. List of surrogates methods :</p>
+<blockquote>
+<div>&#8216;0&#8217; - No surrogates
+&#8216;1&#8217; - Shuffle phase values
+&#8216;2&#8217; - Time lag
+&#8216;3&#8217; - Swap phase/amplitude through trials
+&#8216;4&#8217; - Swap amplitude
+&#8216;5&#8217; - circular shifting</div></blockquote>
+<ul class="simple">
+<li>Third digit : after computing surrogates, the true pac mesure</li>
+</ul>
+<p>will be normalized by surrogates. So the third digit refer to the
+way of normalizing pac by surrogates :</p>
+<blockquote>
+<div>&#8216;0&#8217; - No normalization
+&#8216;1&#8217; - Substraction : substract the mean of surrogates
+&#8216;2&#8217; - Divide : divide by the mean of surrogates
+&#8216;3&#8217; - Substract then divide : substract then divide by the mean
+of surrogates
+&#8216;4&#8217; - Z-score : substract the mean and divide by the deviation
+of the surrogates</div></blockquote>
+</div></blockquote>
+<p class="last">So, if Id=&#8216;123&#8217;, this mean that pac will be evaluate using the
+Modulation Index (&#8216;1&#8217;), then surrogates will be find by introducing a
+time lag (&#8216;2&#8217;) and finally, the true pac value will be normalized by
+substracting then dividing by the mean of surrogates.</p>
+</dd>
+<dt>nbins</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">18]</span><dd>Some pac method (like Kullback-Leibler Distance or Heights Ratio) need
+a binarization of the phase. nbins control the number of bins.</dd>
+<dt>pha_f</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple/list, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">[2,4]]</span><dd>List containing the couple of frequency bands for the phase.
+Each couple can be either a list or a tuple. Example :
+f=[ [2,4], [5,7], [60,250] ] will compute the phase in three
+frequency bands.</dd>
+<dt>pha_meth</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">string, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">&#8216;hilbert&#8217;]</span><dd>Method for the phase extraction.</dd>
+<dt>pha_cycle</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">3]</span><dd>Number of cycles for filtering the phase.</dd>
+<dt>amp_f</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple/list, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">[60,200]]</span><dd>List containing the couple of frequency bands for the amplitude.
+Each couple can be either a list or a tuple.</dd>
+<dt>amp_meth</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">string, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">&#8216;hilbert&#8217;]</span><dd>Method for the amplitude extraction.</dd>
+<dt>amp_cycle</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">6]</span><dd>Number of cycles for filtering the amplitude.</dd>
+<dt>window</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple, list, None, optional [def: None]</span><dd>List/tuple: [100,1500]
+List of list/tuple: [(100,500),(200,4000)]
+None and the width and step parameters will be considered</dd>
+<dt>width</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">None]</span><dd>width of a single window.</dd>
+<dt>step</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">None]</span><dd>Each window will be spaced by the &#8220;step&#8221; value.</dd>
+<dt>time</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">list/array, optional [def: None]</span><dd>Define a specific time vector</dd>
+<dt><a href="#id7"><span class="problematic" id="id8">**</span></a>kwargs</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">additional arguments for filtering</span><dd>See of description of the filtsig module</dd>
+</dl>
+<dl class="method">
+<dt id="feature2.pac.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>xpha</em>, <em>xamp</em>, <em>n_perm=200</em>, <em>n_jobs=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#pac.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.pac.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the normalized cfc mesure between an xpha and xamp signals.</p>
+<dl class="docutils">
+<dt>xpha</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>Signal for phase. The shape of xpha should be :
+(n_electrodes x n_pts x n_trials)</dd>
+<dt>xamp</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>Signal for amplitude. The shape of xamp should be :
+(n_electrodes x n_pts x n_trials)</dd>
+<dt>n_perm</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">200]</span><dd>Number of permutations for normalizing the cfc mesure.</dd>
+<dt>n_jobs</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">-1]</span><dd>Control the number of jobs for parallel computing. Use 1, 2, ...
+depending of your number or cores. -1 for all the cores.</dd>
+</dl>
+<p>If the same signal is used (example : xpha=x and xamp=x), this mean
+the program compute a local cfc.</p>
+<dl class="docutils">
+<dt>ncfc</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>The unormalized cfc mesure. The size of ncfc depends of parameters
+but in general it is :
+(n_phase x n_amplitude x n_electrodes x n_windows x n_trials)</dd>
+<dt>pvalue</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>The associated p-values. The size of pvalue depends of parameters
+but in general it is :
+(n_phase x n_amplitude x n_electrodes x n_windows)</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="feature2.plv">
+<em class="property">class </em><code class="descclassname">feature2.</code><code class="descname">plv</code><a class="reference internal" href="_modules/feature2.html#plv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.plv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the phase synchrony between two signals.</p>
+<dl class="method">
+<dt id="feature2.plv.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#plv.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.plv.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="feature2.preferedphase">
+<em class="property">class </em><code class="descclassname">feature2.</code><code class="descname">preferedphase</code><span class="sig-paren">(</span><em>sf, npts, nbins=72, pha_f=[2, 4], pha_meth='hilbert', pha_cycle=3, amp_f=[60, 200], amp_meth='hilbert', amp_cycle=6, window=None, width=None, step=None, time=None, **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#preferedphase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.preferedphase" title="Permalink to this definition">¶</a></dt>
+<dd><p>For a given amplitude, get the prefered phase. The amplitude is bined,
+relatively to the phase. Use the get() method to compute the prefered
+phase.</p>
+<dl class="docutils">
+<dt>sf</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int</span><dd>Sampling frequency</dd>
+<dt>npts</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int</span><dd>Number of points of the time serie</dd>
+<dt>nbins</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">72]</span><dd>Number of bins to binarized the phase.</dd>
+<dt>pha_meth</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">string, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">&#8216;hilbert&#8217;]</span><dd>Method for the phase extraction.</dd>
+<dt>pha_cycle</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">3]</span><dd>Number of cycles for filtering the phase.</dd>
+<dt>amp_f</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple/list, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">[60,200]]</span><dd>List containing the couple of frequency bands for the amplitude.
+Each couple can be either a list or a tuple.</dd>
+<dt>amp_meth</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">string, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">&#8216;hilbert&#8217;]</span><dd>Method for the amplitude extraction.</dd>
+<dt>amp_cycle</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">6]</span><dd>Number of cycles for filtering the amplitude.</dd>
+<dt>window</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">tuple, list, None, optional [def: None]</span><dd>List/tuple: [100,1500]
+List of list/tuple: [(100,500),(200,4000)]
+None and the width and step parameters will be considered</dd>
+<dt>width</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">None]</span><dd>width of a single window.</dd>
+<dt>step</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">int, optional [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">None]</span><dd>Each window will be spaced by the &#8220;step&#8221; value.</dd>
+<dt>time</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">list/array, optional [def: None]</span><dd>Define a specific time vector</dd>
+<dt><a href="#id9"><span class="problematic" id="id10">**</span></a>kwargs</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">additional arguments for filtering</span><dd>See of description of the filtsig module</dd>
+</dl>
+<dl class="method">
+<dt id="feature2.preferedphase.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>xpha</em>, <em>xamp</em>, <em>n_perm=200</em>, <em>n_jobs=-1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#preferedphase.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.preferedphase.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the normalized cfc mesure between an xpha and xamp signals.</p>
+<dl class="docutils">
+<dt>xpha</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>Signal for phase. The shape of xpha should be :
+(n_electrodes x n_pts x n_trials)</dd>
+<dt>xamp</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>Signal for amplitude. The shape of xamp should be :
+(n_electrodes x n_pts x n_trials)</dd>
+<dt>n_perm</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">200]</span><dd>Number of permutations for assessing reliability of the prefered
+phase.</dd>
+<dt>n_jobs</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer, optional, [def</span> <span class="classifier-delimiter">:</span> <span class="classifier">-1]</span><dd>Control the number of jobs for parallel computing. Use 1, 2, ...
+depending of your number or cores. -1 for all the cores.</dd>
+</dl>
+<p>If the same signal is used (example : xpha=x and xamp=x), this mean
+the program compute a local prefered phase.</p>
+<dl class="docutils">
+<dt>ncfc</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>The unormalized cfc mesure. The size of ncfc depends of parameters
+but in general it is :
+(n_phase x n_amplitude x n_electrodes x n_windows x n_trials)</dd>
+<dt>pvalue</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">array</span><dd>The associated p-values. The size of pvalue depends of parameters
+but in general it is :
+(n_phase x n_amplitude x n_electrodes x n_windows)</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="feature2.pentropy">
+<em class="property">class </em><code class="descclassname">feature2.</code><code class="descname">pentropy</code><a class="reference internal" href="_modules/feature2.html#pentropy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.pentropy" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="feature2.pentropy.get">
+<code class="descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/feature2.html#pentropy.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#feature2.pentropy.get" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="bug.html" title="previous chapter">Bug</a></li>
+      <li>Next: <a href="version.html" title="next chapter">&lt;no title&gt;</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/code.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Etienne Combrisson.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="_sources/code.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
