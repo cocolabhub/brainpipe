@@ -96,7 +96,7 @@ class fextract(fdesign):
     axis : int, optional [def : 0]
         Filter accross the dimension 'axis'
 
-    dtrd : bool, optional [def : Flase]
+    dtrd : bool, optional [def : False]
         Detrend the signal
 
     wltWidth : int, optional [def : 7]
@@ -137,10 +137,6 @@ class fextract(fdesign):
         self.wltWidth = wltWidth
         self.wltCorr = wltCorr
         self.dtrd = dtrd
-        self.filtname = filtname
-        self.cycle = cycle
-        self.order = order
-        self.axis = axis
         super().__init__(filtname=filtname, cycle=cycle, order=order,
                          axis=axis)
 
