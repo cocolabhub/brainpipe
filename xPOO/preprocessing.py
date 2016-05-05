@@ -28,53 +28,56 @@ def bipolarization(data, channel, dim=0, xyz=None, sep='.', unbip=None,
                    rmchan=None, keepchan='all', rmspace=True, rmalone=True):
     """Bipolarize data
 
-    Parameters
-    ----------
-    data : array
-        Data to bipolarize
+    Args:
+        data: array
+            Data to bipolarize
 
-    channel : list
-        List of channels name
+        channel: list
+            List of channels name
 
-    dim : integer, optional, [def : 0]
-        Specify where is the channel dimension of data
+    Kwargs:
+        dim: integer, optional, [def: 0]
+            Specify where is the channel dimension of data
 
-    xyz : array, optional, [def : None]
-        Electrode coordinates. Must be a n_channel x 3
+        xyz: array, optional, [def: None]
+            Electrode coordinates. Must be a n_channel x 3
 
-    sep : string, optional, [def : '.']
-        Separator to simplify electrode names by removing undesired name
-        after the sep. For example, if channel = ['h1.025', 'h2.578']
-        and sep='.', the final name will be 'h2-h1'.
+        sep: string, optional, [def: '.']
+            Separator to simplify electrode names by removing undesired name
+            after the sep. For example, if channel = ['h1.025', 'h2.578']
+            and sep='.', the final name will be 'h2-h1'.
 
-    unbip : list, optional, [def : None]
-        Channel that don't need a bipolarization but to keep.
-        This list can either be the index or the name of the channel.
+        unbip: list, optional, [def: None]
+            Channel that don't need a bipolarization but to keep.
+            This list can either be the index or the name of the channel.
 
-    rmchan : list, optional, [def : None]
-        Channel to remove. This list can either be the index or the
-        name of the channel.
+        rmchan: list, optional, [def: None]
+            Channel to remove. This list can either be the index or the
+            name of the channel.
 
-    keepchan : list, optional, [def : 'all']
-        Channel to keep. This list can either be the index or the
-        name of the channel.
+        keepchan: list, optional, [def: 'all']
+            Channel to keep. This list can either be the index or the
+            name of the channel.
 
-    rmspace : bool, optional, [def : True]
-        Remove undesired space in channel names.
+        rmspace: bool, optional, [def: True]
+            Remove undesired space in channel names.
 
-    rmalone : bool, optional, [def : True]
-        Remove electrodes that cannot be bipolarized.
+        rmalone: bool, optional, [def: True]
+            Remove electrodes that cannot be bipolarized.
 
-    Return
-    ----------
-    data_b : array
-        Bipolarized data.
+    Returns:
+        data_b: array
+            Bipolarized data.
 
-    channel_b : list
-        List of the bipolrized channels name.
+        channel_b: list
+            List of the bipolrized channels name.
 
-    xyz_b : array
-        Array of the new xyz coordinates.
+        xyz_b: array
+            Array of the new xyz coordinates.
+
+    Example :
+        >>> x = 47
+        >>> f = np.array(47, 54, 85)
     """
     # Check data size :
     if data.shape[dim] != len(channel):
