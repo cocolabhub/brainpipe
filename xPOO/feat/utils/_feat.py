@@ -124,6 +124,7 @@ def normalize(A, B, norm=0):
     elif norm == 1:
         return A - B
     # Division
+    elif norm == 2:
         return A / B
     # Substract then divide
     elif norm == 3:

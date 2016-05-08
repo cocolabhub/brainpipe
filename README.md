@@ -1,5 +1,7 @@
 # brainpipe
 
+![alt tag](https://travis-ci.org/EtienneCmb/brainpipe.svg?branch=master)
+
 Version : 0.0.2
 
 ## Description

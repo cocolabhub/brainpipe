@@ -1,10 +1,12 @@
-import numpy as n
+import numpy as np
 import matplotlib.pyplot as plt
+
 
 __all__ = ['addLines', 'BorderPlot']
 
 
 class _pltutils(object):
+
     """
     **kwargs
     ----------
@@ -29,9 +31,9 @@ class _pltutils(object):
         if not hasattr(self, '_yType'):
             self._yType = int
         # Axes ticks :
-        if n.array(xticks).size:
+        if np.array(xticks).size:
             ax.set_xticks(xticks)
-        if n.array(yticks).size:
+        if np.array(yticks).size:
             ax.set_yticks(yticks)
         # Axes ticklabels :
         if xticklabels:
@@ -44,16 +46,162 @@ class _pltutils(object):
         if ylabel:
             ax.set_ylabel(ylabel)
         # Axes limit :
-        if n.array(xlim).size:
+        if np.array(xlim).size:
             ax.set_xlim(xlim)
-        if n.array(ylim).size:
+        if np.array(ylim).size:
             ax.set_ylim(ylim)
         ax.set_title(title, y=1.02)
         # Style :
         plt.style.use(style)
 
 
+class ndplot(object):
+
+    """ndplot with automatic management of sublot
+
+    Methods
+    ----------
+    -> plot1D : 1D plot
+    -> plot2D : 2D plot
+    """
+
+    def __init__(self, num=None, figsize=None, dpi=None, title='', **kwargs):
+        self._fig = plt.figure(num=num, figsize=figsize, dpi=dpi, **kwargs)
+        if title is not '':
+            self.fig.suptitle(title, fontsize=14, fontweight='bold')
+
+    def plot1D(self, y, x=None, maxplot=10, kind='plot', **kwargs):
+        """Simple one dimentional plot
+
+        Parameters
+        ----------
+        y : array
+            Data to plot. y can either have one, two or three dimensions.
+            If y is a vector, it will be plot in a simple window. If y is
+            a matrix, all values inside are going to be superimpose. If y
+            is a 3D matrix, the first dimension control the number of subplots.
+
+        x : array, optional, [def : None]
+            x vector for plotting data.
+
+        maxplot : int, optional, [def : 10]
+            Control the maximum number of subplot to prevent very large plot.
+            By default, maxplot is 10 which mean that only 10 subplot can be
+            defined.
+
+        kind : string, optional, [def : 'plot']
+            Control the type of plot. Choose between 'plot' and 'scatter'.
+        """
+        # Check y shape :
+        y = self._checkarray(y)
+        if x is None:
+            x = np.arange(y.shape[1])
+        # Plotting function :
+
+        def _fcn(y):
+            if kind == 'plot':
+                plt.plot(x, y)
+            elif kind == 'scatter':
+                plt.scatter(x, y)
+            _pltutils(plt.gca(), **kwargs)
+        # Run function for each yi :
+        return self._subplotND(y, _fcn, maxplot)
+
+    def plot2D(self, y, xvec=None, yvec=None, maxplot=10, cmap='inferno',
+               interpolation='none', colorbar=True, vmin=None, vmax=None,
+               **kwargs):
+        """Plot y as an image
+
+        Parameters
+        ----------
+        y : array
+            Data to plot. y can either have one, two or three dimensions.
+            If y is a vector, it will be plot in a simple window. If y is
+            a matrix, all values inside are going to be superimpose. If y
+            is a 3D matrix, the first dimension control the number of subplots.
+
+        xvec, yvec : array, optional, [def : None]
+            Vectors for y and x axis of each picture
+
+        maxplot : int, optional, [def : 10]
+            Control the maximum number of subplot to prevent very large plot.
+            By default, maxplot is 10 which mean that only 10 subplot can be
+            defined.
+
+        cmap : string, optional, [def : 'inferno']
+            Choice of the colormap
+
+        interpolation : string, optional, [def : 'none']
+            Plot interpolation
+
+        colorbar : bool, optional, [def : True]
+            Add or not a colorbar to your plot
+
+        vmin, vmax : int/float, optional, [def : None]
+            Control minimum and maximum of the image
+        """
+        # Check y shape :
+        y = self._checkarray(y)
+        if xvec is None:
+            xvec = np.arange(y.shape[-1])
+        if yvec is None:
+            yvec = np.arange(y.shape[1])
+        # Plotting function :
+
+        def _fcn(y):
+            im = plt.imshow(y, aspect='auto', cmap=cmap,
+                            interpolation=interpolation, vmin=vmin, vmax=vmax,
+                            extent=[xvec[0], xvec[-1], yvec[-1], yvec[0]])
+            ax = plt.gca()
+            _pltutils(ax, **kwargs)
+            plt.colorbar(im)
+            ax.invert_yaxis()
+        # Run function for each yi :
+        return self._subplotND(y, _fcn, maxplot)
+
+    def _checkarray(self, y):
+        """Check input shape
+        """
+        # Vector :
+        if y.ndim == 1:
+            y = y[np.newaxis, ..., np.newaxis]
+        # 2D array :
+        elif y.ndim == 2:
+            y = y[np.newaxis]
+        # more than 3D array :
+        elif y.ndim > 3:
+            raise ValueError('array to plot should not have more than '
+                             '3 dimensions')
+        return y
+
+    def _subplotND(self, y, fcn, maxplot):
+        """Manage subplots
+        """
+        L = y.shape[0]
+        if L <= maxplot:
+            fig = self.fig
+            if L < 4:
+                ncol, nrow = L, 1
+            else:
+                ncol = round(np.sqrt(L)).astype(int)
+                nrow = round(L/ncol).astype(int)
+                while nrow*ncol < L:
+                    nrow += 1
+            for k in range(L):
+                fig.add_subplot(nrow, ncol, k+1)
+                fcn(y[k, ...])
+            return plt.gca()
+        else:
+            raise ValueError('Warning : the "maxplot" parameter prevent to a'
+                             'large number of plot. To increase the number'
+                             ' of plot, change "maxplot"')
+
+ndplot.plot1D.__doc__ += _pltutils.__doc__
+ndplot.plot2D.__doc__ += _pltutils.__doc__
+
+
 class addLines(object):
+
     """Add vertical and horizontal lines to an existing plot.
 
     Parameters
@@ -127,6 +275,7 @@ class addLines(object):
 
 
 class BorderPlot(_pltutils):
+
     """Plot a signal with it associated deviation. The function plot the
     mean of the signal, and the deviation (std) or standard error on the mean
     (sem) in transparency.
@@ -141,11 +290,11 @@ class BorderPlot(_pltutils):
         The other dimension will be consider to define the deviation. For
         example, x.shape = (N, M)
 
-    y : numpy array, optional, [def : n.array([])]
+    y : numpy array, optional, [def : np.array([])]
         Label vector to separate the x signal in diffrent classes. The length
         of y must be M. If no y is specified, the deviation will be computed
         for the entire array x. If y is composed with integers
-        (example : y = n.array([1,1,1,1,2,2,2,2])), the functino will geneate
+        (example : y = np.array([1,1,1,1,2,2,2,2])), the functino will geneate
         as many curve as the number of unique classes in y. In this case, two
         curves are going to be considered.
 
@@ -176,11 +325,11 @@ class BorderPlot(_pltutils):
     """
     __doc__ += _pltutils.__doc__
 
-    def __init__(self, time, x, y=n.array([]), kind='sem', color='', alpha=0.2,
-                 linewidth=2, legend='', ncol=1, **kwargs):
+    def __init__(self, time, x, y=np.array([]), kind='sem', color='',
+                 alpha=0.2, linewidth=2, legend='', ncol=1, **kwargs):
         pass
 
-    def __new__(self, time, x, y=n.array([]), kind='sem', color='', alpha=0.2,
+    def __new__(self, time, x, y=np.array([]), kind='sem', color='', alpha=0.2,
                 linewidth=2, legend='', ncol=1, **kwargs):
 
         self.xType = type(time[0])
@@ -191,8 +340,8 @@ class BorderPlot(_pltutils):
             x = x.T
         npts, dev = x.shape
         if not y.size:
-            y = n.array([0]*dev)
-        yClass = n.unique(y)
+            y = np.array([0]*dev)
+        yClass = np.unique(y)
         nclass = len(yClass)
         if not color:
             color = ['darkblue', 'darkgreen', 'darkred',
@@ -212,7 +361,7 @@ class BorderPlot(_pltutils):
 
         # For each class :
         for k in yClass:
-            _BorderPlot(time, x[:, n.where(y == k)[0]], color[k], kind=kind,
+            _BorderPlot(time, x[:, np.where(y == k)[0]], color[k], kind=kind,
                         alpha=alpha, linewidth=linewidth, legend=legend[k])
         ax = plt.gca()
         plt.axis('tight')
@@ -225,10 +374,10 @@ class BorderPlot(_pltutils):
 def _BorderPlot(time, x, color, kind='sem', alpha=0.2, legend='', linewidth=2):
     npts, dev = x.shape
     # Get the deviation/sem :
-    xStd = n.std(x, axis=1)
+    xStd = np.std(x, axis=1)
     if kind is 'sem':
-        xStd = xStd/n.sqrt(npts-1)
-    xMean = n.mean(x, 1)
+        xStd = xStd/np.sqrt(npts-1)
+    xMean = np.mean(x, 1)
     xLow, xHigh = xMean-xStd, xMean+xStd
 
     # Plot :
