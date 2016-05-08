@@ -1,5 +1,8 @@
 Classification
 ==============
+Note
+----
+.. note:: This is a **note**.
 
 Classify features
 	- classify

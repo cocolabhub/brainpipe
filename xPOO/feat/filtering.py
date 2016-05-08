@@ -13,21 +13,21 @@ __all__ = [
 ]
 
 docfilter = """
-    filtname : string, optional [def : 'fir1']
-        Name of the filter. Possible values are:
-            - 'fir1' : Window-based FIR filter design
-            - 'butter' : butterworth filter
-            - 'bessel' : bessel filter
+        filtname: string, optional [def: 'fir1']
+            Name of the filter. Possible values are:
+                - 'fir1': Window-based FIR filter design
+                - 'butter': butterworth filter
+                - 'bessel': bessel filter
 
-    cycle : int, optional [def : 3]
-        Number of cycle to use for the filter. This parameter
-        is only avaible for the 'fir1' method
+        cycle: int, optional [def: 3]
+            Number of cycle to use for the filter. This parameter
+            is only avaible for the 'fir1' method
 
-    order : int, optional [def : 3]
-        Order of the 'butter' or 'bessel' filter
+        order: int, optional [def: 3]
+            Order of the 'butter' or 'bessel' filter
 
-    axis : int, optional [def : 0]
-        Filter accross the dimension 'axis'
+        axis: int, optional [def: 0]
+            Filter accross the dimension 'axis'
 """
 
 docType = """"""
@@ -63,32 +63,32 @@ class fextract(fdesign):
 
     """Extract informations from a signal
 
-    Parameters
-    ----------
-    method : string
-        Method to transform the signal. Possible values are:
-            - 'hilbert' : apply a hilbert transform to each column
-            - 'hilbert1' : hilbert transform to a whole matrix
-            - 'hilbert2' : 2D hilbert transform
-            - 'wavelet' : wavelet transform
-            - 'filter' : filtered signal
+    Args:
+        method: string
+            Method to transform the signal. Possible values are:
+                - 'hilbert': apply a hilbert transform to each column
+                - 'hilbert1': hilbert transform to a whole matrix
+                - 'hilbert2': 2D hilbert transform
+                - 'wavelet': wavelet transform
+                - 'filter': filtered signal
 
-    kind : string
-        Type of information to extract to the transformed signal.
-        Possible values are:
-            - 'signal' : return the transform signal
-            - 'phase' : phase of the the transform signal
-            - 'amplitude' : amplitude of the transform signal
-            - 'power' : power of the transform signal
+        kind: string
+            Type of information to extract to the transformed signal.
+            Possible values are:
+                - 'signal': return the transform signal
+                - 'phase': phase of the the transform signal
+                - 'amplitude': amplitude of the transform signal
+                - 'power': power of the transform signal
 
-    dtrd : bool, optional [def : False]
-        Detrend the signal
+    Kargs:
+        dtrd: bool, optional [def: False]
+            Detrend the signal
 
-    wltWidth : int, optional [def : 7]
-        Width of the wavelet
+        wltWidth: int, optional [def: 7]
+            Width of the wavelet
 
-    wltCorr : int, optional [def : 3]
-        Correction of the edgde effect for the wavelet
+        wltCorr: int, optional [def: 3]
+            Correction of the edgde effect for the wavelet
     """
     __doc__ += docfilter
 
@@ -120,19 +120,17 @@ class fextract(fdesign):
     def get(self, sf, f, npts):
         """Get the methods
 
-        Parameters
-        ----------
-        sf : integer
-            Sampling frequency
+        Args:
+            sf: integer
+                Sampling frequency
 
-        f : tuple/list
-            List containing the couple of frequency bands. Each couple can be
-            either a list or a tuple. Example : f=[ [2,4], [5,7], [60,250] ]
+            f: tuple/list
+                List containing the couple of frequency bands. Each couple can be
+                either a list or a tuple. Example: f=[ [2,4], [5,7], [60,250] ]
 
-        Return
-        ----------
-        fMeth : list
-            List of methods for filtering
+        Return:
+            fMeth: list
+                List of methods for filtering
         """
         if type(f[0]) == int:
             f = [f]
@@ -144,18 +142,15 @@ class fextract(fdesign):
     def apply(self, x, fMeth):
         """Apply the defined methods
 
-        Parameters
-        ----------
-        x : array
-            Array to filt. Shape of x must be (npts x ntrials)
+        Args:
+            x: array
+                Array to filt. Shape of x must be (npts x ntrials)
 
-        fMeth : list
-            List of methods for filtering
-
-        Return
-        ----------
-        xf : array
-            The filtered signal of shape (n frequency x npts x ntrials)
+            fMeth: list
+                List of methods for filtering
+        Return:
+            xf: array
+                The filtered signal of shape (n frequency x npts x ntrials)
         """
         return _apply_method(x, fMeth, self._dtrd, self._method,
                              self._wltCorr, self._wltWidth)
