@@ -7,7 +7,7 @@ from joblib import Parallel, delayed
 import numpy as np
 from itertools import product
 
-__all__ = ['sigfilt', 'amplitude', 'power', 'phase']
+__all__ = ['sigfilt', 'amplitude', 'power', 'TF', 'phase']
 
 
 # ------------------------------------------------------------
@@ -52,7 +52,15 @@ class _spectral(object):
 
         f: tuple/list
             List containing the couple of frequency bands to extract spectral
-            informations. Example : f=[ [2,4], [5,7], [60,250] ]
+            informations. Alternatively, f can be define with the form
+            f=(fstart, fend, fwidth, fstep) where fstart and fend are the
+            starting and endind frequencies, fwidth and fstep are the width
+            and step of each band.
+
+                >>> # Specify each band:
+                >>> f = [ [15, 35], [25, 45], [35, 55], [45, 60], [55, 75] ]
+                >>> # Second option:
+                >>> f = (15, 75, 20, 10)
 
         window: tuple/list/None, optional [def: None]
             List/tuple: [100,1500]
@@ -71,12 +79,16 @@ class _spectral(object):
     """
 
     def __init__(self, sf, npts, kind, f, baseline, norm, method, window,
-                 width, step, split, time, **kwargs):
+                 width, step, split, time, meanT, **kwargs):
+
+        # Check the type of f:
+        if (len(f) == 4) and isinstance(f[0], (int, float)):
+            f = binarize(f[0], f[1], f[2], f[3], kind='list')
+        # Manage time and frequencies:
         self._window, self.xvec = _manageWindow(
             npts, window=window, width=width, step=step, time=time)
         self.f, self._fSplit, self._fSplitIndex = _manageFrequencies(
             f, split=split)
-
         # Get variables :
         self._baseline = baseline
         self._norm = norm
@@ -89,6 +101,7 @@ class _spectral(object):
         self.yvec = [round((k[0]+k[1])/2) for k in self.f]
         self._kind = kind
         self._fobj = fextract(method, kind, **kwargs)
+        self._meanT = meanT
         # ndplot.__init__(self, self._kind)
 
     def __str__(self):
@@ -155,9 +168,10 @@ class _spectral(object):
 
         data = Parallel(n_jobs=n_jobs)(
             delayed(_get)(x[k, ...], self) for k in range(nfeat))
-        xF, pvalues = zip(*data)
+        # xF, pvalues = zip(*data)
+        xF = np.array(data)
 
-        return np.swapaxes(np.array(xF), 0, 1), np.swapaxes(np.array(pvalues), 0, 1)
+        return np.swapaxes(np.array(xF), 0, 1)  # , np.swapaxes(np.array(pvalues), 0, 1)
 
     @staticmethod
     def freqvec(fstart, fend, fwidth, fstep):
@@ -195,7 +209,7 @@ class sigfilt(_spectral):
                  **kwargs):
         _spectral.__init__(self, sf, npts, 'signal', f, baseline, norm,
                            'filter', window, width, step, split, time,
-                           **kwargs)
+                           False, **kwargs)
 
 
 # ------------------------------------------------------------
@@ -221,7 +235,7 @@ class amplitude(_spectral):
                   'wavelet'])
         _spectral.__init__(self, sf, npts, 'amplitude', f, baseline, norm,
                            method, window, width, step, split, time,
-                           **kwargs)
+                           False, **kwargs)
 
 
 # ------------------------------------------------------------
@@ -247,7 +261,33 @@ class power(_spectral):
                   'wavelet'])
         _spectral.__init__(self, sf, npts, 'power', f, baseline, norm,
                            method, window, width, step, split, time,
-                           **kwargs)
+                           False, **kwargs)
+
+
+# ------------------------------------------------------------
+# TIME-FREQUENCY MAP
+# ------------------------------------------------------------
+class TF(_spectral):
+
+    """Extract the time-frequency map of the signal. """
+    __doc__ += _spectral.__doc__ + docsignal
+    __doc__ += """
+    method: string
+        Method to transform the signal. Possible values are:
+            - 'hilbert': apply a hilbert transform to each column
+            - 'hilbert1': hilbert transform to a whole matrix
+            - 'hilbert2': 2D hilbert transform
+            - 'wavelet': wavelet transform
+    """ + supfilter
+
+    def __init__(self, sf, npts, f=(2, 200, 10, 5), baseline=(1, 2), norm=0,
+                 method='hilbert1', window=None, width=None, step=None,
+                 split=None, time=None, **kwargs):
+        _checkref('method', method, ['hilbert', 'hilbert1', 'hilbert2',
+                  'wavelet'])
+        _spectral.__init__(self, sf, npts, 'power', f, baseline, norm,
+                           method, window, width, step, split, time,
+                           True, **kwargs)
 
 
 # ------------------------------------------------------------
@@ -268,7 +308,7 @@ class phase(_spectral):
                  width=None, step=None, time=None, **kwargs):
         _checkref('method', method, ['hilbert', 'hilbert1', 'hilbert2'])
         _spectral.__init__(self, sf, npts, 'phase', f, None, 0, method,
-                           window, width, step, None, time, **kwargs)
+                           window, width, step, None, time, False, **kwargs)
 
 
 # ------------------------------------------------------------
@@ -287,32 +327,38 @@ def _get(x, self):
     xF = self._fobj.apply(x, fMeth)
     nf, npts, nt = xF.shape
 
+    # Mean through trials:
+    if self._meanT:
+        xF = np.mean(xF, 2)
+        xF = xF[..., np.newaxis]
+
     # Normalize power :
     if norm is not 0:
         xFm = np.mean(xF[:, bsl[0]:bsl[1], :], 1)
         baseline = np.tile(xFm[:, np.newaxis, :], [1, xF.shape[1], 1])
         xFn = normalize(xF, baseline, norm=norm)
+        del xFm, baseline
     else:
         baseline = np.zeros(xF.shape)
         xFn = xF
 
     # Mean Frequencies :
-    xF, _ = binArray(xF, self._fSplitIndex, axis=0)
+    # xF, _ = binArray(xF, self._fSplitIndex, axis=0)
     xFn, _ = binArray(xFn, self._fSplitIndex, axis=0)
 
     # Mean time :
     if self._window is not None:
-        xF, xvec = binArray(xF, self._window, axis=1)
+        # xF, xvec = binArray(xF, self._window, axis=1)
         xFn, xvec = binArray(xFn, self._window, axis=1)
 
-    # Statistical evaluation :
-    if (norm is not 0) and (self._statmeth is not 'none'):
-        pvalues = _evalstat(xF, xFn, xFm, self._statmeth, n_perm, norm,
-                            maxstat, twotails)
-    else:
-        pvalues = np.matrix([0])
+    # # Statistical evaluation :
+    # if (norm is not 0) and (self._statmeth is not 'none'):
+    #     pvalues = _evalstat(xF, xFn, xFm, self._statmeth, n_perm, norm,
+    #                         maxstat, twotails)
+    # else:
+    #     pvalues = np.matrix([0])
 
-    return xFn, pvalues
+    return xFn  # , pvalues
 
 
 def _evalstat(x, xn, bsl, meth, n_perm, norm, maxstat, twotails):

@@ -2,9 +2,9 @@ import numpy as n
 from itertools import product
 from joblib import Parallel, delayed
 
-from brainpipe._utils._system import (groupInList, list2index,
-                                      adaptsize)
-from brainpipe.cfc.methods import *
+from brainpipe.tools import groupInList, list2index
+from brainpipe.sys.tools import adaptsize
+from brainpipe.feat.coupling.pac.pacmeth import *
 
 __all__ = [
             '_cfcCheck',

@@ -8,18 +8,37 @@ __all__ = ['addLines', 'BorderPlot']
 class _pltutils(object):
 
     """
-    **kwargs
-    ----------
-    title : title of plot [def: '']
-    xlabel : label of x-axis [def : '']
-    ylabel : label of y-axis [def : '']
-    xlim : limit of the x-axis [def : [], current limit of x]
-    ylim : limit of the y-axis [def : [], current limit of y]
-    xticks : ticks of x-axis [def : [], current x-ticks]
-    yticks : ticks of y-axis [def : [], current y-ticks]
-    xticklabels : label of the x-ticks [def : [], current x-ticklabels]
-    yticklabels : label of the y-ticks [def : [], current y-ticklabels]
-    style : style of the plot [def : 'seaborn-poster']
+    **kwargs:
+        title:
+            title of plot [def: '']
+
+        xlabel:
+            label of x-axis [def: '']
+
+        ylabel:
+            label of y-axis [def: '']
+
+        xlim:
+            limit of the x-axis [def: [], current limit of x]
+
+        ylim:
+            limit of the y-axis [def: [], current limit of y]
+
+        xticks:
+            ticks of x-axis [def: [], current x-ticks]
+
+        yticks:
+            ticks of y-axis [def: [], current y-ticks]
+
+        xticklabels:
+            label of the x-ticks [def: [], current x-ticklabels]
+
+        yticklabels:
+            label of the y-ticks [def: [], current y-ticklabels]
+
+        style:
+            style of the plot [def: 'seaborn-poster']
+
     """
 
     def __init__(self, ax, title='', xlabel='', ylabel='', xlim=[], ylim=[],
@@ -81,15 +100,15 @@ class ndplot(object):
             a matrix, all values inside are going to be superimpose. If y
             is a 3D matrix, the first dimension control the number of subplots.
 
-        x : array, optional, [def : None]
+        x : array, optional, [def: None]
             x vector for plotting data.
 
-        maxplot : int, optional, [def : 10]
+        maxplot : int, optional, [def: 10]
             Control the maximum number of subplot to prevent very large plot.
             By default, maxplot is 10 which mean that only 10 subplot can be
             defined.
 
-        kind : string, optional, [def : 'plot']
+        kind : string, optional, [def: 'plot']
             Control the type of plot. Choose between 'plot' and 'scatter'.
         """
         # Check y shape :
@@ -120,24 +139,24 @@ class ndplot(object):
             a matrix, all values inside are going to be superimpose. If y
             is a 3D matrix, the first dimension control the number of subplots.
 
-        xvec, yvec : array, optional, [def : None]
+        xvec, yvec : array, optional, [def: None]
             Vectors for y and x axis of each picture
 
-        maxplot : int, optional, [def : 10]
+        maxplot : int, optional, [def: 10]
             Control the maximum number of subplot to prevent very large plot.
             By default, maxplot is 10 which mean that only 10 subplot can be
             defined.
 
-        cmap : string, optional, [def : 'inferno']
+        cmap : string, optional, [def: 'inferno']
             Choice of the colormap
 
-        interpolation : string, optional, [def : 'none']
+        interpolation : string, optional, [def: 'none']
             Plot interpolation
 
-        colorbar : bool, optional, [def : True]
+        colorbar : bool, optional, [def: True]
             Add or not a colorbar to your plot
 
-        vmin, vmax : int/float, optional, [def : None]
+        vmin, vmax : int/float, optional, [def: None]
             Control minimum and maximum of the image
         """
         # Check y shape :
@@ -204,35 +223,50 @@ class addLines(object):
 
     """Add vertical and horizontal lines to an existing plot.
 
-    Parameters
-    ----------
-    ax : matplotlib axes
-        The axes to add lines. USe for example plt.gca()
+    Args:
+        ax: matplotlib axes
+            The axes to add lines. USe for example plt.gca()
 
-    vLines : list, [def : []]
-        Define vertical lines. vLines should be a list of int/float
+    Kargs:
+        vLines: list, [def: []]
+            Define vertical lines. vLines should be a list of int/float
 
-    vColor : list of strings, [def : ['gray']]
-        Control the color of the vertical lines. The length of the
-        vColor list must be the same as the length of vLines
+        vColor: list of strings, [def: ['gray']]
+            Control the color of the vertical lines. The length of the
+            vColor list must be the same as the length of vLines
 
-    vShape : list of strings, [def : ['--']]
-        Control the shape of the vertical lines. The length of the
-        vShape list must be the same as the length of vLines
+        vShape: list of strings, [def: ['--']]
+            Control the shape of the vertical lines. The length of the
+            vShape list must be the same as the length of vLines
 
-    hLines : list, [def : []]
-        Define horizontal lines. hLines should be a list of int/float
+        hLines: list, [def: []]
+            Define horizontal lines. hLines should be a list of int/float
 
-    hColor : list of strings, [def : ['black']]
-        Control the color of the horizontal lines. The length of the
-        hColor list must be the same as the length of hLines
+        hColor: list of strings, [def: ['black']]
+            Control the color of the horizontal lines. The length of the
+            hColor list must be the same as the length of hLines
 
-    hShape : list of strings, [def : ['-']]
-        Control the shape of the horizontal lines. The length of the
-        hShape list must be the same as the length of hLines
+        hShape: list of strings, [def: ['-']]
+            Control the shape of the horizontal lines. The length of the
+            hShape list must be the same as the length of hLines
+
+    Return:
+        The current axes
+
+    Example:
+        >>> # Create an empty plot:
+        >>> plt.plot([])
+        >>> plt.ylim([-1, 1]), plt.xlim([-10, 10])
+        >>> addLines(plt.gca(), vLines=[0, -5, 5, -7, 7], vColor=['k', 'r', 'g', 'y', 'b'],
+                     vWidth=[5, 4, 3, 2, 1], vShape=['-', '-', '--', '-', '--'],
+                     hLines=[0, -0.5, 0.7], hColor=['k', 'r', 'g'], hWidth=[5, 4, 3],
+                     hShape=['-', '-', '--'])
+
     """
 
-    def __init__():
+    def __init__(self, ax,
+                 vLines=[], vColor=None, vShape=None, vWidth=None,
+                 hLines=[], hColor=None, hWidth=None, hShape=None):
         pass
 
     def __new__(self, ax,
@@ -273,6 +307,8 @@ class addLines(object):
             ax.plot((xlim[0], xlim[1]), (hLines[k], hLines[k]), hShape[k],
                     color=hColor[k], linewidth=hWidth[k])
 
+        return plt.gca()
+
 
 class BorderPlot(_pltutils):
 
@@ -280,48 +316,47 @@ class BorderPlot(_pltutils):
     mean of the signal, and the deviation (std) or standard error on the mean
     (sem) in transparency.
 
-    Parameters
-    ----------
-    time : array/limit
-        The time vector of the plot (len(time)=N)
+    Args:
+        time: array/limit
+            The time vector of the plot (len(time)=N)
 
-    x : numpy array
-        The signal to plot. One dimension of x must be the length of time N.
-        The other dimension will be consider to define the deviation. For
-        example, x.shape = (N, M)
+        x: numpy array
+            The signal to plot. One dimension of x must be the length of time
+            N. The other dimension will be consider to define the deviation.
+            For example, x.shape = (N, M)
 
-    y : numpy array, optional, [def : np.array([])]
-        Label vector to separate the x signal in diffrent classes. The length
-        of y must be M. If no y is specified, the deviation will be computed
-        for the entire array x. If y is composed with integers
-        (example : y = np.array([1,1,1,1,2,2,2,2])), the functino will geneate
-        as many curve as the number of unique classes in y. In this case, two
-        curves are going to be considered.
+    Kargs:
+        y: numpy array, optional, [def: np.array([])]
+            Label vector to separate the x signal in diffrent classes. The
+            length of y must be M. If no y is specified, the deviation will be
+            computed for the entire array x. If y is composed with integers
+            Example: y = np.array([1,1,1,1,2,2,2,2]), the function will
+            geneate as many curve as the number of unique classes in y. In this
+            case, two curves are going to be considered.
 
-    kind : string, optional, [def : 'sem']
-        Choose between 'std' for standard deviation and 'sem', standard error
-        on the mean (wich is: std(x)/sqrt(N-1))
+        kind: string, optional, [def: 'sem']
+            Choose between 'std' for standard deviation and 'sem', standard
+            error on the mean (wich is: std(x)/sqrt(N-1))
 
-    color : string or list of strings, optional
-        Specify the color of each curve. The length of color must be the same
-        as the length of unique classes in y.
+        color: string or list of strings, optional
+            Specify the color of each curve. The length of color must be the
+            same as the length of unique classes in y.
 
-    alpha : int/float, optional [def : 0.2]
-        Control the transparency of the deviation.
+        alpha: int/float, optional [def: 0.2]
+            Control the transparency of the deviation.
 
-    linewidth : int/float, optional, [def : 2]
-        Control the width of the mean curve.
+        linewidth: int/float, optional, [def: 2]
+            Control the width of the mean curve.
 
-    legend : string or list of strings, optional, [def : '']
-        Specify the label of each curve and generate a legend. The length of
-        legend must be the same as the length of unique classes in y.
+        legend: string or list of strings, optional, [def: '']
+            Specify the label of each curve and generate a legend. The length
+            of legend must be the same as the length of unique classes in y.
 
-    ncol : integer, optional, [def : 1]
-        Number of colums for the legend
+        ncol: integer, optional, [def: 1]
+            Number of colums for the legend
 
-    Return
-    ----------
-    The axes of the plot.
+    Return:
+        The axes of the plot.
     """
     __doc__ += _pltutils.__doc__
 
@@ -345,7 +380,7 @@ class BorderPlot(_pltutils):
         nclass = len(yClass)
         if not color:
             color = ['darkblue', 'darkgreen', 'darkred',
-                     'darkorange', 'purple', 'gold', 'dimgray', 'k']
+                     'darkorange', 'purple', 'gold', 'dimgray', 'black']
         else:
             if type(color) is not list:
                 color = [color]

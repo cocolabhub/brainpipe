@@ -15,7 +15,8 @@ from sklearn.base import clone
 from joblib import Parallel, delayed
 
 from brainpipe.statistics import binostatinv, perm2pval, permIntraClass
-from brainpipe._utils._system import groupInList, list2index, adaptsize
+from brainpipe.tools import groupInList, list2index
+from brainpipe.sys.tools import adaptsize
 
 from itertools import product
 

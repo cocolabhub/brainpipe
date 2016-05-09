@@ -2,7 +2,7 @@ Neuronal Features
 =================
 
 
-.. todo:: Missing methods in pac // PLV // Entropy
+.. todo:: Missing methods in PAC // PLV // Entropy
 
 Here's the list of implemented features:
 
@@ -52,6 +52,9 @@ Power
 
 Time-Frequency
 ~~~~~~~~~~~~~~
+.. automodule:: feature
+   :members: TF
+   :noindex:
 
 .. _phase:
 
