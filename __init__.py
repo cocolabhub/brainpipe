@@ -1,10 +1,5 @@
-from brainpipe.xPOO.feature import *
-from brainpipe.xPOO.filtering import *
+from .preprocessing import *
+from .classification import *
+from .feature import *
 
-from brainpipe.xPOO.bpstudy import *
-from brainpipe.xPOO.visualization import *
-from brainpipe.xPOO.physiology import *
-from brainpipe.xPOO.tools import *
-
-from brainpipe.xPOO.classification import *
-from brainpipe.xPOO.multifeatures import *
+__version__ = '0.1.0'
