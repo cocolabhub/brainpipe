@@ -1,24 +1,35 @@
 Brainpipe
 =========
 
-Intro
-
-Requirements
-
-Contents:
 
 .. toctree::
    :maxdepth: 2
+   :caption: PROCESSING
 
    preprocessing
-   spectral
+   feature
+
+.. toctree::
+   :maxdepth: 2
+   :caption: CLASSIFICATION
+
    classification
-   soon
-   bug
+
+.. toctree::
+   :maxdepth: 2
+   :caption: STATISTIQUES
+
+   stat
+
+.. toctree::
+   :maxdepth: 2
+   :caption: OTHERS
+
+   tools
+
 
 
 Indices and tables
-==================
 
 * :ref:`genindex`
 * :ref:`modindex`
