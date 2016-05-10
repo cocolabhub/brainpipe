@@ -2,6 +2,7 @@ from brainpipe.feat.filtering import fextract, docfilter
 from brainpipe.tools import binarize, binArray
 from brainpipe.feat.utils._feat import (_manageWindow, _manageFrequencies,
                                         normalize, _checkref)
+from brainpipe.visu.cmon_plt import tilerplot
 
 from joblib import Parallel, delayed
 import numpy as np
@@ -40,7 +41,7 @@ supfilter = """
 # ------------------------------------------------------------
 # MAIN SPECTRAL CLASS
 # ------------------------------------------------------------
-class _spectral(object):
+class _spectral(tilerplot):
     """This class is optimized for 3D arrays.
 
     Args:
@@ -102,7 +103,6 @@ class _spectral(object):
         self._kind = kind
         self._fobj = fextract(method, kind, **kwargs)
         self._meanT = meanT
-        # ndplot.__init__(self, self._kind)
 
     def __str__(self):
         extractStr = str(self._fobj)
@@ -165,13 +165,17 @@ class _spectral(object):
         nfeat = x.shape[0]
         # Check statistical method :
         _checkref('statmeth', statmeth, ['permutation', 'wilcoxon', 'kruskal'])
-
+        # run feature computation:
         data = Parallel(n_jobs=n_jobs)(
             delayed(_get)(x[k, ...], self) for k in range(nfeat))
         # xF, pvalues = zip(*data)
-        xF = np.array(data)
+        # Re-organize data :
+        xF = np.swapaxes(np.array(data), 0, 1)
+        # Remove last dimension (for TF):
+        if self._meanT:
+            xF = xF[..., 0]
 
-        return np.swapaxes(np.array(xF), 0, 1)  # , np.swapaxes(np.array(pvalues), 0, 1)
+        return xF  # , np.swapaxes(np.array(pvalues), 0, 1)
 
     @staticmethod
     def freqvec(fstart, fend, fwidth, fstep):
@@ -282,11 +286,11 @@ class TF(_spectral):
 
     def __init__(self, sf, npts, f=(2, 200, 10, 5), baseline=(1, 2), norm=0,
                  method='hilbert1', window=None, width=None, step=None,
-                 split=None, time=None, **kwargs):
+                 time=None, **kwargs):
         _checkref('method', method, ['hilbert', 'hilbert1', 'hilbert2',
                   'wavelet'])
         _spectral.__init__(self, sf, npts, 'power', f, baseline, norm,
-                           method, window, width, step, split, time,
+                           method, window, width, step, None, time,
                            True, **kwargs)
 
 

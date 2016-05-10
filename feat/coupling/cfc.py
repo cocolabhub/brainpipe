@@ -8,6 +8,8 @@ from brainpipe.feat.utils._feat import (_manageWindow, _manageFrequencies,
 from brainpipe.feat.filtering import fextract, docfilter
 from brainpipe.feat.coupling.pac._pac import *
 from brainpipe.feat.coupling.pac.pacmeth import *
+from brainpipe.visu.cmon_plt import tilerplot
+from brainpipe.tools import binarize
 
 __all__ = ['pac']
 
@@ -39,7 +41,7 @@ Footnotes = """
 """
 
 
-class _coupling(object):
+class _coupling(tilerplot):
 
     """
     """
@@ -69,6 +71,8 @@ class _coupling(object):
         self._sf = sf
         self._npts = npts
         self._nwin = len(self._window)
+        self.pha = [np.mean(k) for k in self._pha.f]
+        self.amp = [np.mean(k) for k in self._amp.f]
 
 
 class pac(_coupling):
@@ -159,6 +163,13 @@ class pac(_coupling):
         _checkref('pha_meth', pha_meth, ['hilbert', 'hilbert1', 'hilbert2'])
         _checkref('amp_meth', amp_meth, ['hilbert', 'hilbert1', 'hilbert2'])
 
+        # Check the type of f:
+        if (len(pha_f) == 4) and isinstance(pha_f[0], (int, float)):
+            pha_f = binarize(pha_f[0], pha_f[1], pha_f[2], pha_f[3], kind='list')
+        if (len(amp_f) == 4) and isinstance(amp_f[0], (int, float)):
+            amp_f = binarize(amp_f[0], amp_f[1], amp_f[2], amp_f[3], kind='list')
+        self.xvec = []
+
         # Initalize pac object :
         self.Id = Id
         pha_kind = 'phase'
@@ -238,7 +249,7 @@ class pac(_coupling):
         uCfc, Suro, mSuro, stdSuro = zip(*cfcsu)
 
         # Compute permutations :
-        if self.n_perm != 0:
+        if self.n_perm is not 0:
             uCfc, Suro, mSuro = np.array(uCfc), np.array(Suro), np.array(mSuro)
             stdSuro = np.array(stdSuro)
 
@@ -252,4 +263,4 @@ class pac(_coupling):
 
             return nCfc.transpose(4, 3, 0, 1, 2), pvalue.transpose(3, 2, 0, 1)
         else:
-            return uCfc.transpose(4, 3, 0, 1, 2), None
+            return np.array(uCfc).transpose(4, 3, 0, 1, 2), None

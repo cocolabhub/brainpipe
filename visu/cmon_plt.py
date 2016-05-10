@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from brainpipe.visu._interp import mapinterpolation
+from warnings import warn
 
 
-__all__ = ['addLines', 'BorderPlot']
+__all__ = ['addLines', 'BorderPlot', 'tilerplot']
 
 
 class _pltutils(object):
@@ -37,13 +39,13 @@ class _pltutils(object):
             label of the y-ticks [def: [], current y-ticklabels]
 
         style:
-            style of the plot [def: 'seaborn-poster']
+            style of the plot [def: None]
 
     """
 
     def __init__(self, ax, title='', xlabel='', ylabel='', xlim=[], ylim=[],
                  xticks=[], yticks=[], xticklabels=[], yticklabels=[],
-                 style='seaborn-poster'):
+                 style=None):
 
         if not hasattr(self, '_xType'):
             self._xType = int
@@ -71,112 +73,171 @@ class _pltutils(object):
             ax.set_ylim(ylim)
         ax.set_title(title, y=1.02)
         # Style :
-        plt.style.use(style)
+        if style:
+            plt.style.use(style)
 
 
-class ndplot(object):
+class tilerplot(object):
 
-    """ndplot with automatic management of sublot
-
-    Methods
-    ----------
-    -> plot1D : 1D plot
-    -> plot2D : 2D plot
+    """Automatic tiler plot for 1, 2 and 3D data.
     """
 
-    def __init__(self, num=None, figsize=None, dpi=None, title='', **kwargs):
-        self._fig = plt.figure(num=num, figsize=figsize, dpi=dpi, **kwargs)
-        if title is not '':
-            self.fig.suptitle(title, fontsize=14, fontweight='bold')
-
-    def plot1D(self, y, x=None, maxplot=10, kind='plot', **kwargs):
+    def plot1D(self, fig, y, x=None, maxplot=10, figtitle='',
+               subdim=None, transpose=False, **kwargs):
         """Simple one dimentional plot
 
-        Parameters
-        ----------
-        y : array
-            Data to plot. y can either have one, two or three dimensions.
-            If y is a vector, it will be plot in a simple window. If y is
-            a matrix, all values inside are going to be superimpose. If y
-            is a 3D matrix, the first dimension control the number of subplots.
+        Args:
+            y: array
+                Data to plot. y can either have one, two or three dimensions.
+                If y is a vector, it will be plot in a simple window. If y is
+                a matrix, all values inside are going to be superimpose. If y
+                is a 3D matrix, the first dimension control the number of subplots.
 
-        x : array, optional, [def: None]
-            x vector for plotting data.
+            x: array, optional, [def: None]
+                x vector for plotting data.
 
-        maxplot : int, optional, [def: 10]
-            Control the maximum number of subplot to prevent very large plot.
-            By default, maxplot is 10 which mean that only 10 subplot can be
-            defined.
+        Kargs:
+            figtitle: string, optional, [def: '']
+                Add a name to your figure
 
-        kind : string, optional, [def: 'plot']
-            Control the type of plot. Choose between 'plot' and 'scatter'.
+            subdim: tuple, optional, [def: None]
+                Force subplots to be subdim=(n_colums, n_rows)
+
+            maxplot: int, optional, [def: 10]
+                Control the maximum number of subplot to prevent very large plot.
+                By default, maxplot is 10 which mean that only 10 subplot can be
+                defined.
+
+            transpose: bool, optional, [def: False]
+                Invert subplot (row <-> column)
+
+            **kwargs:
+                Supplementar arguments to control each suplot:
+                title, xlabel, ylabel (which can be list for each subplot)
+                xlim, ylim, xticks, yticks, xticklabels, yticklabels, style.
         """
+        # Fig properties:
+        self._fig = self._figmngmt(fig, figtitle=figtitle, transpose=transpose)
         # Check y shape :
         y = self._checkarray(y)
         if x is None:
             x = np.arange(y.shape[1])
+        # Get default for title, xlabel and ylabel:
+        kwout, kwargs = self._completeLabels(kwargs, y.shape[0], 'title',
+                                             'xlabel', 'ylabel', default='')
         # Plotting function :
 
-        def _fcn(y):
-            if kind == 'plot':
-                plt.plot(x, y)
-            elif kind == 'scatter':
-                plt.scatter(x, y)
-            _pltutils(plt.gca(), **kwargs)
+        def _fcn(y, k):
+            plt.plot(x, y)
+            _pltutils(plt.gca(), kwout['title'][k], kwout['xlabel'][k],
+                      kwout['ylabel'][k], **kwargs)
         # Run function for each yi :
-        return self._subplotND(y, _fcn, maxplot)
+        return self._subplotND(y, _fcn, maxplot, subdim)
 
-    def plot2D(self, y, xvec=None, yvec=None, maxplot=10, cmap='inferno',
-               interpolation='none', colorbar=True, vmin=None, vmax=None,
-               **kwargs):
+    def plot2D(self, fig, y, xvec=None, yvec=None, cmap='inferno', colorbar=True,
+               vmin=None, vmax=None, cblabel='', subdim=None, interpolation='none',
+               resample=(0, 0), figtitle='', transpose=False, maxplot=10, **kwargs):
         """Plot y as an image
 
-        Parameters
-        ----------
-        y : array
-            Data to plot. y can either have one, two or three dimensions.
-            If y is a vector, it will be plot in a simple window. If y is
-            a matrix, all values inside are going to be superimpose. If y
-            is a 3D matrix, the first dimension control the number of subplots.
+        Args:
+            fig: figure
+                A matplotlib figure where plotting
 
-        xvec, yvec : array, optional, [def: None]
-            Vectors for y and x axis of each picture
+            y: array
+                Data to plot. y can either have one, two or three dimensions.
+                If y is a vector, it will be plot in a simple window. If y is
+                a matrix, all values inside are going to be superimpose. If y
+                is a 3D matrix, the first dimension control the number of subplots.
 
-        maxplot : int, optional, [def: 10]
-            Control the maximum number of subplot to prevent very large plot.
-            By default, maxplot is 10 which mean that only 10 subplot can be
-            defined.
+        Kargs:
+            xvec, yvec: array, optional, [def: None]
+                Vectors for y and x axis of each picture
 
-        cmap : string, optional, [def: 'inferno']
-            Choice of the colormap
+            cmap: string, optional, [def: 'inferno']
+                Choice of the colormap
 
-        interpolation : string, optional, [def: 'none']
-            Plot interpolation
+            colorbar: bool, optional, [def: True]
+                Add or not a colorbar to your plot
 
-        colorbar : bool, optional, [def: True]
-            Add or not a colorbar to your plot
+            vmin, vmax: int/float, optional, [def: None]
+                Control minimum and maximum of the image
 
-        vmin, vmax : int/float, optional, [def: None]
-            Control minimum and maximum of the image
+            cblabel: string, optional, [def: '']
+                Label for the colorbar
+
+            subdim: tuple, optional, [def: None]
+                Force subplots to be subdim=(n_colums, n_rows)
+
+            interpolation: string, optional, [def: 'none']
+                Plot interpolation
+
+            resample: tuple, optional, [def: (0, 0)]
+                Interpolate the map for a specific dimension. If (0.5, 0.1),
+                this mean that the programme will insert one new point on x-axis,
+                and 10 new points on y-axis. Pimp you map and make it sooo smooth.
+
+            figtitle: string, optional, [def: '']
+                Add a name to your figure
+
+            maxplot: int, optional, [def: 10]
+                Control the maximum number of subplot to prevent very large plot.
+                By default, maxplot is 10 which mean that only 10 subplot can be
+                defined.
+
+            transpose: bool, optional, [def: False]
+                Invert subplot (row <-> column)
+
+            **kwargs:
+                Supplementar arguments to control each suplot:
+                title, xlabel, ylabel (which can be list for each subplot)
+                xlim, ylim, xticks, yticks, xticklabels, yticklabels, style.
         """
+
+        # Fig properties:
+        self._fig = self._figmngmt(fig, figtitle=figtitle, transpose=transpose)
         # Check y shape :
         y = self._checkarray(y)
         if xvec is None:
             xvec = np.arange(y.shape[-1])
         if yvec is None:
             yvec = np.arange(y.shape[1])
+        l0, l1, l2 = y.shape
+        # Resample data:
+        if resample != (0, 0):
+            yi = []
+            for k in range(l0):
+                yT, xvec, yvec = mapinterpolation(y[k, ...], x=xvec, y=yvec,
+                                                  interpx=resample[0],
+                                                  interpy=resample[1])
+                yi.append(yT)
+            y = np.array(yi)
+            del yi, yT
+        # Get default for title, xlabel and ylabel:
+        kwout, kwargs = self._completeLabels(kwargs, y.shape[0], 'title',
+                                             'xlabel', 'ylabel', default='')
         # Plotting function :
 
-        def _fcn(y):
+        def _fcn(y, k):
             im = plt.imshow(y, aspect='auto', cmap=cmap,
                             interpolation=interpolation, vmin=vmin, vmax=vmax,
                             extent=[xvec[0], xvec[-1], yvec[-1], yvec[0]])
             ax = plt.gca()
-            _pltutils(ax, **kwargs)
-            plt.colorbar(im)
+            _pltutils(ax, kwout['title'][k], kwout['xlabel'][k],
+                      kwout['ylabel'][k], **kwargs)
+            if colorbar:
+                cb = plt.colorbar(im)
+                cb.set_label(cblabel)
+
             ax.invert_yaxis()
         # Run function for each yi :
-        return self._subplotND(y, _fcn, maxplot)
+        return self._subplotND(y, _fcn, maxplot, subdim)
+
+    def _figmngmt(self, fig, figtitle='', transpose=False):
+        # Change title:
+        if figtitle:
+            fig.suptitle(figtitle, fontsize=14, fontweight='bold')
+        self._transpose = transpose
+        return fig
 
     def _checkarray(self, y):
         """Check input shape
@@ -193,30 +254,68 @@ class ndplot(object):
                              '3 dimensions')
         return y
 
-    def _subplotND(self, y, fcn, maxplot):
+    def _subplotND(self, y, fcn, maxplot, subdim):
         """Manage subplots
         """
         L = y.shape[0]
         if L <= maxplot:
-            fig = self.fig
-            if L < 4:
-                ncol, nrow = L, 1
+            fig = self._fig
+            # If force subdim:
+            if not subdim:
+                if L < 4:
+                    ncol, nrow = L, 1
+                else:
+                    ncol = round(np.sqrt(L)).astype(int)
+                    nrow = round(L/ncol).astype(int)
+                    while nrow*ncol < L:
+                        nrow += 1
             else:
-                ncol = round(np.sqrt(L)).astype(int)
-                nrow = round(L/ncol).astype(int)
-                while nrow*ncol < L:
-                    nrow += 1
+                nrow, ncol = subdim
+            # Sublots:
+            if self._transpose:
+                backup = ncol
+                ncol = nrow
+                nrow = backup
             for k in range(L):
                 fig.add_subplot(nrow, ncol, k+1)
-                fcn(y[k, ...])
+                fcn(y[k, ...], k)
             return plt.gca()
         else:
             raise ValueError('Warning : the "maxplot" parameter prevent to a'
                              'large number of plot. To increase the number'
                              ' of plot, change "maxplot"')
 
-ndplot.plot1D.__doc__ += _pltutils.__doc__
-ndplot.plot2D.__doc__ += _pltutils.__doc__
+    def _completeLabels(self, kwargs, L, *arg, default=''):
+        """Function for completing title, xlabel, ylabel...
+        """
+        kwlst = list(kwargs.keys())
+        kwval = list(kwargs.values())
+        kwout = {}
+        # For each arg:
+        for k in arg:
+            # If empty set to default :
+            if k not in kwlst:
+                kwout[k] = [default]*L
+            else:
+                val = kwargs[k]
+                # If not empty and is string:
+                if isinstance(val, str):
+                    kwout[k] = [val]*L
+                # If not empty and is string:
+                elif isinstance(val, list):
+                    # Check size:
+                    if len(val) == L:
+                        kwout[k] = val
+                    else:
+                        warn('The length of "'+k+'" must be '+str(L))
+                        kwout[k] = [val[0]]*L
+                # remove the key:
+                kwargs.pop(k, None)
+
+        return kwout, kwargs
+
+# tilerplot.plot1D.__doc__ += _pltutils.__doc__
+# tilerplot.plot2D.__doc__ += _pltutils.__doc__
 
 
 class addLines(object):
@@ -258,9 +357,9 @@ class addLines(object):
         >>> plt.plot([])
         >>> plt.ylim([-1, 1]), plt.xlim([-10, 10])
         >>> addLines(plt.gca(), vLines=[0, -5, 5, -7, 7], vColor=['k', 'r', 'g', 'y', 'b'],
-                     vWidth=[5, 4, 3, 2, 1], vShape=['-', '-', '--', '-', '--'],
-                     hLines=[0, -0.5, 0.7], hColor=['k', 'r', 'g'], hWidth=[5, 4, 3],
-                     hShape=['-', '-', '--'])
+        >>>          vWidth=[5, 4, 3, 2, 1], vShape=['-', '-', '--', '-', '--'],
+        >>>          hLines=[0, -0.5, 0.7], hColor=['k', 'r', 'g'], hWidth=[5, 4, 3],
+        >>>          hShape=['-', '-', '--'])
 
     """
 

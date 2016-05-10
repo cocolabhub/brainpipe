@@ -8,6 +8,7 @@ Visualization
 
 * :ref:`borderplt`
 * :ref:`addline`
+* :ref:`tilerplot`
 
 .. _borderplt:
 
@@ -34,3 +35,16 @@ Add lines
    :align:   center
 
    Quickly add some lines to your plot
+
+.. _tilerplot:
+
+tilerplot
+---------
+.. automodule:: visual
+   :members: tilerplot
+   :noindex:
+
+.. figure::  ../images/plot2D.png
+   :align:   center
+
+   Automatic 1D and 2D plot
