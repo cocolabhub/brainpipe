@@ -45,7 +45,7 @@ def _cfcFiltSuro(xPha, xAmp, surJob, self):
     uCfc = n.array(groupInList(uCfc, listWin))
 
     # Run surogates on each window :
-    if self.n_perm != 0:
+    if (self.n_perm != 0) and (self.Id[0] is not '5'):
         Suro = Parallel(n_jobs=surJob)(delayed(_cfcGetSuro)(
             xPha[:, k[0]:k[1], :], xAmp[:, k[0]:k[1], :],
             self.Id, self.n_perm, self._nbins) for k in self._window)

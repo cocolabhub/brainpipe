@@ -2,6 +2,7 @@ from joblib import Parallel, delayed
 from psutil import cpu_count
 import numpy as np
 from itertools import product
+from scipy.special import erfinv
 
 from brainpipe.feat.utils._feat import (_manageWindow, _manageFrequencies,
                                         _checkref)
@@ -102,10 +103,10 @@ class pac(_coupling):
 
                     - '1': Modulation Index [#f1]_
                     - '2': Kullback-Leibler Distance [#f2]_
-                    - '3': Phase synchrony
-                    - '4': Amplitude PSD
-                    - '5': Heights Ratio
-                    - '6': ndPAC [#f3]_
+                    - '3': Heights Ratio
+                    - '4': Phase synchrony
+                    - '5': ndPAC [#f3]_
+                    - '6': Amplitude PSD
 
                 * Second digit: refer to the method for computing surrogates:
 
@@ -172,27 +173,38 @@ class pac(_coupling):
 
         # Initalize pac object :
         self.Id = Id
-        pha_kind = 'phase'
-        amp_kind = 'amplitude'
+        me = Id[0]
+        # Manage settings :
+        #   1 - Choose if we extract phase or amplitude :
+        #       - Methods using phase // amplitude :
+        if me in ['1', '2', '3', '5', '6']:
+            pha_kind, amp_kind = 'phase', 'amplitude'
+        #       - Methods using phase // phase :
+        elif me in ['4']:
+            pha_kind, amp_kind = 'phase', 'phase'
+        #   2 - Specific case of Ozkurt :
+        if me == '5':
+            Id = '500'
+        # Initialize cfc :
         _coupling.__init__(self, pha_f, pha_kind, pha_meth, pha_cycle,
                            amp_f, amp_kind, amp_meth, amp_cycle,
                            sf, npts, window, width, step, time, **kwargs)
         # Get pac model :
         _, _, _, ModelStr, SurStr, NormStr = CfcSettings(Id, nbins)
-        self._model = ['Method : '+ModelStr, 'Surrogates : '+SurStr,
-                       'Normalization : '+NormStr]
+        self.model = ['Method : '+ModelStr, 'Surrogates : '+SurStr,
+                      'Normalization : '+NormStr]
         self._nbins = nbins
 
     def __str__(self):
         phafilt = 'Phase : '+str(self._pha)
         ampfilt = 'Amplitude : '+str(self._amp)
-        met = self._model[0]+',\n'+self._model[1]+',\n'+self._model[2]+',\n'
+        met = self.model[0]+',\n'+self.model[1]+',\n'+self.model[2]+',\n'
         cfcStr = 'Crossfrequency Coupling(step='+str(self._step)+', width='+str(
             self._width)+', Id='+self.Id+', nbins='+str(self._nbins)+',\n'+met
 
         return cfcStr+phafilt+',\n'+ampfilt+')'
 
-    def get(self, xpha, xamp, n_perm=200, n_jobs=-1):
+    def get(self, xpha, xamp, n_perm=200, p=0.05, n_jobs=-1):
         """Get the normalized cfc mesure between an xpha and xamp signals.
 
         Args:
@@ -208,6 +220,9 @@ class pac(_coupling):
             n_perm: integer, optional, [def: 200]
                 Number of permutations for normalizing the cfc mesure.
 
+            p: float, optional, [def: 0.05]
+                p-value for the statistical method of Ozkurt 2012.
+
             n_jobs: integer, optional, [def: -1]
                 Control the number of jobs for parallel computing. Use 1, 2, ..
                 depending of your number or cores. -1 for all the cores.
@@ -218,11 +233,11 @@ class pac(_coupling):
         Returns:
             ncfc: array
                 The unormalized cfc mesure of size :
-                (n_phase x n_amplitude x n_electrodes x n_windows x n_trials)
+                (n_amplitude x n_phase x n_electrodes x n_windows x n_trials)
 
             pvalue: array
                 The associated p-values of size :
-                (n_phase x n_amplitude x n_electrodes x n_windows)
+                (n_amplitude x n_phase x n_electrodes x n_windows)
         """
         # Check the inputs variables :
         xpha, xamp = _cfcCheck(xpha, xamp, self._npts)
@@ -247,20 +262,29 @@ class pac(_coupling):
         cfcsu = Parallel(n_jobs=elecJob)(delayed(_cfcFiltSuro)(
             xpha[k, ...], xamp[k, ...], surJob, self) for k in range(N))
         uCfc, Suro, mSuro, stdSuro = zip(*cfcsu)
+        uCfc = np.array(uCfc)
 
-        # Compute permutations :
-        if self.n_perm is not 0:
-            uCfc, Suro, mSuro = np.array(uCfc), np.array(Suro), np.array(mSuro)
-            stdSuro = np.array(stdSuro)
+        # Permutations ans stat:
+        if self.Id[0] is not '5':
+            # Compute permutations :
+            if self.n_perm is not 0:
+                Suro, mSuro, stdSuro = np.array(Suro), np.array(mSuro), np.array(stdSuro)
 
-            # Normalize each cfc:
-            _, _, Norm, _, _, _ = CfcSettings(self.Id)
-            nCfc = Norm(uCfc, mSuro, stdSuro)
+                # Normalize each cfc:
+                _, _, Norm, _, _, _ = CfcSettings(self.Id)
+                nCfc = Norm(uCfc, mSuro, stdSuro)
 
-            # Confidence interval :
-            pvalue = np.array([_cfcPvalue(nCfc[k, ...], Suro[
-                k, ...]) for k in range(N)])
+                # Confidence interval :
+                pvalue = np.array([_cfcPvalue(nCfc[k, ...], Suro[
+                    k, ...]) for k in range(N)])
 
-            return nCfc.transpose(4, 3, 0, 1, 2), pvalue.transpose(3, 2, 0, 1)
-        else:
-            return np.array(uCfc).transpose(4, 3, 0, 1, 2), None
+                return nCfc.transpose(3, 4, 0, 1, 2), pvalue.transpose(2, 3, 0, 1)
+            else:
+                return uCfc.transpose(3, 4, 0, 1, 2), None
+        elif self.Id[0] is '5':
+            # Ozkurt threshold :
+            xlim = (erfinv(1-p)**2)
+            # Set to zero non-significant values:
+            idxUn = np.where(uCfc <= 2*xlim)
+            uCfc[idxUn] = 0
+            return uCfc.transpose(3, 4, 0, 1, 2), None

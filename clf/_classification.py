@@ -1,4 +1,4 @@
-import numpy as n
+import numpy as np
 
 from sklearn.discriminant_analysis import (LinearDiscriminantAnalysis,
                                            QuadraticDiscriminantAnalysis)
@@ -98,7 +98,7 @@ class classify(object):
     def __str__(self):
         return str(self.cv[0].lgStr)+' with a '+str(self.clf.lgStr)
 
-    def fit(self, x, mf=False, center=False, grp=n.array([]), n_jobs=-1):
+    def fit(self, x, mf=False, center=False, grp=np.array([]), n_jobs=-1):
         """Apply the classification and cross-validation objects to the array x.
         this method return an array containing the decoding accuracy. The
         dimension of this arry depend of the input x.
@@ -126,7 +126,7 @@ class classify(object):
 
             grp: array, optional, [def: array()]
                 If mf=True, the grp parameter allow to define group of features.
-                If x.shape = (N, 5) and grp=n.array([0,0,1,2,1]), this mean that
+                If x.shape = (N, 5) and grp=np.array([0,0,1,2,1]), this mean that
                 3 groups of features will be considered : (0,1,2)
 
             n_jobs: integer, optional, [def: -1]
@@ -141,7 +141,7 @@ class classify(object):
                                                   mf, grp, center, n_jobs)
         return da
 
-    def fit_stat(self, x, mf=False, center=False, grp=n.array([]),
+    def fit_stat(self, x, mf=False, center=False, grp=np.array([]),
                  method='bino', n_perm=200, rndstate=0, n_jobs=-1):
         """Evaluate the statistical significiancy of the decoding accuracy.
 
@@ -168,7 +168,7 @@ class classify(object):
 
             grp: array, optional, [def: array()]
                 If mf=True, the grp parameter allow to define group of features.
-                If x.shape = (N, 5) and grp=n.array([0,0,1,2,1]), this mean that
+                If x.shape = (N, 5) and grp=np.array([0,0,1,2,1]), this mean that
                 3 groups of features will be considered : (0,1,2)
 
             method: string, optional, [def: 'bino']
@@ -213,15 +213,15 @@ class classify(object):
         da, x, y, self._ytrue, self._ypred = _fit(x, self.y, self.clf,
                                                   self.cv, mf, grp, center,
                                                   n_jobs)
-        score = n.array([n.mean(k) for k in da])
-        rndstate = n.random.RandomState(rndstate)
+        score = np.array([np.mean(k) for k in da])
+        rndstate = np.random.RandomState(rndstate)
 
         # -------------------------------------------------------------
         # Binomial :
         # -------------------------------------------------------------
         if method == 'bino':
             pvalue = binostatinv(self.y, score)
-            daPerm = n.array([])
+            daPerm = np.array([])
 
         # -------------------------------------------------------------
         # Permutations :
@@ -252,15 +252,15 @@ class classify(object):
 
             # Reconstruct daPerm and get the associated p-value:
             daPerm, _, _ = zip(*cvs)
-            daPerm = n.array(groupInList(daPerm, listFeat))
+            daPerm = np.array(groupInList(daPerm, listFeat))
             pvalue = perm2pval(score, daPerm)
 
         else:
             raise ValueError('No statistical method '+method+' found')
 
-        return da, n.array(pvalue), daPerm
+        return da, np.array(pvalue), daPerm
 
-    def confusion_matrix(self, x, mf=False, center=False, grp=n.array([]),
+    def confusion_matrix(self, x, mf=False, center=False, grp=np.array([]),
                          n_jobs=-1, normalize=True, update=True):
         """Get confusion matrix.
 
@@ -287,7 +287,7 @@ class classify(object):
 
             grp: array, optional, [def: array()]
                 If mf=True, the grp parameter allow to define group of features.
-                If x.shape = (N, 5) and grp=n.array([0,0,1,2,1]), this mean that
+                If x.shape = (N, 5) and grp=np.array([0,0,1,2,1]), this mean that
                 3 groups of features will be considered : (0,1,2)
 
             n_jobs: integer, optional, [def: -1]
@@ -319,12 +319,12 @@ class classify(object):
         # Get variables and compute confusion matrix:
         y_pred, y_true = self._ypred, self._ytrue
         nfeat, nrep = len(y_true), len(y_true[0])
-        cm = [n.mean(n.array([confusion_matrix(y_true[k][i], y_pred[
+        cm = [np.mean(np.array([confusion_matrix(y_true[k][i], y_pred[
             k][i]) for i in range(nrep)]), 0) for k in range(nfeat)]
 
         # Normalize the confusion matrix :
         if normalize:
-            cm = [100*k/k.sum(axis=1)[:, n.newaxis] for k in cm]
+            cm = [100*k/k.sum(axis=1)[:, np.newaxis] for k in cm]
 
         return cm
 
@@ -346,7 +346,7 @@ def _fit(x, y, clf, cv, mf, grp, center, n_jobs):
     da, y_true, y_pred = zip(*cvs)
 
     # Reconstruct elements :
-    da = n.array(groupInList(da, listFeat))
+    da = np.array(groupInList(da, listFeat))
     y_true = groupInList(y_true, listFeat)
     y_pred = groupInList(y_pred, listFeat)
 
@@ -421,7 +421,7 @@ class defClf(object):
                 priors=False, **kwargs):
 
         # Default value for priors :
-        priors = n.array([1/len(n.unique(y))]*len(n.unique(y)))
+        priors = np.array([1/len(np.unique(y))]*len(np.unique(y)))
 
         if isinstance(clf, str):
             clf = clf.lower()
@@ -534,7 +534,7 @@ class defCv(object):
 
     def __new__(self, y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
                 **kwargs):
-        y = n.ravel(y)
+        y = np.ravel(y)
         return [_define(y, cvtype=cvtype, n_folds=n_folds, rndstate=k, rep=rep,
                         **kwargs) for k in range(rep)]
 
@@ -582,29 +582,29 @@ def checkXY(x, y, mf, grp, center):
     """Prepare the inputs x and y
     x.shape = (ntrials, nfeat)
     """
-    x, y = n.matrix(x), n.ravel(y)
+    x, y = np.matrix(x), np.ravel(y)
     if x.shape[0] != len(y):
         x = x.T
 
     # Normalize features :
     if center:
-        x_m = n.tile(n.mean(x, 0), (x.shape[0], 1))
+        x_m = np.tile(np.mean(x, 0), (x.shape[0], 1))
         x = (x-x_m)/x_m
 
     # Group parameter :
     if mf:
-        if not isinstance(grp, n.ndarray):
-            grp = n.ravel(grp)
+        if not isinstance(grp, np.ndarray):
+            grp = np.ravel(grp)
         if grp.size == 0:
             x = [x]
         elif (grp.size != 0) and (grp.size == x.shape[1]):
             ugrp = list(set(grp))
-            x = [n.array(x[:, n.where(grp == k)[0]]) for k in ugrp]
+            x = [np.array(x[:, np.where(grp == k)[0]]) for k in ugrp]
         elif (grp.size != 0) and (grp.size != x.shape[1]):
             raise ValueError('The grp parameter must have the same size as the'
                              ' number of features ('+str(x.shape[1])+')')
     else:
-        x = [n.array(x[:, k]) for k in range(x.shape[1])]
+        x = [np.array(x[:, k]) for k in range(x.shape[1])]
 
     return x, y
 
@@ -662,7 +662,7 @@ class generalization(object):
     def __new__(self, time, y, x, clf='lda', cvtype=None, clfArg={},
                 cvArg={}):
 
-        self.y = n.ravel(y)
+        self.y = np.ravel(y)
         self.time = time
 
         # Define clf if it's not defined :
@@ -680,22 +680,22 @@ class generalization(object):
         # Check the size of x:
         npts, ntrials = len(time), len(y)
         if len(x.shape) == 2:
-            x = n.matrix(x)
-        x = adaptsize(x, (2, 0, 1))
+            x = np.matrix(x)
+        # x = adaptsize(x, (2, 0, 1))
 
-        da = n.zeros([npts, npts])
+        da = np.zeros([npts, npts])
         # Training dimension
         for k in range(npts):
-            xx = x[k, ...]
+            xx = x[[k], ...]
             # Testing dimension
             for i in range(npts):
-                xy = x[i, ...]
+                xy = x[[i], ...]
                 # If cv is defined, do a cv on the diagonal
                 if (k == i) and (cvtype is not None):
-                    da[i, k] = _cvscore(xx, y, clf, cvtype)[0]/100
+                    da[i, k] = _cvscore(np.ravel(xx), y, clf, cvtype)[0]/100
                 # If cv is not defined, let the diagonal at zero
                 elif (k == i) and (cvtype is None):
                     pass
                 else:
-                    da[i, k] = accuracy_score(y, clf.fit(xx, y).predict(xy))
+                    da[i, k] = accuracy_score(y, clf.fit(xx.T, y).predict(xy.T))
         return 100*da

@@ -1,4 +1,5 @@
-import numpy as n
+import numpy as np
+from scipy.special import erfinv
 from itertools import product
 from brainpipe.tools import binarize
 
@@ -83,7 +84,6 @@ def CfcMethodList(Id, nbins=18):
         def CfcModel(pha, amp, *arg):
             return ndCfc(pha, amp)
         CfcModelStr = 'Normalized direct Pac (Ozkurt, 2012)'
-#         Cfcsup.CfcstatMeth = 1
 
     return CfcModel, CfcModelStr
 
@@ -95,7 +95,7 @@ def ModulationIndex(pha, amp):
     abs(amplitude x exp(phase)) <-> sum modulations of the
     complex radius accross time. MI = resultant radius
     """
-    return n.array(abs(amp*n.exp(1j*pha).T)/pha.shape[1])
+    return np.array(abs(amp*np.exp(1j*pha).T)/pha.shape[1])
 
 
 def KullbackLeiblerDistance(pha, amp, nbins):
@@ -103,11 +103,11 @@ def KullbackLeiblerDistance(pha, amp, nbins):
     """
     # Get the phase locked binarized amplitude :
     abin, abinsum = _kl_hr(pha, amp, nbins)
-    abin = n.divide(abin, n.rollaxis(abinsum, 0, start=3))
+    abin = np.divide(abin, np.rollaxis(abinsum, 0, start=3))
     abin[abin == 0] = 1
-    abin = abin * n.log2(abin)
+    abin = abin * np.log2(abin)
 
-    return (1 + abin.sum(axis=2)/n.log2(nbins))
+    return (1 + abin.sum(axis=2)/np.log2(nbins))
 
 
 def HeightsRatio(pha, amp, nbins):
@@ -124,27 +124,46 @@ def HeightsRatio(pha, amp, nbins):
 
 def _kl_hr(pha, amp, nbins):
     nPha, npts, nAmp = *pha.shape, amp.shape[0]
-    step = 2*n.pi/nbins
-    vecbin = binarize(-n.pi, n.pi+step, step, step)
+    step = 2*np.pi/nbins
+    vecbin = binarize(-np.pi, np.pi+step, step, step)
     if len(vecbin) > nbins:
         vecbin = vecbin[0:-1]
 
-    abin = n.zeros((nAmp, nPha, nbins))
+    abin = np.zeros((nAmp, nPha, nbins))
     for k, i in enumerate(vecbin):
         # Find where phase take vecbin values :
-        pL, pC = n.where((pha >= i[0]) & (pha < i[1]))
+        pL, pC = np.where((pha >= i[0]) & (pha < i[1]))
 
         # Matrix to do amp x binMat :
-        binMat = n.zeros((npts, nPha))
+        binMat = np.zeros((npts, nPha))
         binMat[pC, pL] = 1
-        meanMat = n.matlib.repmat(binMat.sum(axis=0), nAmp, 1)
+        meanMat = np.matlib.repmat(binMat.sum(axis=0), nAmp, 1)
         meanMat[meanMat == 0] = 1
 
         # Multiply matrix :
-        abin[:, :, k] = n.divide(n.dot(amp, binMat), meanMat)
-    abinsum = n.array([abin.sum(axis=2) for k in range(nbins)])
+        abin[:, :, k] = np.divide(np.dot(amp, binMat), meanMat)
+    abinsum = np.array([abin.sum(axis=2) for k in range(nbins)])
 
     return abin, abinsum
+
+
+def PhaseSynchrony(pha, amp):
+    """Phase Synchrony
+    """
+    return np.array(abs((np.exp(-1j*amp)*(np.exp(1j*pha).T))/pha.shape[1]))
+
+
+def ndCfc(pha, amp):
+    """Normalized direct Pac (Ozkurt, 2012)
+    """
+    npts = amp.shape[1]
+    # Get mean and deviation of amplitude :
+    amp_m = np.tile(np.mean(amp, 1)[..., np.newaxis], (1, npts))
+    amp_std = np.tile(np.std(amp, 1)[..., np.newaxis], (1, npts))
+    # Normalize amplitude :
+    amp = np.divide(amp - amp_m, amp_std)
+    # Compute pac :
+    return np.square(np.abs(amp*np.exp(1j*pha.T)))/npts
 
 # ----------------------------------------------------------------------------
 #                                 SURROGATES
@@ -193,7 +212,7 @@ def CfcSurrogatesList(Id, CfcModel, n_perm=200, tlag=[0, 0]):
             return CfcTrialSwap(pha, amp, CfcModel, n_perm=n_perm)
         CfcSuroModelStr = 'Swap phase/amplitude through trials (Tort, 2010)'
 
-    # Swap ampliude
+    # Swap amplitude
     elif Id == 4:
         def CfcSuroModel(pha, amp, CfcModel, n_perm):
             return CfcAmpSwap(pha, amp, CfcModel, n_perm=n_perm)
@@ -215,16 +234,16 @@ def CfcShuffle(xfP, xfA, CfcModel, n_perm=200):
     nPha, timeL, nbTrials = xfP.shape
     nAmp = xfA.shape[0]
 
-    perm = [n.random.permutation(timeL) for k in range(n_perm)]
+    perm = [np.random.permutation(timeL) for k in range(n_perm)]
     # Compute surrogates :
-    Suro = n.zeros((nbTrials, nAmp, nPha, n_perm))
+    Suro = np.zeros((nbTrials, nAmp, nPha, n_perm))
     for k in range(nbTrials):
-        CurPha, curAmp = xfP[:, :, k], n.matrix(xfA[:, :, k])
+        CurPha, curAmp = xfP[:, :, k], np.matrix(xfA[:, :, k])
         for i in range(n_perm):
             # Randomly permutate phase values :
             CurPhaShuffle = CurPha[:, perm[i]]
             # compute new Cfc :
-            Suro[k, :, :, i] = CfcModel(n.matrix(CurPhaShuffle), curAmp)
+            Suro[k, :, :, i] = CfcModel(np.matrix(CurPhaShuffle), curAmp)
 
     return Suro
 
