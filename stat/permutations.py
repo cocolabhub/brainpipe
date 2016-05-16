@@ -206,7 +206,6 @@ def perm_swap(a, b, n_perm=200, axis=-1, rndstate=0):
         # Re-order a & b :
         absplit = np.split(absh_mat, 2, axis=1)
         a, b = absplit[0], absplit[1]
-        print(a.shape, b.shape)
         if axis != 0:
             a = np.swapaxes(a, 1, axis+1)
             b = np.swapaxes(b, 1, axis+1)

@@ -6,7 +6,8 @@ __all__ = ['binarize',
            'list2index',
            'groupInList',
            'ndsplit',
-           'ndjoin'
+           'ndjoin',
+           'squarefreq'
            ]
 
 
@@ -162,3 +163,26 @@ def ndjoin(x, axis=0):
             raise ValueError("Element "+str(num)+" is not consistent.")
     return xj
 
+
+def squarefreq(fstart, fend, fwidth):
+    """Build a square frequency vector.
+
+    Args:
+        fstart: int
+            Starting frequency
+
+        fend: int
+            Ending frequency
+
+        fwidth: int
+            Width between each frequency
+
+    Return:
+        fce: list
+            List of frequencies.
+    """
+    fstartAll = np.arange(fstart, fend, fwidth)
+    fce = []
+    for k in fstartAll:
+        fce.extend(binarize(k, fend, fwidth, fwidth, kind='list'))
+    return fce

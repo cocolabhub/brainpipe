@@ -115,7 +115,7 @@ class _spectral(tilerplot):
                                wi=self._width, sp=self._split)
         return powStr+extractStr+')'
 
-    def get(self, x, statmeth='none', tail=2, n_perm=200, corraxis=-1,
+    def get(self, x, statmeth=None, tail=2, n_perm=200, corraxis=-1,
             metric='m_center', maxstat=None, n_jobs=-1):
         """Get the spectral informations of the signal x.
 
@@ -124,12 +124,11 @@ class _spectral(tilerplot):
                 Data with a shape of (n_electrodes x n_pts x n_trials)
 
         Kargs:
-            statmeth: string, optional, [def: 'none']
+            statmeth: string, optional, [def: None]
                 Method to evaluate the statistical significiancy. To get p-values,
                 the program will compare real values with a defined baseline. As a
                 consequence, the 'norm' and 'baseline' parameter should not be None.
 
-                - 'none: no statistical evaluation
                 - 'permutation': randomly shuffle real data with baseline.Control the number of permutations with the n_perm parameter. For example, if n_perm = 1000, this mean that minimum p-valueswill be 0.001.
                 - 'wilcoxon': Wilcoxon signed-rank test
                 - 'kruskal': Kruskal-Wallis H-test
@@ -186,8 +185,8 @@ class _spectral(tilerplot):
             self._norm = None
 
         # Check statistical method :
-        _checkref('statmeth', statmeth, ['permutation', 'wilcoxon', 'kruskal',
-                  'none'])
+        if statmeth is not None:
+            _checkref('statmeth', statmeth, ['permutation', 'wilcoxon', 'kruskal'])
 
         # run feature computation:
         data = Parallel(n_jobs=n_jobs)(
@@ -218,6 +217,7 @@ def _get(x, self):
     """
     # Unpack args :
     bsl, norm = self._baseline, self._norm
+    n_perm, statmeth = self._n_perm, self._statmeth
 
     # Get the filter properties and apply:
     fMeth = self._fobj.get(self._sf, self._fSplit, self._npts)
@@ -225,7 +225,7 @@ def _get(x, self):
     nf, npts, nt = xF.shape
 
     # Statistical evaluation :
-    if (self._n_perm is not 0) and (bsl is not None) and (self._statmeth is not 'none'):
+    if (n_perm is not 0) and (bsl is not None) and (statmeth is not None):
         pvalues = _evalstat(self, xF, bsl)
     else:
         pvalues = None
