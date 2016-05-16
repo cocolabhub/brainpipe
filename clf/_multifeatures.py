@@ -6,7 +6,7 @@ from brainpipe.clf.utils._sequence import *
 from brainpipe.clf.utils._mf import *
 
 from brainpipe.clf._classification import defClf, defCv
-from brainpipe.statistics import binostatinv
+from brainpipe.statistics import bino_da2p
 
 
 __all__ = ['mf', 'sequence']
@@ -114,7 +114,7 @@ class mf(object):
         self._stat = stat
         self._y = np.ravel(y)
         if threshold is not None:
-            p = binostatinv(y, threshold)
+            p = bino_da2p(y, threshold)
         self._p = p
         self._nbest = nbest
         self._n_perm = n_perm

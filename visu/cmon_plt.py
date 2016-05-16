@@ -83,7 +83,7 @@ class tilerplot(object):
     """
 
     def plot1D(self, fig, y, x=None, maxplot=10, figtitle='',
-               subdim=None, transpose=False, **kwargs):
+               subdim=None, transpose=False, color='b', **kwargs):
         """Simple one dimentional plot
 
         Args:
@@ -111,6 +111,9 @@ class tilerplot(object):
             transpose: bool, optional, [def: False]
                 Invert subplot (row <-> column)
 
+            color: string, optional, [def: 'b']
+                Color of the plot
+
             **kwargs:
                 Supplementar arguments to control each suplot:
                 title, xlabel, ylabel (which can be list for each subplot)
@@ -128,7 +131,8 @@ class tilerplot(object):
         # Plotting function :
 
         def _fcn(y, k):
-            plt.plot(x, y)
+            plt.plot(x, y, color=color)
+            plt.axis('tight')
             _pltutils(plt.gca(), kwout['title'][k], kwout['xlabel'][k],
                       kwout['ylabel'][k], **kwargs)
         # Run function for each yi :
@@ -215,12 +219,13 @@ class tilerplot(object):
         # Get default for title, xlabel and ylabel:
         kwout, kwargs = self._completeLabels(kwargs, y.shape[0], 'title',
                                              'xlabel', 'ylabel', default='')
-        # Plotting function :
 
+        # Plotting function :
         def _fcn(y, k):
             im = plt.imshow(y, aspect='auto', cmap=cmap,
                             interpolation=interpolation, vmin=vmin, vmax=vmax,
                             extent=[xvec[0], xvec[-1], yvec[-1], yvec[0]])
+            plt.axis('tight')
             ax = plt.gca()
             _pltutils(ax, kwout['title'][k], kwout['xlabel'][k],
                       kwout['ylabel'][k], **kwargs)
@@ -231,6 +236,13 @@ class tilerplot(object):
             ax.invert_yaxis()
         # Run function for each yi :
         return self._subplotND(y, _fcn, maxplot, subdim)
+
+    def plotcustom(self, fig, y, fcn, maxplot=10, subdim=None):
+        """
+        """
+        self._fig = fig
+        self._transpose = False
+        return self._subplotND(y, fcn, maxplot, subdim)
 
     def _figmngmt(self, fig, figtitle='', transpose=False):
         # Change title:
@@ -257,6 +269,7 @@ class tilerplot(object):
     def _subplotND(self, y, fcn, maxplot, subdim):
         """Manage subplots
         """
+        axall = []
         L = y.shape[0]
         if L <= maxplot:
             fig = self._fig
@@ -279,7 +292,8 @@ class tilerplot(object):
             for k in range(L):
                 fig.add_subplot(nrow, ncol, k+1)
                 fcn(y[k, ...], k)
-            return plt.gca()
+                axall.append(plt.gca())
+            return axall
         else:
             raise ValueError('Warning : the "maxplot" parameter prevent to a'
                              'large number of plot. To increase the number'
@@ -314,8 +328,8 @@ class tilerplot(object):
 
         return kwout, kwargs
 
-# tilerplot.plot1D.__doc__ += _pltutils.__doc__
-# tilerplot.plot2D.__doc__ += _pltutils.__doc__
+tilerplot.plot1D.__doc__ += _pltutils.__doc__
+tilerplot.plot2D.__doc__ += _pltutils.__doc__
 
 
 class addLines(object):
@@ -425,7 +439,7 @@ class BorderPlot(_pltutils):
             For example, x.shape = (N, M)
 
     Kargs:
-        y: numpy array, optional, [def: np.array([])]
+        y: numpy array, optional, [def: None]
             Label vector to separate the x signal in diffrent classes. The
             length of y must be M. If no y is specified, the deviation will be
             computed for the entire array x. If y is composed with integers
@@ -459,12 +473,12 @@ class BorderPlot(_pltutils):
     """
     __doc__ += _pltutils.__doc__
 
-    def __init__(self, time, x, y=np.array([]), kind='sem', color='',
+    def __init__(self, time, x, y=None, kind='sem', color='',
                  alpha=0.2, linewidth=2, legend='', ncol=1, **kwargs):
         pass
 
-    def __new__(self, time, x, y=np.array([]), kind='sem', color='', alpha=0.2,
-                linewidth=2, legend='', ncol=1, **kwargs):
+    def __new__(self, time, x, y=None, kind='sem', color='', alpha=0.2,
+                linewidth=2, legend='', ncol=1, axes=None, **kwargs):
 
         self.xType = type(time[0])
         self.yType = type(x[0, 0])
@@ -473,7 +487,7 @@ class BorderPlot(_pltutils):
         if x.shape[1] == len(time):
             x = x.T
         npts, dev = x.shape
-        if not y.size:
+        if y is None:
             y = np.array([0]*dev)
         yClass = np.unique(y)
         nclass = len(yClass)
@@ -495,8 +509,8 @@ class BorderPlot(_pltutils):
 
         # For each class :
         for k in yClass:
-            _BorderPlot(time, x[:, np.where(y == k)[0]], color[k], kind=kind,
-                        alpha=alpha, linewidth=linewidth, legend=legend[k])
+            _BorderPlot(time, x[:, np.where(y == k)[0]], color[k], kind,
+                        alpha, legend[k], linewidth, axes)
         ax = plt.gca()
         plt.axis('tight')
 
@@ -505,7 +519,7 @@ class BorderPlot(_pltutils):
         return plt.gca()
 
 
-def _BorderPlot(time, x, color, kind='sem', alpha=0.2, legend='', linewidth=2):
+def _BorderPlot(time, x, color, kind, alpha, legend, linewidth, axes):
     npts, dev = x.shape
     # Get the deviation/sem :
     xStd = np.std(x, axis=1)
@@ -515,5 +529,8 @@ def _BorderPlot(time, x, color, kind='sem', alpha=0.2, legend='', linewidth=2):
     xLow, xHigh = xMean-xStd, xMean+xStd
 
     # Plot :
+    if axes is None:
+        axes = plt.gca()
+    plt.sca(axes)
     ax = plt.plot(time, xMean, color=color, label=legend, linewidth=linewidth)
     plt.fill_between(time, xLow, xHigh, alpha=alpha, color=ax[0].get_color())

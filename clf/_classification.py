@@ -7,14 +7,16 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
-from sklearn.cross_validation import (StratifiedKFold, KFold,
-                                      StratifiedShuffleSplit, ShuffleSplit)
+from sklearn.cross_validation import (StratifiedKFold, KFold, LeaveOneOut,
+                                      StratifiedShuffleSplit, ShuffleSplit,
+                                      LeaveOneLabelOut)
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.base import clone
 
 from joblib import Parallel, delayed
 
-from brainpipe.statistics import binostatinv, perm2pval, permIntraClass
+# from brainpipe.statistics import binostatinv, perm2pval, permIntraClass
+from brainpipe.statistics import bino_da2p
 from brainpipe.tools import groupInList, list2index
 from brainpipe.sys.tools import adaptsize
 
@@ -220,7 +222,7 @@ class classify(object):
         # Binomial :
         # -------------------------------------------------------------
         if method == 'bino':
-            pvalue = binostatinv(self.y, score)
+            pvalue = bino_da2p(self.y, score)
             daPerm = np.array([])
 
         # -------------------------------------------------------------
@@ -504,6 +506,8 @@ class defCv(object):
                 - 'kfold': k-fold
                 - 'sss': Stratified Shuffle Split
                 - 'ss': Shuffle Split
+                - 'loo': Leave One Out
+                - 'lolo': Leave One Label Out
 
         n_folds: integer, optional, [def: 10]
             Number of folds
@@ -571,6 +575,18 @@ def _define(y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
         cvT.lgStr = str(rep)+'-times, test size 1/' + \
             str(n_folds)+' Shuffle Stratified'
         cvT.shStr = str(rep)+' rep x'+str(n_folds)+' '+cvtype
+
+    # Leave One Out :
+    elif cvtype == 'loo':
+        cvT = LeaveOneOut(len(y))
+        cvT.lgStr = str(rep)+'-times, Leave One Out'
+        cvT.shStr = str(rep)+' rep '+cvtype
+
+    # Leave One Label Out :
+    elif cvtype == 'lolo':
+        cvT = LeaveOneLabelOut(y)
+        cvT.lgStr = str(rep)+'-times, leave One Label Out'
+        cvT.shStr = str(rep)+' rep '+cvtype
 
     else:
         raise ValueError('No cross-validation "'+cvtype+'"" found')

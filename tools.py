@@ -1,10 +1,12 @@
-import numpy as n
+import numpy as np
 
 __all__ = ['binarize',
            'binArray',
            'p2str',
            'list2index',
-           'groupInList'
+           'groupInList',
+           'ndsplit',
+           'ndjoin'
            ]
 
 
@@ -26,8 +28,8 @@ def binarize(starttime, endtime, width, step, kind='tuple'):
     kind : string, optional, [def: 'list']
         Return either a list or a tuple
     """
-    X = n.vstack((n.arange(starttime, endtime-width+step, step),
-                  n.arange(starttime+width, endtime+step, step)))
+    X = np.vstack((np.arange(starttime, endtime-width+step, step),
+                  np.arange(starttime+width, endtime+step, step)))
     if X[1, -1] > endtime:
         X = X[:, 0:-1]
     if kind == 'array':
@@ -53,16 +55,16 @@ def binArray(x, binList, axis=0):
     -> Return the binarize x and the center of each window.
     """
     nbin = len(binList)
-    x = n.swapaxes(x, 0, axis)
+    x = np.swapaxes(x, 0, axis)
 
-    xBin = n.zeros((nbin,)+x.shape[1::])
+    xBin = np.zeros((nbin,)+x.shape[1::])
     for k, i in enumerate(binList):
         if i[1] - i[0] == 1:
             xBin[k, ...] = x[i[0], ...]
         else:
-            xBin[k, ...] = n.mean(x[i[0]:i[1], ...], 0)
+            xBin[k, ...] = np.mean(x[i[0]:i[1], ...], 0)
 
-    return n.swapaxes(xBin, 0, axis), [(k[0]+k[1])/2 for k in binList]
+    return np.swapaxes(xBin, 0, axis), [(k[0]+k[1])/2 for k in binList]
 
 
 def p2str(p):
@@ -78,7 +80,7 @@ def list2index(dim1, dim2):
     Example:
     for (2,3) -> [(0,0),(1,0),(0,1),(1,1),(0,2),(1,2)]
     """
-    list1 = list(n.arange(dim1))*dim2
+    list1 = list(np.arange(dim1))*dim2
     list2 = sum([[k]*dim1 for k in range(dim2)], [])
     return list(zip(list1, list2)), list1, list2
 
@@ -88,12 +90,75 @@ def groupInList(x, idx):
     Example:
     groupInList([1,2,3,4,5],[0,0,1,1,2]) = [[1,2],[3,4],[5]]
     """
-    if not isinstance(x, n.ndarray):
-        x = n.array(x)
+    if not isinstance(x, np.ndarray):
+        x = np.array(x)
     if not isinstance(idx, list):
         idx = list(idx)
     # Get the list of unique elements in idx:
     uelmt = list(set(idx))
-    idx = n.array(idx)
-    return [list(x[n.where(idx == k)]) for k in uelmt]
+    idx = np.array(idx)
+    return [list(x[np.where(idx == k)]) for k in uelmt]
+
+
+def ndsplit(x, sp, axis=0):
+    """Split array (work for odd dimensions)
+
+    Args:
+        x: array
+            Data to split
+
+        sp: int
+            Number of chunk
+
+    Kargs:
+        axis: int, optional, [def: 0]
+            Axis for splitting array
+
+    Return:
+        List of splitted arrays
+    """
+    # Check dimensions :
+    sz = x.shape[axis]%sp
+    if axis != 0:
+        x = np.swapaxes(x, 0, axis)
+    dim = x.shape
+    if sp <= dim[0]:
+        # First split :
+        xs = np.split(x[0:dim[0]-sz, ...], sp, axis=0)
+        # Complete list with undivisibale data :
+        if sz != 0:
+            m_end = xs[-1]
+            xs.pop(-1)
+            mat = np.concatenate((m_end, x[-sz::, ...]), axis=0)
+            xs.append(mat)
+        return xs
+    else:
+        import warnings
+        warnings.warn("The split parameter is superior to the value "
+                      "of axis "+str(axis)+". Splitting with sp=1")
+        return list(x[:, np.newaxis, ...])
+
+
+def ndjoin(x, axis=0):
+    """Join arrays in a list
+
+    Args:
+        x: list
+            List of data.
+
+    Kargs:
+        axis: optional, [def: 0]
+            Axis to join arrays
+
+    Return:
+        Array
+    """
+    # Shape scanning:
+    xj = np.array([])
+    for num, k in enumerate(x):
+        try:
+            xj = np.concatenate((xj, k), axis=axis) if xj.size else k
+        except:
+            raise ValueError("Element "+str(num)+" is not consistent.")
+    return xj
 

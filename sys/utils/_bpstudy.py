@@ -50,7 +50,7 @@ def _path_bpsettings():
     """
     # bpPath = os.path.dirname(brainpipe.__file__)
     return os.path.join(os.path.dirname(
-        brainpipe.__file__), 'xPOO', 'bpsettings.pickle')
+        brainpipe.__file__), 'bpsettings.pickle')
 
 
 def _load_bpsettings():

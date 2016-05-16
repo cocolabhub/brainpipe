@@ -134,20 +134,20 @@ class pac(_coupling):
                 List containing the couple of frequency bands for the phase.
                 Example: f=[ [2,4], [5,7], [60,250] ]
 
-        pha_meth: string, optional, [def : 'hilbert']
+        pha_meth: string, optional, [def: 'hilbert']
             Method for the phase extraction.
 
-        pha_cycle: integer, optional, [def : 3]
+        pha_cycle: integer, optional, [def: 3]
             Number of cycles for filtering the phase.
 
-        amp_f: tuple/list, optional, [def : [60,200]]
+        amp_f: tuple/list, optional, [def: [60,200]]
                 List containing the couple of frequency bands for the amplitude.
                 Each couple can be either a list or a tuple.
 
-        amp_meth: string, optional, [def : 'hilbert']
+        amp_meth: string, optional, [def: 'hilbert']
             Method for the amplitude extraction.
 
-        amp_cycle: integer, optional, [def : 6]
+        amp_cycle: integer, optional, [def: 6]
             Number of cycles for filtering the amplitude.
 
         nbins: integer, optional, [def: 18]

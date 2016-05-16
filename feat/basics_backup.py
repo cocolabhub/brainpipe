@@ -3,14 +3,11 @@ from brainpipe.tools import binarize, binArray
 from brainpipe.feat.utils._feat import (_manageWindow, _manageFrequencies,
                                         normalize, _checkref)
 from brainpipe.visu.cmon_plt import tilerplot
-from brainpipe.statistics import perm_swap, perm_metric, perm_2pvalue, maxstat
-
-from scipy.stats import wilcoxon, kruskal
+from brainpipe.statistics import perm_swaparray, perm_metric, perm_2pvalue
 
 from joblib import Parallel, delayed
 import numpy as np
 from itertools import product
-from warnings import warn
 
 __all__ = ['sigfilt', 'amplitude', 'power', 'TF', 'phase']
 
@@ -18,7 +15,7 @@ __all__ = ['sigfilt', 'amplitude', 'power', 'TF', 'phase']
 # ------------------------------------------------------------
 # DOCUMENTATION
 # ------------------------------------------------------------
-docsignal = """norm: int, optional [def: None]
+docsignal = """norm: int, optional [def: 0]
             Number to choose the normalization method
                 - 0: No normalisation
                 - 1: Substraction
@@ -26,7 +23,7 @@ docsignal = """norm: int, optional [def: None]
                 - 3: Substract then divide
                 - 4: Z-score
 
-        baseline: tuple/list of int [def: None]
+        baseline: tuple/list of int [def: (1,1)]
             Define a window to normalize the power
 
         split: int or list of int, optional [def: None]
@@ -115,55 +112,46 @@ class _spectral(tilerplot):
                                wi=self._width, sp=self._split)
         return powStr+extractStr+')'
 
-    def get(self, x, statmeth='none', tail=2, n_perm=200, corraxis=-1,
-            metric='m_center', maxstat=None, n_jobs=-1):
+    def get(self, x, statmeth=None, tail=2, maxstat=-1, metric='m_center',
+            n_perm=200, n_jobs=-1):
         """Get the spectral informations of the signal x.
 
         Args:
             x: array
-                Data with a shape of (n_electrodes x n_pts x n_trials)
+                Data. x should have a shape of
+                (n_electrodes x n_pts x n_trials)
 
         Kargs:
-            statmeth: string, optional, [def: 'none']
-                Method to evaluate the statistical significiancy. To get p-values,
-                the program will compare real values with a defined baseline. As a
-                consequence, the 'norm' and 'baseline' parameter should not be None.
+            n_perm: integer, optional, [def: 200]
+                Number of permutations for assessing statistical significiancy.
 
-                - 'none: no statistical evaluation
+        statmeth: string, optional, [def: None]
+            Method to evaluate the statistical significiancy. To get p-values,
+            the program will compare real values with a defined baseline. As a
+            consequence, the 'norm' parameter should not be equal to zero.
+
+                - None: no statistical evaluation
                 - 'permutation': randomly shuffle real data with baseline.Control the number of permutations with the n_perm parameter. For example, if n_perm = 1000, this mean that minimum p-valueswill be 0.001.
                 - 'wilcoxon': Wilcoxon signed-rank test
                 - 'kruskal': Kruskal-Wallis H-test
 
-            n_perm: integer, optional, [def: 200]
-                Number of permutations for assessing statistical significiancy.
+        tail: int, optional, [def: 1]
+            For the permutation method, get p-values from one or two tails of
+            the distribution.
 
-            tail: int, optional, [def: 2]
-                For the permutation method, get p-values from one or two tails of
-                the distribution. Use -1 for testing A<B, 1 for A>B and 2 for A~=B.
+        maxtstat: integer, optional, [def -1]
+            Correct p-values with maximum statistique. maxstat correspond to
+            the dimension of perm for correction. Use -1 to correct through all
+            dimensions. Otherwise, use d1, d2, ... or dn to correct through a
+            specific dimension.
 
-            metric: string/function type, optional, [def: 'm_center']
-                Use diffrent metrics to normalize data and permutations by the
-                defined baseline. Use:
-
-                - None: compare directly values without transformation
-                - 'm_center': (A-B)/mean(B) transformation
-                - 'm_zscore': (A-B)/std(B) transformation
-                - 'm_minus': (A-B) transformation
-                - function: user defined function [def myfcn(A, B): return array_like]
-
-            maxtstat: integer, optional, [def -1]
-                Correct p-values with maximum statistique. maxstat correspond to
-                the dimension of perm for correction. Use -1 to correct through all
-                dimensions. Otherwise, use d1, d2, ... or dn to correct through a
-                specific dimension.
+        n_perm: integer, optional, [def: 200]
+            Number of permutations for assessing statistical significiancy.
 
         Return:
             xF: array
                 The un/normalized feature of x, with a shape of
                 (n_frequency x n_electrodes x n_window x n_trials)
-
-            pvalues: array
-                p-values with a shape of (n_frequency x n_electrodes x n_window)
         """
         # Get variables :
         self._statmeth = statmeth
@@ -171,146 +159,25 @@ class _spectral(tilerplot):
         self._2t = tail
         self._mxst = maxstat
         self._metric = metric
-        self._axis = corraxis
-
         # Check input size :
         if len(x.shape) == 2:
             x = x[np.newaxis, ...]
         if x.shape[1] != self._npts:
             raise ValueError('The second dimension must be '+str(self._npts))
         nfeat = x.shape[0]
-        warnmsg = 'You define a normalization but no baseline has been' + \
-                  ' specified. Normalization will be ignore'
-        if (self._norm is not None) and (self._baseline is None):
-            warn(warnmsg)
-            self._norm = None
-
         # Check statistical method :
-        _checkref('statmeth', statmeth, ['permutation', 'wilcoxon', 'kruskal',
-                  'none'])
-
+        _checkref('statmeth', statmeth, ['permutation', 'wilcoxon', 'kruskal'])
         # run feature computation:
         data = Parallel(n_jobs=n_jobs)(
             delayed(_get)(x[k, ...], self) for k in range(nfeat))
-        xF, pvalues = zip(*data)
-
+        # xF, pvalues = zip(*data)
         # Re-organize data :
-        xF = np.swapaxes(np.array(xF), 0, 1)
-        if pvalues[0] is not None:
-            pvalues = np.swapaxes(np.array(pvalues), 0, 1)
-        else:
-            pvalues = None
-
+        xF = np.swapaxes(np.array(data), 0, 1)
         # Remove last dimension (for TF):
         if self._meanT:
             xF = xF[..., 0]
 
-        return xF, pvalues
-
-
-# ------------------------------------------------------------
-# SUB GET FUNCTION
-# ------------------------------------------------------------
-def _get(x, self):
-    """Sub get function.
-
-    Get the spectral info of x.
-    """
-    # Unpack args :
-    bsl, norm = self._baseline, self._norm
-
-    # Get the filter properties and apply:
-    fMeth = self._fobj.get(self._sf, self._fSplit, self._npts)
-    xF = self._fobj.apply(x, fMeth)
-    nf, npts, nt = xF.shape
-
-    # Statistical evaluation :
-    if (self._n_perm is not 0) and (bsl is not None) and (self._statmeth is not 'none'):
-        pvalues = _evalstat(self, xF, bsl)
-    else:
-        pvalues = None
-
-    # Mean through trials:
-    if self._meanT:
-        xF = np.mean(xF[..., np.newaxis], 2)
-
-    # Normalize power :
-    if (norm is not None) and (bsl is not None):
-        xFm = np.mean(xF[:, bsl[0]:bsl[1], :], 1)
-        baseline = np.tile(xFm[:, np.newaxis, :], [1, xF.shape[1], 1])
-        xF = normalize(xF, baseline, norm=norm)
-
-    # Mean Frequencies :
-    xF, _ = binArray(xF, self._fSplitIndex, axis=0)
-
-    # Mean time :
-    if self._window is not None:
-        xF, xvec = binArray(xF, self._window, axis=1)
-
-    return xF, pvalues
-
-
-def _evalstat(self, x, bsl):
-    """Statistical evaluation of features
-
-    [x] = [xn] = (nFce, npts, nTrials)
-    """
-    # Unpack variables:
-    statmeth = self._statmeth
-    n_perm = self._n_perm
-    tail = self._2t
-    maxst = self._mxst
-    corraxis = self._axis
-
-    # Mean Frequencies :
-    x, _ = binArray(x, self._fSplitIndex, axis=0)
-
-    # Get the baseline and set to same shape of x:
-    xFm = np.mean(x[:, bsl[0]:bsl[1], :], 1)
-
-    # Mean time :
-    if self._window is not None:
-        x, _ = binArray(x, self._window, axis=1)
-
-    # Repeat baseline:
-    baseline = np.tile(xFm[:, np.newaxis, :], [1, x.shape[1], 1])
-
-    # Get shape of x:
-    nf, npts, nt = x.shape
-    pvalues = np.ones((nf, npts))
-
-    # Switch between methods:
-    #   -> Permutations
-    if statmeth == 'permutation':
-        # Get perm from x and baseline by swaping through trials:
-        perm = perm_swap(x, baseline, n_perm=n_perm, axis=2, rndstate=0)[0]
-
-        # Get metric and apply to x and perm:
-        fcn = perm_metric(self._metric)
-        xN = np.mean(fcn(x, baseline), 2)
-        permN = np.mean(fcn(perm, baseline), 3)
-
-        # Maximum statistique:
-        if maxst is not None:
-            permN = maxstat(permN, axis=corraxis)
-
-        # Get pvalues:
-        pvalues = perm_2pvalue(xN, permN, n_perm, tail=tail)
-
-    #   -> Wilcoxon // Kruskal-Wallis:
-    else:
-        # Get the method:
-        if statmeth == 'wilcoxon':
-            def fcn(a, b): return wilcoxon(a, b)[1]
-        elif statmeth == 'kruskal':
-            def fcn(a, b): return kruskal(a, b)[1]
-
-        # Apply:
-        ite = product(range(nf), range(npts))
-        for k, i in ite:
-            pvalues[k, i] = fcn(x[k, i, :], xFm[k, :])
-
-    return pvalues
+        return xF  # , np.swapaxes(np.array(pvalues), 0, 1)
 
 
 # ------------------------------------------------------------
@@ -321,7 +188,7 @@ class sigfilt(_spectral):
     """Extract the filtered signal. """
     __doc__ += _spectral.__doc__ + docsignal + supfilter
 
-    def __init__(self, sf, npts, f=[60, 200], baseline=None, norm=None,
+    def __init__(self, sf, npts, f=[60, 200], baseline=(1, 2), norm=0,
                  window=None, width=None, step=None, split=None, time=None,
                  **kwargs):
         _spectral.__init__(self, sf, npts, 'signal', f, baseline, norm,
@@ -345,7 +212,7 @@ class amplitude(_spectral):
             - 'wavelet': wavelet transform
     """ + supfilter
 
-    def __init__(self, sf, npts, f=[60, 200], baseline=None, norm=None,
+    def __init__(self, sf, npts, f=[60, 200], baseline=(1, 2), norm=0,
                  method='hilbert1', window=None, width=None, step=None,
                  split=None, time=None, **kwargs):
         _checkref('method', method, ['hilbert', 'hilbert1', 'hilbert2',
@@ -371,7 +238,7 @@ class power(_spectral):
             - 'wavelet': wavelet transform
     """ + supfilter
 
-    def __init__(self, sf, npts, f=[60, 200], baseline=None, norm=None,
+    def __init__(self, sf, npts, f=[60, 200], baseline=(1, 2), norm=0,
                  method='hilbert1', window=None, width=None, step=None,
                  split=None, time=None, **kwargs):
         _checkref('method', method, ['hilbert', 'hilbert1', 'hilbert2',
@@ -397,7 +264,7 @@ class TF(_spectral):
             - 'wavelet': wavelet transform
     """ + supfilter
 
-    def __init__(self, sf, npts, f=(2, 200, 10, 5), baseline=None, norm=None,
+    def __init__(self, sf, npts, f=(2, 200, 10, 5), baseline=(1, 2), norm=0,
                  method='hilbert1', window=None, width=None, step=None,
                  time=None, **kwargs):
         _checkref('method', method, ['hilbert', 'hilbert1', 'hilbert2',
@@ -424,7 +291,112 @@ class phase(_spectral):
     def __init__(self, sf, npts, f=[60, 200], method='hilbert', window=None,
                  width=None, step=None, time=None, **kwargs):
         _checkref('method', method, ['hilbert', 'hilbert1', 'hilbert2'])
-        _spectral.__init__(self, sf, npts, 'phase', f, None, None, method,
+        _spectral.__init__(self, sf, npts, 'phase', f, None, 0, method,
                            window, width, step, None, time, False, **kwargs)
 
 
+# ------------------------------------------------------------
+# SUB GET FUNCTION
+# ------------------------------------------------------------
+def _get(x, self):
+    """Sub get function.
+
+    Get the spectral info of x.
+    """
+    # Unpack args :
+    bsl, norm, n_perm = self._baseline, self._norm, self._n_perm
+    maxstat, tail, metric = self._mxst, self._2t, self._metric
+    statmeth = self._statmeth
+
+    # Get the filter properties and apply:
+    fMeth = self._fobj.get(self._sf, self._fSplit, self._npts)
+    xF = self._fobj.apply(x, fMeth)
+    nf, npts, nt = xF.shape
+
+    # Mean through trials:
+    if self._meanT:
+        xF = np.mean(xF, 2)
+        xF = xF[..., np.newaxis]
+
+    # Normalize power :
+    if norm is not 0:
+        xFm = np.mean(xF[:, bsl[0]:bsl[1], :], 1)
+        baseline = np.tile(xFm[:, np.newaxis, :], [1, xF.shape[1], 1])
+        xFn = normalize(xF, baseline, norm=norm)
+        del xFm, baseline
+    else:
+        baseline = np.zeros(xF.shape)
+        xFn = xF
+
+    # Mean Frequencies :
+    xFn, _ = binArray(xFn, self._fSplitIndex, axis=0)
+
+    # Mean time :
+    if self._window is not None:
+        xFn, xvec = binArray(xFn, self._window, axis=1)
+
+    # Statistical evaluation :
+    if (norm is not 0) and (self._statmeth is not 'none'):
+        pvalues = _evalstat(xF, xFm, statmeth, n_perm, metric,
+                            maxstat, tail)
+    else:
+        pvalues = np.matrix([0])
+
+    return xFn  # , pvalues
+
+
+def _evalstat(x, bsl, meth, n_perm, metric, maxstat, tail):
+    """Statistical evaluation of features
+
+    [x] = [xn] = (nFce, npts, nTrials)
+    [bsl] = (nFce, nTrials)
+    """
+    # Get shape of xF :
+    nf, npts, nt = x.shape
+    pvalues = np.ones((nf, npts))
+
+    # Permutations :
+    if meth == 'permutation':
+        perm = perm_swaparray(a, b, n_perm=200, axis=-1, rndstate=0)
+        from brainpipe.xPOO.stats import permutation
+        # Pre-define permutations :
+        pObj = permutation(n_perm)
+        perm = np.zeros((n_perm, nf, npts))
+        # For each permutation :
+        for p in range(n_perm):
+            # Get 1D iterations :
+            ite = product(range(nf), range(npts))
+            permT = np.random.permutation(2*nt)
+            for f, pts in ite:
+                bs, xs = bsl[f, :], x[f, pts, :]
+                # Reshape data :
+                subX = np.vstack((bsl[f, :], x[f, pts, :])).reshape(2*nt,)
+                # Shuffle data :
+                subX = subX[permT].reshape(nt, 2)
+                # Normalize data :
+                subX = normalize(subX[:, 0], subX[:, 1], norm=norm)
+                # Get mean of data :
+                perm[p, f, pts] = np.mean(subX)
+        # Get final pvalues :
+        pvalues = pObj.perm2p(np.mean(xn, 2), perm, tail=tail,
+                              maxstat=maxstat)
+
+    # Wilcoxon test :
+    elif meth == 'wilcoxon':
+        from scipy.stats import wilcoxon
+        # Get iterations :
+        ite = product(range(nf), range(npts))
+        # Compute wilcoxon :
+        for k, i in ite:
+            _, pvalues[k, i] = wilcoxon(x[k, i, :], bsl[k, :])
+
+    # Kruskal-Wallis :
+    elif meth == 'kruskal':
+        from scipy.stats import kruskal
+        # Get iterations :
+        ite = product(range(nf), range(npts))
+        # Compute Kruskal-Wallis :
+        for k, i in ite:
+            _, pvalues[k, i] = kruskal(x[k, i, :], bsl[k, :])
+
+    return pvalues

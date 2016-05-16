@@ -86,8 +86,9 @@ def _manageWindow(npts, window=None, width=None, step=None, kind='tuple',
         xvec = [round((k[0]+k[1])/2) for k in window]
     else:
         xvec = list(n.arange(0, npts))
-
-    if time and (len(time) == npts):
+    if (time is not None) and not isinstance(time, list):
+        tme = list(time)
+    if (time is not None) and (len(time) == npts):
         xvec = time
     elif time and (len(time) != npts):
         warnings.warn("The length of 'time' ["+str(len(time))+"] must be equal"

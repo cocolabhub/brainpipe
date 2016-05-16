@@ -14,6 +14,12 @@ Pandas complements
    :members: pdTools
    :noindex:
 
+Arrays
+------
+.. autofunction:: tools.ndsplit
+
+.. autofunction:: tools.ndjoin
+
 File management
 ---------------
 
