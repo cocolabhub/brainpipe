@@ -115,8 +115,8 @@ class _spectral(tilerplot):
                                wi=self._width, sp=self._split)
         return powStr+extractStr+')'
 
-    def get(self, x, statmeth=None, tail=2, n_perm=200, corraxis=-1,
-            metric='m_center', maxstat=None, n_jobs=-1):
+    def get(self, x, statmeth=None, tail=2, n_perm=200, metric='m_center',
+            maxistat=False, n_jobs=-1):
         """Get the spectral informations of the signal x.
 
         Args:
@@ -150,11 +150,9 @@ class _spectral(tilerplot):
                 - 'm_minus': (A-B) transformation
                 - function: user defined function [def myfcn(A, B): return array_like]
 
-            maxtstat: integer, optional, [def -1]
-                Correct p-values with maximum statistique. maxstat correspond to
-                the dimension of perm for correction. Use -1 to correct through all
-                dimensions. Otherwise, use d1, d2, ... or dn to correct through a
-                specific dimension.
+            maxistat: bool, optional, [def: False]
+                Correct p-values with maximum statistique. If maxistat is True,
+                the correction will be applied only trhough frequencies.
 
         Return:
             xF: array
@@ -168,9 +166,8 @@ class _spectral(tilerplot):
         self._statmeth = statmeth
         self._n_perm = n_perm
         self._2t = tail
-        self._mxst = maxstat
+        self._mxst = maxistat
         self._metric = metric
-        self._axis = corraxis
 
         # Check input size :
         if len(x.shape) == 2:
@@ -260,7 +257,6 @@ def _evalstat(self, x, bsl):
     n_perm = self._n_perm
     tail = self._2t
     maxst = self._mxst
-    corraxis = self._axis
 
     # Mean Frequencies :
     x, _ = binArray(x, self._fSplitIndex, axis=0)
@@ -281,21 +277,25 @@ def _evalstat(self, x, bsl):
 
     # Switch between methods:
     #   -> Permutations
+    # Loops on time and matrix for frequency (avoid RAM usage but increase speed)
     if statmeth == 'permutation':
-        # Get perm from x and baseline by swaping through trials:
-        perm = perm_swap(x, baseline, n_perm=n_perm, axis=2, rndstate=0)[0]
-
-        # Get metric and apply to x and perm:
+        # Get metric:
         fcn = perm_metric(self._metric)
-        xN = np.mean(fcn(x, baseline), 2)
-        permN = np.mean(fcn(perm, baseline), 3)
-
-        # Maximum statistique:
-        if maxst is not None:
-            permN = maxstat(permN, axis=corraxis)
-
-        # Get pvalues:
-        pvalues = perm_2pvalue(xN, permN, n_perm, tail=tail)
+        # Apply metric to x and baseline:
+        xN = fcn(x, baseline).mean(axis=2)
+        # For each time points:
+        for pts in range(npts):
+            # Randomly swap x // baseline :
+            perm = perm_swap(x[:, pts, :], baseline[:, pts, :],
+                             n_perm=n_perm, axis=1, rndstate=0+pts)[0]
+            # Normalize permutations by baline:
+            perm = fcn(perm, baseline[:, pts, :]).mean(2)
+            # Maximum stat (correct through frequencies):
+            if maxst:
+                print(perm.shape)
+                perm = maxstat(perm, axis=1)
+            # Get pvalues :
+            pvalues[:, pts] = perm_2pvalue(xN[:, pts], perm, n_perm, tail=tail)
 
     #   -> Wilcoxon // Kruskal-Wallis:
     else:

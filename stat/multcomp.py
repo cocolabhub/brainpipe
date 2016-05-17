@@ -67,9 +67,7 @@ def fdr(p, q):
     idxrev = np.argsort(idx)
     h = h[idxrev].reshape(dim)
     pback[~h] = 1
-    # print('CHECK RETURN ARGUMENTS')
     return pback
-    # return pback, h
 
 
 def maxstat(perm, axis=-1):
@@ -94,7 +92,7 @@ def maxstat(perm, axis=-1):
         permR = perm.max()*np.ones(perm.shape)
     # Max through specific dimension :
     elif axis >= 0:
-        permR = np.max(perm, axis=axis+1, keepdims=True)
+        permR = np.max(perm, axis=axis, keepdims=True)
         psh, pRsh = perm.shape, permR.shape
         permR = np.tile(permR, [int(psh[k]/pRsh[k]) for k in range(perm.ndim)])
     # Any other values :
