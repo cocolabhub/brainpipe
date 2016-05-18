@@ -257,7 +257,16 @@ def perm_rep(x, n_perm):
 
 
 def perm_metric(metric):
-    """Get the metric
+    """Get a metric for permutation normalization.
+
+    Args:
+        metric: string/function
+
+            - None: compare directly values without transformation
+            - 'm_center': (A-B)/mean(B) transformation
+            - 'm_zscore': (A-B)/std(B) transformation
+            - 'm_minus': (A-B) transformation
+            - function: user defined function [def myfcn(A, B): return array_like]
     """
     # Pre-defined metrics :
     if isinstance(metric, str):

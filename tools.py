@@ -181,8 +181,7 @@ def squarefreq(fstart, fend, fwidth):
         fce: list
             List of frequencies.
     """
-    fstartAll = np.arange(fstart, fend, fwidth)
     fce = []
-    for k in fstartAll:
-        fce.extend(binarize(k, fend, fwidth, fwidth, kind='list'))
+    refce = np.arange(fstart, fend+fwidth, fwidth)
+    [[fce.append([k, i]) for i in refce[num+1::]] for num, k in enumerate(refce)]
     return fce

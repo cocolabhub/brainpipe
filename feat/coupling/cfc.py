@@ -35,9 +35,9 @@ windoc = """
 Footnotes = """
 
     .. rubric:: Footnotes
-    .. [#f1] Canolty et al, 2006 `see <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2628289/>`_
-    .. [#f2] Tort et al, 2010 `see <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2941206/>`_
-    .. [#f3] See Ozkurt et al, 2012 `see <http://www.ncbi.nlm.nih.gov/pubmed/22531738/>`_
+    .. [#f1] `Canolty et al, 2006 <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2628289/>`_
+    .. [#f2] `Tort et al, 2010 <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2941206/>`_
+    .. [#f3] `Ozkurt et al, 2012 <http://www.ncbi.nlm.nih.gov/pubmed/22531738/>`_
 
 """
 
@@ -85,7 +85,7 @@ class pac(_coupling):
         - Surrogates to correct the true pac value
         - A normalization method to correct true pas value bu surrogates
 
-    Contributor: Juan LP Soto  `Python <http://www.python.org/>`_.
+    Contributor: Juan LP Soto.
 
     Args:
         sf: int

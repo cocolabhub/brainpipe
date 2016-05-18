@@ -71,7 +71,7 @@ def fdr(p, q):
 
 
 def maxstat(perm, axis=-1):
-    """Correction by the maximum statistique
+    """Correction by the maximum statistic
 
     Args:
         perm: array

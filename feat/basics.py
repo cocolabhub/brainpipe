@@ -242,7 +242,7 @@ def _get(x, self):
 
     # Mean time :
     if self._window is not None:
-        xF, xvec = binArray(xF, self._window, axis=1)
+        xF, self.xvec = binArray(xF, self._window, axis=1)
 
     return xF, pvalues
 
@@ -292,7 +292,6 @@ def _evalstat(self, x, bsl):
             perm = fcn(perm, baseline[:, pts, :]).mean(2)
             # Maximum stat (correct through frequencies):
             if maxst:
-                print(perm.shape)
                 perm = maxstat(perm, axis=1)
             # Get pvalues :
             pvalues[:, pts] = perm_2pvalue(xN[:, pts], perm, n_perm, tail=tail)

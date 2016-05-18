@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 from brainpipe.visu._interp import mapinterpolation
 from warnings import warn
 
@@ -114,7 +115,7 @@ class tilerplot(object):
             color: string, optional, [def: 'b']
                 Color of the plot
 
-            **kwargs:
+            kwargs:
                 Supplementar arguments to control each suplot:
                 title, xlabel, ylabel (which can be list for each subplot)
                 xlim, ylim, xticks, yticks, xticklabels, yticklabels, style.
@@ -138,9 +139,10 @@ class tilerplot(object):
         # Run function for each yi :
         return self._subplotND(y, _fcn, maxplot, subdim)
 
-    def plot2D(self, fig, y, xvec=None, yvec=None, cmap='inferno', colorbar=True,
-               vmin=None, vmax=None, cblabel='', subdim=None, interpolation='none',
-               resample=(0, 0), figtitle='', transpose=False, maxplot=10, **kwargs):
+    def plot2D(self, fig, y, xvec=None, yvec=None, cmap='inferno',
+               colorbar=True, cbticks='auto', vmin=None, vmax=None, cblabel='',
+               subdim=None, mask=None, interpolation='none', resample=(0, 0),
+               figtitle='', transpose=False, maxplot=10, **kwargs):
         """Plot y as an image
 
         Args:
@@ -191,7 +193,7 @@ class tilerplot(object):
             transpose: bool, optional, [def: False]
                 Invert subplot (row <-> column)
 
-            **kwargs:
+            kwargs:
                 Supplementar arguments to control each suplot:
                 title, xlabel, ylabel (which can be list for each subplot)
                 xlim, ylim, xticks, yticks, xticklabels, yticklabels, style.
@@ -199,29 +201,50 @@ class tilerplot(object):
 
         # Fig properties:
         self._fig = self._figmngmt(fig, figtitle=figtitle, transpose=transpose)
+        # Mask properties:
+        if (mask is not None):
+            if not (mask.shape == y.shape):
+                warn('The shape of mask '+str(mask.shape)+' must be the same '
+                     'of y '+str(y.shape)+'. Mask will be ignored')
+                mask = None
+
         # Check y shape :
         y = self._checkarray(y)
         if xvec is None:
             xvec = np.arange(y.shape[-1])
         if yvec is None:
             yvec = np.arange(y.shape[1])
+
         l0, l1, l2 = y.shape
         # Resample data:
         if resample != (0, 0):
             yi = []
+            maski = []
             for k in range(l0):
                 yT, xvec, yvec = mapinterpolation(y[k, ...], x=xvec, y=yvec,
                                                   interpx=resample[0],
                                                   interpy=resample[1])
                 yi.append(yT)
+                if mask is not None:
+                    maskT, _, _ = mapinterpolation(mask[k, ...], x=xvec, y=yvec,
+                                                   interpx=resample[0],
+                                                   interpy=resample[1])
+                    maski.append(maskT)
             y = np.array(yi)
+            mask = maski
             del yi, yT
         # Get default for title, xlabel and ylabel:
         kwout, kwargs = self._completeLabels(kwargs, y.shape[0], 'title',
                                              'xlabel', 'ylabel', default='')
 
         # Plotting function :
-        def _fcn(y, k):
+        def _fcn(y, k, mask=mask):
+            # Get a mask for data:
+            if mask is not None:
+                mask = np.array(mask)
+                norm = Normalize(y.min(), y.max())
+                y = plt.get_cmap(cmap)(norm(y))
+                y[..., 3] = mask[k, ...]
             im = plt.imshow(y, aspect='auto', cmap=cmap,
                             interpolation=interpolation, vmin=vmin, vmax=vmax,
                             extent=[xvec[0], xvec[-1], yvec[-1], yvec[0]])
@@ -230,7 +253,13 @@ class tilerplot(object):
             _pltutils(ax, kwout['title'][k], kwout['xlabel'][k],
                       kwout['ylabel'][k], **kwargs)
             if colorbar:
-                cb = plt.colorbar(im)
+                cb = plt.colorbar(im, shrink=0.7, pad=0.01, aspect=10)
+                if cbticks == 'auto':
+                    cb.set_ticks(im.colorbar.get_clim())
+                elif cbticks is None:
+                    pass
+                else:
+                    cb.set_ticks(cbticks)
                 cb.set_label(cblabel)
 
             ax.invert_yaxis()
@@ -328,8 +357,8 @@ class tilerplot(object):
 
         return kwout, kwargs
 
-tilerplot.plot1D.__doc__ += _pltutils.__doc__
-tilerplot.plot2D.__doc__ += _pltutils.__doc__
+# tilerplot.plot1D.__doc__ += _pltutils.__doc__
+# tilerplot.plot2D.__doc__ += _pltutils.__doc__
 
 
 class addLines(object):
@@ -468,10 +497,14 @@ class BorderPlot(_pltutils):
         ncol: integer, optional, [def: 1]
             Number of colums for the legend
 
+        kwargs:
+            Supplementar arguments to control each suplot:
+            title, xlabel, ylabel (which can be list for each subplot)
+            xlim, ylim, xticks, yticks, xticklabels, yticklabels, style.
     Return:
         The axes of the plot.
     """
-    __doc__ += _pltutils.__doc__
+    # __doc__ += _pltutils.__doc__
 
     def __init__(self, time, x, y=None, kind='sem', color='',
                  alpha=0.2, linewidth=2, legend='', ncol=1, **kwargs):

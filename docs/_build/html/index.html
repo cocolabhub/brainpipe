@@ -84,7 +84,7 @@
 </ul>
 </li>
 </ul>
-<p class="caption"><span class="caption-text">STATISTIQUES</span></p>
+<p class="caption"><span class="caption-text">STATISTICS</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="stat.html">Statistics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="stat.html#binomial">Binomial</a></li>
@@ -149,6 +149,86 @@
             
   <div class="section" id="brainpipe">
 <h1>Brainpipe<a class="headerlink" href="#brainpipe" title="Permalink to this headline">¶</a></h1>
+<p>Brainpipe is a python toolbox dedicated for neuronal signals analysis and machine-learning. The aim is to provide a variety of tools to extract informations from neural activities (features) and use machine-learning to validate hypothesis. The machine-learning used the excellent <a class="reference external" href="http://scikit-learn.org/stable/">scikit-learn</a>  library. Brainpipe can also perform parallel computing and try to optimize RAM usage for our &#8216;large&#8217; datasets.</p>
+<p>It&#8217;s evolving every day! So if you have problems, bugs or if you want to collaborate and add your own tools, contact me at <a class="reference external" href="mailto:e&#46;combrisson&#37;&#52;&#48;gmail&#46;com">e<span>&#46;</span>combrisson<span>&#64;</span>gmail<span>&#46;</span>com</a></p>
+<div class="figure align-center" id="id2">
+<img alt="_images/titend.png" src="_images/titend.png" />
+<p class="caption"><span class="caption-text">(My amazing <a class="reference external" href="https://www.facebook.com/jhenntattooist/?fref=ts">Jhenn Oz</a>)</span></p>
+</div>
+</div>
+<div class="section" id="requirement">
+<h1>Requirement<a class="headerlink" href="#requirement" title="Permalink to this headline">¶</a></h1>
+<p>brainpipe is developed on Python 3, so the compatibility with python 2 is not guaranted! (not tested yet)</p>
+<p>Please, check if you have this toolbox installed and already up-to-date:</p>
+<ul class="simple">
+<li>matplotlib (visualization)</li>
+<li>scikit-learn (machine learning)</li>
+<li>joblib (parallel computing)</li>
+</ul>
+</div>
+<div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>For instance, the easiest way of installing brainpipe is to ues github (<a class="reference external" href="https://github.com/EtienneCmb/brainpipe">brainpipe</a> ).</p>
+<p>Go to your python site-package folder (ex: anaconda3/lib/python3.5/site-packages) and in a terminal run</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">git</span><span class="nd">@github.com</span><span class="p">:</span><span class="n">EtienneCmb</span><span class="o">/</span><span class="n">brainpipe</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="what-s-new">
+<h1>What&#8217;s new<a class="headerlink" href="#what-s-new" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="v0-1-0">
+<h2>v0.1.0<a class="headerlink" href="#v0-1-0" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><dl class="first docutils">
+<dt>Statistics:</dt>
+<dd><ul class="first last simple">
+<li>Permutations: array optimized permutation module</li>
+<li>p-values on permutations can be compute on 1 tail (upper and lower part) or two tails</li>
+<li>metric:</li>
+<li>Multiple comparison: maximum statistique, Bonferroni, FDR</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Features:</dt>
+<dd><ul class="first last simple">
+<li>sigfilt//amplitude//power//TF: wilcoxon/Kruskal-Wallis/permutations stat test (comparison with baseline)</li>
+<li>PAC: new Normalized Direct PAC method (Ozkurt, 2012)</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Visualization:</dt>
+<dd><ul class="first last simple">
+<li>tilerplot() with plot1D() and plot2D() with automatic control of subplot</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Tools:</dt>
+<dd><ul class="first last simple">
+<li>Array: ndsplit and ndjoin method which doesn&#8217;t depend on odd/even size (but return list)</li>
+<li>squarefreq() generate a square frequency vector</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Bugs:</dt>
+<dd><ul class="first last simple">
+<li>Probably on stat for classification() and multi-features, but not tested. It might works</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="organization">
+<h1>Organization<a class="headerlink" href="#organization" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound" id="processing">
 <p class="caption"><span class="caption-text">PROCESSING</span><a class="headerlink" href="#processing" title="Permalink to this toctree">¶</a></p>
 <ul>
@@ -194,13 +274,22 @@
 </li>
 </ul>
 </div>
-<div class="toctree-wrapper compound" id="statistiques">
-<p class="caption"><span class="caption-text">STATISTIQUES</span><a class="headerlink" href="#statistiques" title="Permalink to this toctree">¶</a></p>
+<div class="toctree-wrapper compound" id="statistics">
+<p class="caption"><span class="caption-text">STATISTICS</span><a class="headerlink" href="#statistics" title="Permalink to this toctree">¶</a></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="stat.html">Statistics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="stat.html#binomial">Binomial</a></li>
-<li class="toctree-l2"><a class="reference internal" href="stat.html#permutations">Permutations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="stat.html#multiple-comparisons">Multiple-comparisons</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stat.html#permutations">Permutations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stat.html#evaluation">Evaluation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stat.html#generate">Generate</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="stat.html#multiple-comparisons">Multiple-comparisons</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stat.html#bonferroni">Bonferroni</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stat.html#false-discovery-rate-fdr">False Discovery Rate (FDR)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stat.html#maximum-statistic">Maximum statistic</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

@@ -230,6 +230,9 @@ def CfcSurrogatesList(Id, CfcModel, n_perm=200, tlag=[0, 0]):
 def CfcShuffle(xfP, xfA, CfcModel, n_perm=200):
     """Shuffle the phase values. For each shuffle phase distribution,
     we compute the cfc using the cfc method.
+
+    [xfP] = (nPha, npts, ntrials)
+    [xfA] = (nAmp, npts, ntrials)
     """
     nPha, timeL, nbTrials = xfP.shape
     nAmp = xfA.shape[0]
