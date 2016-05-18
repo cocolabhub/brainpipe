@@ -141,7 +141,8 @@ class tilerplot(object):
 
     def plot2D(self, fig, y, xvec=None, yvec=None, cmap='inferno',
                colorbar=True, cbticks='auto', vmin=None, vmax=None, cblabel='',
-               subdim=None, mask=None, interpolation='none', resample=(0, 0),
+               sharex=False, sharey=False, subdim=None, mask=None,
+               interpolation='none', resample=(0, 0), under=None, over=None,
                figtitle='', transpose=False, maxplot=10, **kwargs):
         """Plot y as an image
 
@@ -201,12 +202,20 @@ class tilerplot(object):
 
         # Fig properties:
         self._fig = self._figmngmt(fig, figtitle=figtitle, transpose=transpose)
+
+        # Share axis:
+        if sharex:
+            self._fig.subplots_adjust(hspace=0)
         # Mask properties:
         if (mask is not None):
             if not (mask.shape == y.shape):
                 warn('The shape of mask '+str(mask.shape)+' must be the same '
                      'of y '+str(y.shape)+'. Mask will be ignored')
                 mask = None
+            if mask.ndim == 2:
+                mask = mask[np.newaxis, ...]
+        else:
+            mask = []
 
         # Check y shape :
         y = self._checkarray(y)
@@ -216,6 +225,7 @@ class tilerplot(object):
             yvec = np.arange(y.shape[1])
 
         l0, l1, l2 = y.shape
+
         # Resample data:
         if resample != (0, 0):
             yi = []
@@ -225,7 +235,7 @@ class tilerplot(object):
                                                   interpx=resample[0],
                                                   interpy=resample[1])
                 yi.append(yT)
-                if mask is not None:
+                if np.array(mask).size:
                     maskT, _, _ = mapinterpolation(mask[k, ...], x=xvec, y=yvec,
                                                    interpx=resample[0],
                                                    interpy=resample[1])
@@ -240,14 +250,21 @@ class tilerplot(object):
         # Plotting function :
         def _fcn(y, k, mask=mask):
             # Get a mask for data:
-            if mask is not None:
+            if np.array(mask).size:
                 mask = np.array(mask)
-                norm = Normalize(y.min(), y.max())
+                norm = Normalize(vmin, vmax)
                 y = plt.get_cmap(cmap)(norm(y))
                 y[..., 3] = mask[k, ...]
+            # Plot picture:
             im = plt.imshow(y, aspect='auto', cmap=cmap,
                             interpolation=interpolation, vmin=vmin, vmax=vmax,
                             extent=[xvec[0], xvec[-1], yvec[-1], yvec[0]])
+            # Manage under and over:
+            if (under is not None) and (isinstance(under, str)):
+                im.cmap.set_under(color=under)
+            if (over is not None) and (isinstance(over, str)):
+                im.cmap.set_over(color=over)
+
             plt.axis('tight')
             ax = plt.gca()
             _pltutils(ax, kwout['title'][k], kwout['xlabel'][k],
@@ -260,11 +277,15 @@ class tilerplot(object):
                     pass
                 else:
                     cb.set_ticks(cbticks)
-                cb.set_label(cblabel)
+                cb.set_label(cblabel, labelpad=-10)
 
             ax.invert_yaxis()
+        axAll = self._subplotND(y, _fcn, maxplot, subdim, sharex, sharey)
+        fig = plt.gcf()
+        fig.tight_layout()
+
         # Run function for each yi :
-        return self._subplotND(y, _fcn, maxplot, subdim)
+        return fig, axAll
 
     def plotcustom(self, fig, y, fcn, maxplot=10, subdim=None):
         """
@@ -295,7 +316,7 @@ class tilerplot(object):
                              '3 dimensions')
         return y
 
-    def _subplotND(self, y, fcn, maxplot, subdim):
+    def _subplotND(self, y, fcn, maxplot, subdim, sharex, sharey):
         """Manage subplots
         """
         axall = []
@@ -318,10 +339,24 @@ class tilerplot(object):
                 backup = ncol
                 ncol = nrow
                 nrow = backup
+            self._nrow, self._ncol = nrow, ncol
             for k in range(L):
                 fig.add_subplot(nrow, ncol, k+1)
                 fcn(y[k, ...], k)
+                ax = plt.gca()
+                # Share-y axis:
+                if sharey and (k % ncol == 0):
+                    pass
+                else:
+                    if sharey:
+                        ax.set_yticklabels([])
+                        ax.set_ylabel('')
+                # Share-x axis:
+                if sharex and (k < (nrow-1)*ncol):
+                    ax.set_xticklabels([])
+                    ax.set_xlabel('')
                 axall.append(plt.gca())
+                plt.gca().grid('off')
             return axall
         else:
             raise ValueError('Warning : the "maxplot" parameter prevent to a'
