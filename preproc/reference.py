@@ -133,8 +133,8 @@ def bipolarization(data, channel, dim=0, xyz=None, sep='.', unbip=None,
     channel_b, idx_b = [], []
     for num, chan in enumerate(chanShort):
         # Get current letter and num :
-        cletter = chan[0]
         cnum = numlst[num]
+        cletter = chan.split(str(cnum))[0]
         # If chan is consider and there is a number in the elec name :
         if (num not in unbipidx) and cnum:
             # Try to find elec-1 :
