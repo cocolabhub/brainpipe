@@ -11,6 +11,7 @@ from brainpipe.feat.coupling.pac._pac import *
 from brainpipe.feat.coupling.pac.pacmeth import *
 from brainpipe.visu.cmon_plt import tilerplot
 from brainpipe.tools import binarize
+from brainpipe.statistics import perm_2pvalue
 
 __all__ = ['pac']
 
@@ -38,6 +39,7 @@ Footnotes = """
     .. [#f1] `Canolty et al, 2006 <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2628289/>`_
     .. [#f2] `Tort et al, 2010 <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2941206/>`_
     .. [#f3] `Ozkurt et al, 2012 <http://www.ncbi.nlm.nih.gov/pubmed/22531738/>`_
+    .. [#f4] `Bahramisharif et al, 2013 <http://www.jneurosci.org/content/33/48/18849.short/>`_
 
 """
 
@@ -95,7 +97,7 @@ class pac(_coupling):
             Number of points of the time serie
 
     Kargs:
-        Id: string, optional, [def: '114']
+        Id: string, optional, [def: '113']
             The Id correspond to the way of computing pac. Id is composed of
             three digits [ex : Id='210']
 
@@ -106,16 +108,16 @@ class pac(_coupling):
                     - '3': Heights Ratio
                     - '4': Phase synchrony
                     - '5': ndPAC [#f3]_
-                    - '6': Amplitude PSD
+                    - '6': Amplitude PSD [NOT IMPLEMENTED YET]
 
                 * Second digit: refer to the method for computing surrogates:
 
                     - '0': No surrogates
-                    - '1': Shuffle phase values
-                    - '2': Time lag
-                    - '3': Swap phase/amplitude through trials
-                    - '4': Swap amplitude
-                    - '5': circular shifting
+                    - '1': Swap trials phase/amplitude [#f2]_
+                    - '2': Swap trials amplitude [#f4]_
+                    - '3': Shuffle phase values
+                    - '4': Time lag [#f1]_ [NOT IMPLEMENTED YET]
+                    - '5': circular shifting [NOT IMPLEMENTED YET]
 
                 * Third digit: refer to the normalization method for correction:
 
@@ -125,9 +127,9 @@ class pac(_coupling):
                     - '3': Substract then divide by the mean of surrogates
                     - '4': Z-score
 
-            So, if Id='123', this mean that pac will be evaluate using the
+            So, if Id='143', this mean that pac will be evaluate using the
             Modulation Index ('1'), then surrogates will be find by introducing a
-            time lag ('2') and finally, the true pac value will be normalized by
+            time lag ('4') and finally, the true pac value will be normalized by
             substracting then dividing by the mean of surrogates.
 
         pha_f: tuple/list, optional, [def: [2,4]]
@@ -157,7 +159,7 @@ class pac(_coupling):
     """
     __doc__ += windoc + docfilter + Footnotes
 
-    def __init__(self, sf, npts, Id='114', pha_f=[2, 4], pha_meth='hilbert',
+    def __init__(self, sf, npts, Id='113', pha_f=[2, 4], pha_meth='hilbert',
                  pha_cycle=3, amp_f=[60, 200], amp_meth='hilbert', amp_cycle=6,
                  nbins=18, window=None, width=None, step=None, time=None, **kwargs):
         # Check pha and amp methods:
@@ -275,8 +277,8 @@ class pac(_coupling):
                 nCfc = Norm(uCfc, mSuro, stdSuro)
 
                 # Confidence interval :
-                pvalue = np.array([_cfcPvalue(nCfc[k, ...], Suro[
-                    k, ...]) for k in range(N)])
+                pvalue = perm_2pvalue(uCfc.mean(2), np.rollaxis(Suro.mean(2), 4),
+                                      self.n_perm, tail=1)
 
                 return nCfc.transpose(3, 4, 0, 1, 2), pvalue.transpose(2, 3, 0, 1)
             else:

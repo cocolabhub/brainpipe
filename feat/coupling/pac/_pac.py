@@ -8,7 +8,6 @@ from brainpipe.feat.coupling.pac.pacmeth import *
 
 __all__ = [
             '_cfcCheck',
-            '_cfcPvalue',
             '_cfcFiltSuro'
           ]
 
@@ -88,20 +87,3 @@ def _cfcCheck(xPha, xAmp, npts):
         raise ValueError('xPha and xAmp must have the same size')
 
     return xPha, xAmp
-
-
-def _cfcPvalue(nCfc, perm):
-    """Get the pvalue of the cfc using permutations
-    """
-    nCfc, perm = n.mean(nCfc, 1), n.mean(perm, 1)
-    nW, nA, nP = nCfc.shape
-    nperm = perm.shape[3]
-
-    pvalue = n.ones(nCfc.shape)
-    for i, k, l in product(range(nW), range(nA), range(nP)):
-        pv = (n.sum(perm[i, k, l, :] >= nCfc[i, k, l])) / nperm
-        if pv == 0:
-            pvalue[i, k, l] = 1/nperm
-        else:
-            pvalue[i, k, l] = pv
-    return pvalue
