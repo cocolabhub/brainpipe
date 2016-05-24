@@ -83,8 +83,9 @@ class tilerplot(object):
     """Automatic tiler plot for 1, 2 and 3D data.
     """
 
-    def plot1D(self, fig, y, x=None, maxplot=10, figtitle='',
-               subdim=None, transpose=False, color='b', **kwargs):
+    def plot1D(self, fig, y, x=None, maxplot=10, figtitle='', sharex=False,
+               sharey=False,  subdim=None, transpose=False, color='b',
+               **kwargs):
         """Simple one dimentional plot
 
         Args:
@@ -136,14 +137,19 @@ class tilerplot(object):
             plt.axis('tight')
             _pltutils(plt.gca(), kwout['title'][k], kwout['xlabel'][k],
                       kwout['ylabel'][k], **kwargs)
-        # Run function for each yi :
-        return self._subplotND(y, _fcn, maxplot, subdim)
+
+        axAll = self._subplotND(y, _fcn, maxplot, subdim, sharex, sharey)
+        fig = plt.gcf()
+        fig.tight_layout()
+
+        return fig, axAll
 
     def plot2D(self, fig, y, xvec=None, yvec=None, cmap='inferno',
-               colorbar=True, cbticks='auto', vmin=None, vmax=None, cblabel='',
-               sharex=False, sharey=False, subdim=None, mask=None,
-               interpolation='none', resample=(0, 0), under=None, over=None,
-               figtitle='', transpose=False, maxplot=10, **kwargs):
+               colorbar=True, cbticks='minmax', ycb=-10, cblabel='',
+               under=None, over=None, vmin=None, vmax=None, sharex=False,
+               sharey=False, subdim=None, mask=None, interpolation='none',
+               resample=(0, 0), figtitle='', transpose=False, maxplot=10,
+               **kwargs):
         """Plot y as an image
 
         Args:
@@ -166,11 +172,24 @@ class tilerplot(object):
             colorbar: bool, optional, [def: True]
                 Add or not a colorbar to your plot
 
-            vmin, vmax: int/float, optional, [def: None]
-                Control minimum and maximum of the image
+            cbticks: list/string, optional, [def: 'minmax']
+                Control colorbar ticks. Use 'auto' for [min,(min+max)/2,max],
+                'minmax' for [min, max] or your own list.
+
+            ycb: int, optional, [def: -10]
+                Distance between the colorbar and the label.
 
             cblabel: string, optional, [def: '']
                 Label for the colorbar
+
+            under, over: string, optional, [def: '']
+                Color for everything under and over the colorbar limit.
+
+            vmin, vmax: int/float, optional, [def: None]
+                Control minimum and maximum of the image
+
+            sharex, sharey: bool, optional, [def: False]
+                Define if subplots should share x and y
 
             subdim: tuple, optional, [def: None]
                 Force subplots to be subdim=(n_colums, n_rows)
@@ -272,27 +291,23 @@ class tilerplot(object):
             if colorbar:
                 cb = plt.colorbar(im, shrink=0.7, pad=0.01, aspect=10)
                 if cbticks == 'auto':
-                    cb.set_ticks(im.colorbar.get_clim())
+                    clim = im.colorbar.get_clim()
+                    cb.set_ticks([clim[0], (clim[0]+clim[1])/2, clim[1]])
+                elif cbticks == 'minmax':
+                    clim = im.colorbar.get_clim()
+                    cb.set_ticks([clim[0], clim[1]])
                 elif cbticks is None:
                     pass
                 else:
                     cb.set_ticks(cbticks)
-                cb.set_label(cblabel, labelpad=-10)
+                cb.set_label(cblabel, labelpad=ycb)
 
             ax.invert_yaxis()
         axAll = self._subplotND(y, _fcn, maxplot, subdim, sharex, sharey)
         fig = plt.gcf()
         fig.tight_layout()
 
-        # Run function for each yi :
         return fig, axAll
-
-    def plotcustom(self, fig, y, fcn, maxplot=10, subdim=None):
-        """
-        """
-        self._fig = fig
-        self._transpose = False
-        return self._subplotND(y, fcn, maxplot, subdim)
 
     def _figmngmt(self, fig, figtitle='', transpose=False):
         # Change title:
