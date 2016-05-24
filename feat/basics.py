@@ -107,7 +107,9 @@ class _spectral(tilerplot):
         self._kind = kind
         self._fobj = fextract(method, kind, **kwargs)
         self._meanT = meanT
-        self._time = time
+        if (self._window is not None) and (time is not None):
+            self.xvec = binArray(time, self._window)[0]
+        self.xvec = list(self.xvec)
 
     def __str__(self):
         extractStr = str(self._fobj)
@@ -181,9 +183,6 @@ class _spectral(tilerplot):
         if (self._norm is not None) and (self._baseline is None):
             warn(warnmsg)
             self._norm = None
-        if self._window is not None:
-            self.xvec = binArray(self._time, self._window)[0]
-        self.xvec = list(self.xvec)
 
         # Check statistical method :
         if statmeth is not None:
