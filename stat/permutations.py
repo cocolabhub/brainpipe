@@ -143,11 +143,11 @@ def perm_swap(a, b, n_perm=200, axis=-1, rndstate=0):
     """Permute values between two arrays and generate a number of permutations.
 
     Args:
-        a: ndarray
-            Array of shape (d1, d2, ...)
-
-        b: ndarray
-            Array with the same shape of a
+        a, b: ndarray
+            Array to swap values. If axis=-1, the shape of a and b could
+            be diffrent. If axis is not -1, the shape of a and b could
+            be diffrent along the specified axis, but must be the same on
+            all other axis.
 
         n_pem: int
             Number of permutations
@@ -162,54 +162,57 @@ def perm_swap(a, b, n_perm=200, axis=-1, rndstate=0):
 
     Return:
         ash, bsh: array
-            The two swapping arrays with a new shape of (n_perm ,d1, d2, ...)
+            Swapped arrays
     """
-    # Check if size a == size b:
-    if a.shape != b.shape:
-        raise ValueError("Shape of 'a' is "+str(a.shape)+" shape of"
-                         " b is "+str(b.shape)+". Both must be equal")
-    ab_sh = a.shape
+    ash, bsh = a.shape, b.shape
+    # Check size of a and b :
+    if (axis != -1):  # Swap entire array work whatever dim
+        ashO = np.delete(np.array(ash), axis)
+        bshO = np.delete(np.array(bsh), axis)
+        if not np.array_equal(ashO, bshO):
+            raise ValueError("Shape of a is "+str(a.shape)+" shape of"
+                             " b is "+str(b.shape)+". Except along axis "+str(axis)+
+                             ", the shape of a and b must be equal")
 
     # Shuffle both entire matrix
     if axis == -1:
+        ash_p, bsh_p = np.product(ash), np.product(bsh)
         ab_backup = np.concatenate((np.ravel(a), np.ravel(b)))
-        absh_mat = np.zeros((n_perm, len(ab_backup)))
-        # For each permutation :
-        for k in range(n_perm):
-            # Backup of ab :
-            ab = ab_backup.copy()
-            # New random state :
-            rnd = np.random.RandomState(rndstate+k)
-            # Shuffle copy :
-            rnd.shuffle(np.ravel(ab))
-            absh_mat[k, :] = ab
+        absh_mat = _swap(ab_backup, n_perm, rndstate)
         # Finally reshape data :
-        absplit = np.split(absh_mat, 2, axis=1)
-        return absplit[0].reshape(n_perm, *ab_sh), absplit[1].reshape(n_perm, *ab_sh)
+        aswap = absh_mat[:, 0:ash_p].reshape(tuple([n_perm]+list(ash)))
+        bswap = absh_mat[:, ash_p::].reshape(tuple([n_perm]+list(bsh)))
+        return aswap, bswap
     else:
         # Swap axes if axis != 0:
         if axis != 0:
             a = np.swapaxes(a, 0, axis)
             b = np.swapaxes(b, 0, axis)
+        na, nb = a.shape[0], b.shape[0]
         # Swap a & b along axis :
         ab_backup = np.concatenate((a, b), axis=0)
-        absh_mat = np.zeros((n_perm, 2*a.shape[0], *tuple(list(a.shape)[1::])))
-        # For each permutation :
-        for k in range(n_perm):
-            # Backup of ab :
-            ab = ab_backup.copy()
-            # New random state :
-            rnd = np.random.RandomState(rndstate+k)
-            # Shuffle copy :
-            rnd.shuffle(ab)
-            absh_mat[k, ...] = ab
+        absh_mat = _swap(ab_backup, n_perm, rndstate)
         # Re-order a & b :
-        absplit = np.split(absh_mat, 2, axis=1)
-        a, b = absplit[0], absplit[1]
+        aswap, bswap = absh_mat[:, 0:na, ...], absh_mat[:, na::, ...]
         if axis != 0:
-            a = np.swapaxes(a, 1, axis+1)
-            b = np.swapaxes(b, 1, axis+1)
-        return a, b
+            aswap = np.swapaxes(aswap, 1, axis+1)
+            bswap = np.swapaxes(bswap, 1, axis+1)
+        return aswap, bswap
+
+
+def _swap(ab_backup, n_perm, rndstate):
+    """Sub Swapping function
+    """
+    absh_mat = np.zeros(tuple([n_perm]+list(ab_backup.shape)))
+    for k in range(n_perm):
+        # Backup of ab :
+        ab = ab_backup.copy()
+        # New random state :
+        rnd = np.random.RandomState(rndstate+k)
+        # Shuffle copy :
+        rnd.shuffle(ab)
+        absh_mat[k, ...] = ab
+    return absh_mat
 
 
 def perm_array(x, n_perm=200, rndstate=0):
