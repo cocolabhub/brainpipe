@@ -185,4 +185,4 @@ def bipolarization(data, channel, dim=0, xyz=None, sep='.', unbip=None,
     else:
         data_b = np.array(data_b)
 
-    return data_b, channel_b, xyz_b
+    return data_b, channel_b, np.array(xyz_b)
