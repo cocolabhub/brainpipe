@@ -1,7 +1,9 @@
 import numpy as np
 from scipy.special import erfinv
 from itertools import product
+
 from brainpipe.tools import binarize
+from brainpipe.statistics import perm_swap, perm_array
 
 __all__ = [
     'CfcSettings',
@@ -178,10 +180,10 @@ def CfcSurrogatesList(Id, CfcModel, n_perm=200, tlag=[0, 0]):
     method on surrogates data.
     Here's the list of methods to compute surrogates:
     - No surrogates
-    - Shuffle phase values
-    - Time lag
     - Swap phase/amplitude through trials
     - Swap amplitude
+    - Shuffle phase values
+    - Time lag
     - circular shifting
 
     Each method should return the surrogates, the mean of the surrogates and
@@ -193,30 +195,30 @@ def CfcSurrogatesList(Id, CfcModel, n_perm=200, tlag=[0, 0]):
             return (None, None, None)
         CfcSuroModelStr = 'No surrogates'
 
-    # Shuffle phase values
+    # Swap phase/amplitude through trials
     elif Id == 1:
+        def CfcSuroModel(pha, amp, CfcModel, n_perm):
+            return CfcTrialSwap(pha, amp, CfcModel, n_perm=n_perm)
+        CfcSuroModelStr = 'Swap phase/amplitude through trials, (Tort, 2010)'
+
+    # Swap amplitude
+    elif Id == 2:
+        def CfcSuroModel(pha, amp, CfcModel, n_perm):
+            return CfcAmpSwap(pha, amp, CfcModel, n_perm=n_perm)
+        CfcSuroModelStr = 'Swap amplitude, (Bahramisharif, 2013)'
+
+    # Shuffle phase values
+    elif Id == 3:
         def CfcSuroModel(pha, amp, CfcModel, n_perm):
             return CfcShuffle(pha, amp, CfcModel, n_perm=n_perm)
         CfcSuroModelStr = 'Shuffle phase values'
 
     # Introduce a time lag
-    elif Id == 2:
+    elif Id == 4:
         def CfcSuroModel(pha, amp, CfcModel, n_perm, tlag):
             return CfcTimeLag(pha, amp, CfcModel, n_perm=n_perm, tlag=tlag)
         CfcSuroModelStr = 'Time lag on amplitude between ['+int(
             tlag[0])+';'+int(tlag[1])+'] , (Canolty, 2006)'
-
-    # Swap phase/amplitude through trials
-    elif Id == 3:
-        def CfcSuroModel(pha, amp, CfcModel, n_perm):
-            return CfcTrialSwap(pha, amp, CfcModel, n_perm=n_perm)
-        CfcSuroModelStr = 'Swap phase/amplitude through trials (Tort, 2010)'
-
-    # Swap amplitude
-    elif Id == 4:
-        def CfcSuroModel(pha, amp, CfcModel, n_perm):
-            return CfcAmpSwap(pha, amp, CfcModel, n_perm=n_perm)
-        CfcSuroModelStr = 'Swap amplitude, (Bahramisharif, 2013)'
 
     # Circular shifting
     elif Id == 5:
@@ -227,16 +229,59 @@ def CfcSurrogatesList(Id, CfcModel, n_perm=200, tlag=[0, 0]):
     return CfcSuroModel, CfcSuroModelStr
 
 
-def CfcShuffle(xfP, xfA, CfcModel, n_perm=200):
-    """Shuffle the phase values. For each shuffle phase distribution,
-    we compute the cfc using the cfc method.
+def CfcTrialSwap(xfP, xfA, CfcModel, n_perm=200):
+    """Swap phase/amplitude trials (Tort, 2010)
 
     [xfP] = (nPha, npts, ntrials)
     [xfA] = (nAmp, npts, ntrials)
     """
+    # Get sizes :
     nPha, timeL, nbTrials = xfP.shape
     nAmp = xfA.shape[0]
+    # Swap trials phase/amplitude :
+    phamp = np.concatenate((xfP, xfA))
+    phampSh1, phampSh2 = perm_swap(phamp, phamp, axis=2, n_perm=n_perm)
+    phaSh, ampSh = phampSh1[:, 0:nPha, ...], phampSh2[:, nPha::, ...]
+    del phamp, phampSh1, phampSh2
+    # Get pac :
+    Suro = np.zeros((nbTrials, nAmp, nPha, n_perm))
+    iteract = product(range(nbTrials), range(n_perm))
+    for tr, pe in iteract:
+        Suro[tr, :, :, pe] = CfcModel(np.matrix(phaSh[pe, :, :, tr]),
+                                      ampSh[pe, :, :, tr])
+    return Suro
 
+
+def CfcAmpSwap(xfP, xfA, CfcModel, n_perm=200):
+    """Swap phase/amplitude trials, (Bahramisharif, 2013)
+
+    [xfP] = (nPha, npts, ntrials)
+    [xfA] = (nAmp, npts, ntrials)
+    """
+    # Get sizes :
+    nPha, timeL, nbTrials = xfP.shape
+    nAmp = xfA.shape[0]
+    print(nPha, timeL, nbTrials, nAmp)
+    # Swap trials phase/amplitude :
+    ampSh, _ = perm_swap(xfA, xfA, axis=2, n_perm=n_perm)
+    # Get pac :
+    Suro = np.zeros((nbTrials, nAmp, nPha, n_perm))
+    iteract = product(range(nbTrials), range(n_perm))
+    for tr, pe in iteract:
+        Suro[tr, :, :, pe] = CfcModel(xfP[:, :, tr],
+                                      np.matrix(ampSh[pe, :, :, tr]))
+    return Suro
+
+
+def CfcShuffle(xfP, xfA, CfcModel, n_perm=200):
+    """Randomly shuffle phase
+
+    [xfP] = (nPha, npts, ntrials)
+    [xfA] = (nAmp, npts, ntrials)
+    """
+    # Get sizes :
+    nPha, timeL, nbTrials = xfP.shape
+    nAmp = xfA.shape[0]
     perm = [np.random.permutation(timeL) for k in range(n_perm)]
     # Compute surrogates :
     Suro = np.zeros((nbTrials, nAmp, nPha, n_perm))
@@ -249,7 +294,6 @@ def CfcShuffle(xfP, xfA, CfcModel, n_perm=200):
             Suro[k, :, :, i] = CfcModel(np.matrix(CurPhaShuffle), curAmp)
 
     return Suro
-
 
 # ----------------------------------------------------------------------------
 #                               NORMALIZATION
