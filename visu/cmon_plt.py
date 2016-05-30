@@ -42,11 +42,17 @@ class _pltutils(object):
         style:
             style of the plot [def: None]
 
+        despine:
+            List of axis to despine ['left', 'right', 'top', 'bottom']
+
+        rmaxis:
+            Remove axis ['left', 'right', 'top', 'bottom']
+
     """
 
     def __init__(self, ax, title='', xlabel='', ylabel='', xlim=[], ylim=[],
                  xticks=[], yticks=[], xticklabels=[], yticklabels=[],
-                 style=None):
+                 style=None, despine=None, rmaxis=None):
 
         if not hasattr(self, '_xType'):
             self._xType = int
@@ -76,6 +82,18 @@ class _pltutils(object):
         # Style :
         if style:
             plt.style.use(style)
+        # Despine :
+        if despine:
+            for loc, spine in ax.spines.items():
+                if loc in despine:
+                    spine.set_position(('outward', 10))  # outward by 10 points
+                    spine.set_smart_bounds(True)
+        # Remove axis :
+        if rmaxis:
+            for loc, spine in ax.spines.items():
+                if loc in rmaxis:
+                    spine.set_color('none')  # don't draw spine
+                    ax.tick_params(**{loc: 'off'})
 
 
 class tilerplot(object):
@@ -85,7 +103,7 @@ class tilerplot(object):
 
     def plot1D(self, fig, y, x=None, maxplot=10, figtitle='', sharex=False,
                sharey=False,  subdim=None, transpose=False, color='b',
-               **kwargs):
+               subspace=None, **kwargs):
         """Simple one dimentional plot
 
         Args:
@@ -116,10 +134,16 @@ class tilerplot(object):
             color: string, optional, [def: 'b']
                 Color of the plot
 
+            subspace: dict, optional, [def: None]
+                Control the distance in subplots. Use 'left', 'bottom',
+                'right', 'top', 'wspace', 'hspace'.
+                Example: {'top':0.85, 'wspace':0.8}
+
             kwargs:
                 Supplementar arguments to control each suplot:
                 title, xlabel, ylabel (which can be list for each subplot)
-                xlim, ylim, xticks, yticks, xticklabels, yticklabels, style.
+                xlim, ylim, xticks, yticks, xticklabels, yticklabels, style,
+                despine, rmaxis.
         """
         # Fig properties:
         self._fig = self._figmngmt(fig, figtitle=figtitle, transpose=transpose)
@@ -142,6 +166,9 @@ class tilerplot(object):
         fig = plt.gcf()
         fig.tight_layout()
 
+        if subspace:
+            fig.subplots_adjust(**subspace)
+
         return fig, axAll
 
     def plot2D(self, fig, y, xvec=None, yvec=None, cmap='inferno',
@@ -149,7 +176,7 @@ class tilerplot(object):
                under=None, over=None, vmin=None, vmax=None, sharex=False,
                sharey=False, subdim=None, mask=None, interpolation='none',
                resample=(0, 0), figtitle='', transpose=False, maxplot=10,
-               **kwargs):
+               subspace=None, **kwargs):
         """Plot y as an image
 
         Args:
@@ -169,8 +196,9 @@ class tilerplot(object):
             cmap: string, optional, [def: 'inferno']
                 Choice of the colormap
 
-            colorbar: bool, optional, [def: True]
-                Add or not a colorbar to your plot
+            colorbar: bool/string, optional, [def: True]
+                Add or not a colorbar to your plot. Alternatively, use
+                'center-max' or 'center-dev' to have a centered colorbar
 
             cbticks: list/string, optional, [def: 'minmax']
                 Control colorbar ticks. Use 'auto' for [min,(min+max)/2,max],
@@ -213,10 +241,16 @@ class tilerplot(object):
             transpose: bool, optional, [def: False]
                 Invert subplot (row <-> column)
 
+            subspace: dict, optional, [def: None]
+                Control the distance in subplots. Use 'left', 'bottom',
+                'right', 'top', 'wspace', 'hspace'.
+                Example: {'top':0.85, 'wspace':0.8}
+
             kwargs:
                 Supplementar arguments to control each suplot:
                 title, xlabel, ylabel (which can be list for each subplot)
-                xlim, ylim, xticks, yticks, xticklabels, yticklabels, style.
+                xlim, ylim, xticks, yticks, xticklabels, yticklabels, style
+                despine, rmaxis.
         """
 
         # Fig properties:
@@ -242,8 +276,17 @@ class tilerplot(object):
             xvec = np.arange(y.shape[-1])
         if yvec is None:
             yvec = np.arange(y.shape[1])
-
         l0, l1, l2 = y.shape
+
+        if (vmin is None) and (vmax is None):
+            if colorbar == 'center-max':
+                m, M = y.min(), y.max()
+                vmin, vmax = -np.max([np.abs(m), np.abs(M)]), np.max([np.abs(m), np.abs(M)])
+                colorbar = True
+            if colorbar == 'center-dev':
+                m, M = y.mean()-y.std(), y.mean()+y.std()
+                vmin, vmax = -np.max([np.abs(m), np.abs(M)]), np.max([np.abs(m), np.abs(M)])
+                colorbar = True
 
         # Resample data:
         if resample != (0, 0):
@@ -301,11 +344,14 @@ class tilerplot(object):
                 else:
                     cb.set_ticks(cbticks)
                 cb.set_label(cblabel, labelpad=ycb)
-
             ax.invert_yaxis()
+
         axAll = self._subplotND(y, _fcn, maxplot, subdim, sharex, sharey)
         fig = plt.gcf()
         fig.tight_layout()
+
+        if subspace:
+            fig.subplots_adjust(**subspace)
 
         return fig, axAll
 
@@ -314,6 +360,7 @@ class tilerplot(object):
         if figtitle:
             fig.suptitle(figtitle, fontsize=14, fontweight='bold')
         self._transpose = transpose
+
         return fig
 
     def _checkarray(self, y):

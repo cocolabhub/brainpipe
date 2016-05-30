@@ -47,7 +47,7 @@ def _cfcFiltSuro(xPha, xAmp, surJob, self):
     if (self.n_perm != 0) and (self.Id[0] is not '5'):
         Suro = Parallel(n_jobs=surJob)(delayed(_cfcGetSuro)(
             xPha[:, k[0]:k[1], :], xAmp[:, k[0]:k[1], :],
-            self.Id, self.n_perm, self._nbins) for k in self._window)
+            self.Id, self.n_perm, self._nbins, self._matricial) for k in self._window)
         mSuro = [n.mean(k, 3) for k in Suro]
         stdSuro = [n.std(k, 3) for k in Suro]
     else:
@@ -65,13 +65,13 @@ def _cfcGet(pha, amp, Id, nbins):
     return Model(n.matrix(pha), n.matrix(amp), nbins)
 
 
-def _cfcGetSuro(pha, amp, Id, n_perm, nbins):
+def _cfcGetSuro(pha, amp, Id, n_perm, nbins, matricial):
     """Compute the basic cfc model
     """
     # Get the cfc model :
-    Model, Sur, _, _, _, _ = CfcSettings(Id, nbins=nbins)
+    Model, Sur, _, _, _, _ = CfcSettings(Id, nbins=nbins, matricial=matricial)
 
-    return Sur(pha, amp, Model, n_perm)
+    return Sur(pha, amp, Model, n_perm, matricial)
 
 
 def _cfcCheck(xPha, xAmp, npts):
