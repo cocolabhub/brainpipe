@@ -206,7 +206,7 @@ class pac(_coupling):
 
         return cfcStr+phafilt+',\n'+ampfilt+')'
 
-    def get(self, xpha, xamp, n_perm=200, p=0.05, n_jobs=-1):
+    def get(self, xpha, xamp, n_perm=200, p=0.05, matricial=True, n_jobs=-1):
         """Get the normalized cfc mesure between an xpha and xamp signals.
 
         Args:
@@ -244,6 +244,7 @@ class pac(_coupling):
         # Check the inputs variables :
         xpha, xamp = _cfcCheck(xpha, xamp, self._npts)
         self.n_perm = n_perm
+        self._matricial = matricial
         if n_perm != 0:
             self.p = 1/n_perm
         else:

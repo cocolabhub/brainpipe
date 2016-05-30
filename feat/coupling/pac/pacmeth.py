@@ -13,7 +13,7 @@ __all__ = [
 # ----------------------------------------------------------------------------
 #                            ID to CFC MODEL
 # ----------------------------------------------------------------------------
-def CfcSettings(Id, nbins=18, n_perm=200, tlag=[0, 0]):
+def CfcSettings(Id, nbins=18, n_perm=200, tlag=[0, 0], matricial=True):
     """From an Id, get the model of cfc composed with:
     - Method : how to compute cfc
     - Surrogates : method for computing surrogates
@@ -27,7 +27,8 @@ def CfcSettings(Id, nbins=18, n_perm=200, tlag=[0, 0]):
 
     # Define the way to compute surrogates :
     [CfcSur, CfcSurStr] = CfcSurrogatesList(int(Id[1]), CfcModel,
-                                            n_perm=n_perm, tlag=tlag)
+                                            n_perm=n_perm, tlag=tlag,
+                                            matricial=matricial)
 
     # Define the way to normalize the Cfc with surrogates :
     [CfcNorm, CfcNormStr] = CfcNormalizationList(int(Id[2]))
@@ -172,7 +173,7 @@ def ndCfc(pha, amp):
 # ----------------------------------------------------------------------------
 
 
-def CfcSurrogatesList(Id, CfcModel, n_perm=200, tlag=[0, 0]):
+def CfcSurrogatesList(Id, CfcModel, n_perm=200, tlag=[0, 0], matricial=True):
     """List of methods to compute surrogates.
 
     The surrogates are used to normalized the cfc value. It help to determine
@@ -197,14 +198,16 @@ def CfcSurrogatesList(Id, CfcModel, n_perm=200, tlag=[0, 0]):
 
     # Swap phase/amplitude through trials
     elif Id == 1:
-        def CfcSuroModel(pha, amp, CfcModel, n_perm):
-            return CfcTrialSwap(pha, amp, CfcModel, n_perm=n_perm)
+        def CfcSuroModel(pha, amp, CfcModel, n_perm, matricial):
+            return CfcTrialSwap(pha, amp, CfcModel, n_perm=n_perm,
+                                matricial=matricial)
         CfcSuroModelStr = 'Swap phase/amplitude through trials, (Tort, 2010)'
 
     # Swap amplitude
     elif Id == 2:
-        def CfcSuroModel(pha, amp, CfcModel, n_perm):
-            return CfcAmpSwap(pha, amp, CfcModel, n_perm=n_perm)
+        def CfcSuroModel(pha, amp, CfcModel, n_perm, matricial):
+            return CfcAmpSwap(pha, amp, CfcModel, n_perm=n_perm,
+                              matricial=matricial)
         CfcSuroModelStr = 'Swap amplitude, (Bahramisharif, 2013)'
 
     # Shuffle phase values
@@ -229,7 +232,7 @@ def CfcSurrogatesList(Id, CfcModel, n_perm=200, tlag=[0, 0]):
     return CfcSuroModel, CfcSuroModelStr
 
 
-def CfcTrialSwap(xfP, xfA, CfcModel, n_perm=200):
+def CfcTrialSwap(xfP, xfA, CfcModel, n_perm=200, matricial=True):
     """Swap phase/amplitude trials (Tort, 2010)
 
     [xfP] = (nPha, npts, ntrials)
@@ -238,21 +241,37 @@ def CfcTrialSwap(xfP, xfA, CfcModel, n_perm=200):
     # Get sizes :
     nPha, timeL, nbTrials = xfP.shape
     nAmp = xfA.shape[0]
-    # Swap trials phase/amplitude :
-    phamp = np.concatenate((xfP, xfA))
-    phampSh1, phampSh2 = perm_swap(phamp, phamp, axis=2, n_perm=n_perm)
-    phaSh, ampSh = phampSh1[:, 0:nPha, ...], phampSh2[:, nPha::, ...]
-    del phamp, phampSh1, phampSh2
-    # Get pac :
     Suro = np.zeros((nbTrials, nAmp, nPha, n_perm))
-    iteract = product(range(nbTrials), range(n_perm))
-    for tr, pe in iteract:
-        Suro[tr, :, :, pe] = CfcModel(np.matrix(phaSh[pe, :, :, tr]),
-                                      ampSh[pe, :, :, tr])
+    if matricial:
+        # Swap trials phase/amplitude :
+        phamp = np.concatenate((xfP, xfA))
+        phampSh1, phampSh2 = perm_swap(phamp, phamp, axis=2, n_perm=n_perm)
+        phaSh, ampSh = phampSh1[:, 0:nPha, ...], phampSh2[:, nPha::, ...]
+        del phamp, phampSh1, phampSh2
+        # Get pac :
+        iteract = product(range(nbTrials), range(n_perm))
+        for tr, pe in iteract:
+            Suro[tr, :, :, pe] = CfcModel(np.matrix(phaSh[pe, :, :, tr]),
+                                          ampSh[pe, :, :, tr])
+    else:
+        # Swap trials phase/amplitude :
+        phampiter = product(range(nPha), range(nAmp))
+        for ipha, iamp in phampiter:
+            # Concatenate selected pha/amp :
+            phamp = np.concatenate((xfP[[ipha], ...], xfA[[iamp], ...]))
+            # Swap:
+            phampSh1, phampSh2 = perm_swap(phamp, phamp, axis=2, n_perm=n_perm)
+            phaSh, ampSh = phampSh1[:, 0, ...], phampSh2[:, 1, ...]
+            # Get pac :
+            iteract = product(range(nbTrials), range(n_perm))
+            for tr, pe in iteract:
+                Suro[tr, iamp, ipha, pe] = CfcModel(np.matrix(phaSh[pe, :, tr]),
+                                                    ampSh[pe, :, tr])
+
     return Suro
 
 
-def CfcAmpSwap(xfP, xfA, CfcModel, n_perm=200):
+def CfcAmpSwap(xfP, xfA, CfcModel, n_perm=200, matricial=True):
     """Swap phase/amplitude trials, (Bahramisharif, 2013)
 
     [xfP] = (nPha, npts, ntrials)
@@ -261,15 +280,24 @@ def CfcAmpSwap(xfP, xfA, CfcModel, n_perm=200):
     # Get sizes :
     nPha, timeL, nbTrials = xfP.shape
     nAmp = xfA.shape[0]
-    print(nPha, timeL, nbTrials, nAmp)
-    # Swap trials phase/amplitude :
-    ampSh, _ = perm_swap(xfA, xfA, axis=2, n_perm=n_perm)
-    # Get pac :
     Suro = np.zeros((nbTrials, nAmp, nPha, n_perm))
-    iteract = product(range(nbTrials), range(n_perm))
-    for tr, pe in iteract:
-        Suro[tr, :, :, pe] = CfcModel(xfP[:, :, tr],
-                                      np.matrix(ampSh[pe, :, :, tr]))
+    if matricial:
+        # Swap trials phase/amplitude :
+        ampSh, _ = perm_swap(xfA, xfA, axis=2, n_perm=n_perm)
+        # Get pac :
+        iteract = product(range(nbTrials), range(n_perm))
+        for tr, pe in iteract:
+            Suro[tr, :, :, pe] = CfcModel(xfP[:, :, tr],
+                                          np.matrix(ampSh[pe, :, :, tr]))
+    else:
+        for iamp in range(nAmp):
+            ampSh, _ = perm_swap(xfA[iamp, ...], xfA[iamp, ...], axis=1, n_perm=n_perm)
+            # Get pac :
+            iteract = product(range(nbTrials), range(n_perm))
+            for tr, pe in iteract:
+                Suro[tr, iamp, :, pe] = CfcModel(xfP[:, :, tr],
+                                                 np.matrix(ampSh[pe, :, tr]))
+
     return Suro
 
 
