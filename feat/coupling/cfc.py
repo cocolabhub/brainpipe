@@ -333,9 +333,6 @@ class PhaseLockedPower(object):
                 - 4: Z-score
         powArgs: any supplementar arguments are directly passed to the power
         function.
-
-    .. automethod:: get
-    .. automethod:: tflockedplot
     """
 
     def __init__(self, sf, npts, f=(2, 200, 10, 5), pha=[8, 13], time=None,

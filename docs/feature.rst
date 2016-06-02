@@ -94,6 +94,8 @@ Phase-locked power
 .. automodule:: feature
    :members: PhaseLockedPower
    :noindex:
+.. figure::  ../images/plp.png
+   :align:   center
 
 .. _plv:
 
