@@ -12,8 +12,11 @@ from brainpipe.feat.coupling.pac.pacmeth import *
 from brainpipe.visu.cmon_plt import tilerplot
 from brainpipe.tools import binarize
 from brainpipe.statistics import perm_2pvalue
+from brainpipe.feat.utils._feat import normalize
+from brainpipe.feature import power, phase, sigfilt
+from brainpipe.visual import addLines
 
-__all__ = ['pac']
+__all__ = ['pac', 'PhaseLockedPower']
 
 
 windoc = """
@@ -168,9 +171,11 @@ class pac(_coupling):
 
         # Check the type of f:
         if (len(pha_f) == 4) and isinstance(pha_f[0], (int, float)):
-            pha_f = binarize(pha_f[0], pha_f[1], pha_f[2], pha_f[3], kind='list')
+            pha_f = binarize(
+                pha_f[0], pha_f[1], pha_f[2], pha_f[3], kind='list')
         if (len(amp_f) == 4) and isinstance(amp_f[0], (int, float)):
-            amp_f = binarize(amp_f[0], amp_f[1], amp_f[2], amp_f[3], kind='list')
+            amp_f = binarize(
+                amp_f[0], amp_f[1], amp_f[2], amp_f[3], kind='list')
         self.xvec = []
 
         # Initalize pac object :
@@ -271,7 +276,8 @@ class pac(_coupling):
         if self.Id[0] is not '5':
             # Compute permutations :
             if self.n_perm is not 0:
-                Suro, mSuro, stdSuro = np.array(Suro), np.array(mSuro), np.array(stdSuro)
+                Suro, mSuro, stdSuro = np.array(
+                    Suro), np.array(mSuro), np.array(stdSuro)
 
                 # Normalize each cfc:
                 _, _, Norm, _, _, _ = CfcSettings(self.Id)
@@ -291,3 +297,208 @@ class pac(_coupling):
             idxUn = np.where(uCfc <= 2*xlim)
             uCfc[idxUn] = 0
             return uCfc.transpose(3, 4, 0, 1, 2), None
+
+
+class PhaseLockedPower(object):
+
+    """Extract phase-locked power and visualize shifted time-frequency map
+    according to phase peak.
+
+    Args:
+        sf: int
+            Sampling frequency
+
+        npts: int
+            Number of points of the time serie
+
+    Kargs:
+        f: tuple/list, optional, [def: (2, 200, 10, 5)]
+            The frequency vector (fstart, fend, fwidth, fstep)
+
+        pha: tuple/list, optional, [def: [8, 13]]
+            Frequency for phase.
+
+        time: array/list, optional, [def: None]
+            The time vector to use
+
+        baseline: tuple/list, optional, [def: None]
+            Location of baseline (in sample)
+
+        norm: integer, optional, [def: None]
+            Normalize method
+                - 0: No normalisation
+                - 1: Substraction
+                - 2: Division
+                - 3: Substract then divide
+                - 4: Z-score
+        powArgs: any supplementar arguments are directly passed to the power
+        function.
+    """
+
+    def __init__(self, sf, npts, f=(2, 200, 10, 5), pha=[8, 13], time=None,
+                 baseline=None, norm=None, **powArgs):
+        # Define objects:
+        self._normBck = norm
+        self._baseline = baseline
+        self._powObj = power(
+            sf, npts, f=f, baseline=baseline, norm=0, time=time, **powArgs)
+        self._phaObj = phase(sf, npts, f=pha)
+        self._sigObj = sigfilt(sf, npts, f=pha)
+
+    def get(self, x, cue):
+        """Get power phase locked
+
+        Args:
+            x: array
+                Data of shape (npt, ntrials)
+
+            cue: integer
+                Cue to align time-frequency maps.
+
+        Returns:
+            xpow, xpha, xsig: repectively realigned power, phase and filtered
+            signal
+        """
+        # Find cue according to define time vector
+        self._cue = cue
+        xvec = self._powObj.xvec
+        cue = np.abs(np.array(xvec)-cue).argmin()
+        self._cueIdx = cue
+        # Extact power, phase and filtered signal:
+        xpow = np.squeeze(self._powObj.get(x)[0])
+        xpha = np.squeeze(self._phaObj.get(x)[0])
+        xsig = np.squeeze(self._sigObj.get(x)[0])
+        # Re-align:
+        xpha_s, xpow_s, xsig_s = np.empty_like(
+            xpha), np.empty_like(xpow), np.empty_like(xsig)
+        nTrials = xsig.shape[1]
+        for k in range(nTrials):
+            # Get shifting:
+            move = self._PeakDetection(xsig[:, k], cue)
+            # Apply shifting:
+            xpha_s[:, k] = self._ShiftSignal(np.matrix(xpha[:, k]), move)
+            xsig_s[:, k] = self._ShiftSignal(np.matrix(xsig[:, k]), move)
+            xpow_s[:, :, k] = self._ShiftSignal(xpow[:, :, k], move)
+        xpow_s = np.mean(xpow_s, 2)
+        # Normalize mean power:
+        if self._normBck is not 0:
+            bsl = self._baseline
+            xFm = np.mean(xpow_s[:, bsl[0]:bsl[1]], 1)
+            baseline = np.tile(xFm[:, np.newaxis], [1, xpow_s.shape[1]])
+            xpow_s = normalize(xpow_s, baseline, norm=self._normBck)
+
+        return xpow_s, xpha_s, xsig_s
+
+    def tflockedplot(self, xpow, sig, cmap='viridis', vmin=None, vmax=None,
+                     ylim=None, alpha=0.3, kind='std', vColor='r',
+                     sigcolor='slateblue', fignum=0):
+        """Plot realigned time-frequency maps.
+
+        Args:
+            xpow, sig: output of the get() method. sig can either be the phase
+            or the filtered signal.
+
+        Kargs:
+            cmap: string, optional, [def: 'viridis']
+                The colormap to use
+
+            vmin, vmax: int/float, otpional, [def: None, None]
+                Limits of the colorbar
+
+            ylim: tuple/list, optional, [def: None]
+                Limit for the plot of the signal
+
+            alpha: float, optional, [def: 0.3]
+                Transparency of deviation/sem
+
+            kind: string, optional, [def: 'std']
+                Choose between 'std' or 'sem' to either display standard
+                deviation or standard error on the mean for the signal plot
+
+            vColor: string, optional, [def: 'r']
+                Color of the vertical line which materialized the choosen cue
+
+            sigcolor: string, optional, [def: 'slateblue']
+                Color of the signal
+
+            fignum: integer, optional, [def: 0]
+                Number of the figure
+
+        Returns:
+            figure, axes1 (TF plot), axes2 (signal plot), axes3 (colorbar)
+        """
+        import matplotlib.gridspec as gridspec
+        import matplotlib.pyplot as plt
+
+        xvec = self._powObj.xvec
+        yvec = self._powObj.yvec
+
+        fig = plt.figure(fignum, figsize=(8, 9))
+        gs = gridspec.GridSpec(11, 11)
+        ax1 = plt.subplot(gs[0:-2, 0:-1])
+        ax2 = plt.subplot(gs[-2::, 0:-1])
+        ax3 = plt.subplot(gs[1:-3, -1])
+
+        # TF:
+        im = ax1.imshow(xpow, aspect='auto', cmap=cmap, vmin=vmin, vmax=vmax,
+                        extent=[xvec[0], xvec[-1], yvec[-1], yvec[0]])
+        addLines(ax1, vLines=[self._cue], vShape=['-'], vWidth=[3],
+                 vColor=[vColor])
+        ax1.set_xticks([])
+        ax1.set_xticklabels('')
+        ax1.set_ylabel('Frequency (hz)')
+        ax1.invert_yaxis()
+        ax1.tick_params(axis='both', which='both', top='off', right='off')
+        ax1.axis('tight')
+
+        cb = plt.colorbar(im, cax=ax3)
+        cb.set_ticks(cb.get_clim())
+        cb.set_label('Power modulations', labelpad=-10)
+
+        # Signal:
+        xm = sig.mean(1)
+        if kind == 'std':
+            x2add = sig.std(1)
+        elif kind == 'sem':
+            x2add = sig.std(1)/np.sqrt(len(xm)-1)
+        xlow, xhigh = xm-x2add, xm+x2add
+        ax = ax2.plot(xvec, xm, lw=2, color=sigcolor)
+        ax2.fill_between(xvec, xlow, xhigh, alpha=alpha,
+                         color=ax[0].get_color())
+        ax2.set_yticks(ax2.get_ylim())
+        ax2.tick_params(axis='both', which='both', top='off', right='off')
+        ax2.set_xlabel('Time')
+        if ylim is not None:
+            ax2.set_ylim(ylim)
+        else:
+            ax2.axis('tight')
+        addLines(ax2, vLines=[self._cue], vShape=['-'], vWidth=[3],
+                 vColor=[vColor])
+
+        return plt.gcf(), ax1, ax2, ax3
+
+    @staticmethod
+    def _PeakDetection(sig, cue):
+        """Detect peaks in a signal and return the shifting length
+        corresponding to the defined cue
+        sig: vector
+        cue: integer (in sample)
+        """
+        peaks = []
+        for k in range(len(sig)-1):
+            if (sig[k-1] < sig[k]) and (sig[k] > sig[k+1]):
+                peaks.append(k)
+        minPeak = peaks[np.abs(np.array(peaks)-cue).argmin()]
+        return minPeak-cue
+
+    @staticmethod
+    def _ShiftSignal(sig, move):
+        """
+        """
+        npts = sig.shape[1]
+        sigShift = np.zeros(sig.shape)
+        if move >= 0:
+            sigShift[:, 0:npts-move] = sig[:, move::]
+        elif move < 0:
+            sigShift[:, np.abs(move)::] = sig[:, 0:npts-np.abs(move)]
+        return sigShift

@@ -14,7 +14,9 @@ Here's the list of implemented features:
 * :ref:`entropy`
 * :ref:`pac`
 * :ref:`pp`
+* :ref:`plp`
 * :ref:`plv`
+
 
 
 .. code-block:: python
@@ -91,7 +93,18 @@ Phase-Amplitude Coupling
 Prefered-phase
 ~~~~~~~~~~~~~~~~~~~
 
+.. _plp:
+
+Phase-locked power
+~~~~~~~~~~~~~~~~~~~
+.. automodule:: feature
+   :members: PhaseLockedPower
+   :noindex:
+.. figure::  ../images/plp.png
+   :align:   center
+
 .. _plv:
+
 
 Phase-Locking Value
 ~~~~~~~~~~~~~~~~~~~

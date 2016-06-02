@@ -119,7 +119,7 @@ class _spectral(tilerplot):
         return powStr+extractStr+')'
 
     def get(self, x, statmeth=None, tail=2, n_perm=200, metric='m_center',
-            maxistat=False, n_jobs=-1):
+            maxstat=False, n_jobs=-1):
         """Get the spectral informations of the signal x.
 
         Args:
@@ -153,8 +153,8 @@ class _spectral(tilerplot):
                 - 'm_minus': (A-B) transformation
                 - function: user defined function [def myfcn(A, B): return array_like]
 
-            maxistat: bool, optional, [def: False]
-                Correct p-values with maximum statistique. If maxistat is True,
+            maxstat: bool, optional, [def: False]
+                Correct p-values with maximum statistique. If maxstat is True,
                 the correction will be applied only trhough frequencies.
 
         Return:
@@ -169,7 +169,7 @@ class _spectral(tilerplot):
         self._statmeth = statmeth
         self._n_perm = n_perm
         self._2t = tail
-        self._mxst = maxistat
+        self._mxst = maxstat
         self._metric = metric
 
         # Check input size :
@@ -428,5 +428,3 @@ class phase(_spectral):
         _checkref('method', method, ['hilbert', 'hilbert1', 'hilbert2'])
         _spectral.__init__(self, sf, npts, 'phase', f, None, None, method,
                            window, width, step, None, time, False, **kwargs)
-
-
