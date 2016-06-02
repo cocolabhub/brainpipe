@@ -2,7 +2,7 @@ Neuronal Features
 =================
 
 
-.. todo:: Missing methods in PAC // PLV // Entropy
+.. todo:: Missing methods in PLV // Entropy
 
 Here's the list of implemented features:
 
@@ -56,6 +56,9 @@ Time-Frequency
    :members: TF
    :noindex:
 
+.. figure::  ../images/tf.png
+   :align:   center
+
 .. _phase:
 
 Phase
@@ -79,6 +82,9 @@ Phase-Amplitude Coupling
 .. automodule:: feature
    :members: pac
    :noindex:
+
+.. figure::  ../images/pac.png
+   :align:   center
 
 .. _pp:
 
