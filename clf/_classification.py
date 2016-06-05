@@ -15,8 +15,7 @@ from sklearn.base import clone
 
 from joblib import Parallel, delayed
 
-# from brainpipe.statistics import binostatinv, perm2pval, permIntraClass
-from brainpipe.statistics import bino_da2p
+from brainpipe.statistics import bino_da2p, perm_2pvalue
 from brainpipe.tools import groupInList, list2index
 from brainpipe.sys.tools import adaptsize
 
@@ -255,7 +254,7 @@ class classify(object):
             # Reconstruct daPerm and get the associated p-value:
             daPerm, _, _ = zip(*cvs)
             daPerm = np.array(groupInList(daPerm, listFeat))
-            pvalue = perm2pval(score, daPerm)
+            pvalue = perm_2pvalue(score, daPerm.T, n_perm, tail=1)
 
         else:
             raise ValueError('No statistical method '+method+' found')
