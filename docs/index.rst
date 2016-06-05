@@ -8,7 +8,7 @@ It's evolving every day! So if you have problems, bugs or if you want to collabo
 .. figure::  ../images/titend.png
    :align:   center
 
-   (My amazing `Jhenn Oz <https://www.facebook.com/jhenntattooist/?fref=ts>`_)
+   (`Jhenn Oz <https://www.facebook.com/jhenntattooist/?fref=ts>`_)
 
 	
 
@@ -34,6 +34,10 @@ Go to your python site-package folder (ex: anaconda3/lib/python3.5/site-packages
 
 What's new
 **********
+v0.2.0
+=======
+- New features (phase-locked power and PSD based features)
+
 v0.1.0
 =======
 
@@ -50,17 +54,20 @@ v0.1.0
 - Tools:
 	- Array: ndsplit and ndjoin method which doesn't depend on odd/even size (but return list)
 	- squarefreq() generate a square frequency vector
-- Bugs:
-	- Probably on stat for classification() and multi-features, but not tested. It might works
 	
 
 Organization
 ************
 .. toctree::
-   :maxdepth: 3
-   :caption: PROCESSING
+   :maxdepth: 4
+   :caption: PRE-PROCESSING
 
    preprocessing
+
+.. toctree::
+   :maxdepth: 4
+   :caption: FEATURES
+
    feature
 
 .. toctree::
