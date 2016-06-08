@@ -1,6 +1,7 @@
 import numpy as np
+import pandas as pd
 
-__all__ = ['cfcRndSignals', 'cfcVec']
+__all__ = ['cfcRndSignals', 'cfcVec', 'bandRef', 'findBandName', 'findBandFcy']
 
 
 def cfcRndSignals(fPha=2, fAmp=100, sf=1024, ndatasets=10,
@@ -132,3 +133,68 @@ def cfcVec(pha=(2, 30, 2, 1), amp=(60, 200, 10, 5)):
     aTuple = [(aDown[k], aUp[k]) for k in range(aDown.shape[0])]
 
     return pVec, aVec, pTuple, aTuple
+
+stdF = pd.DataFrame({'vlfc':[[0, 1.5]], 'delta':[[2, 4]], 'theta':[[5, 7]],
+                    'alpha':[[8, 13]], 'beta':[[13, 30]], 'low-gamma':[[30, 60]],
+                    'high-gamma':[[60, 200]]},
+                    columns=['vlfc', 'delta', 'theta', 'alpha', 'beta', 'low-gamma',
+                    'high-gamma'])
+
+def bandRef(return_as='table'):
+    """Get the traditionnal physiological frequency bands of interest
+
+    Args:
+        return_as: string, optional, [def: 'table]
+            Say how to return bands. Use either 'table' to get a pandas
+            Dataframe or 'list' to have two list containing bands name
+            and definition.
+    """
+    if return_as is 'table':
+        return stdF
+    elif return_as is 'list':
+        return list(stdF.keys()), list(stdF.values[0])
+
+def findBandName(band):
+    """Find the physiological name of a frequency band
+
+    Args:
+        band: list
+            List of frequency bands
+
+    Returns:
+        List of band names
+
+    Example:
+        >>> band = [[13, 60], [0, 1], [5, 7]]
+        >>> findBandName(band)
+        >>> ['Low-gamma', 'VLFC', 'Theta']
+    """
+    # Check input type :
+    if isinstance(band, list) and isinstance(band[0], (int, float)):
+        band = [band]
+    cband = np.array([np.array(k).mean() for k in band])
+    cref = np.array([np.array(k).mean() for k in list(stdF.values[0])])
+    bname = list(stdF.keys())
+    return [bname[np.abs(cref-k).argmin()] for k in cband]
+
+def findBandFcy(band):
+    """Find the physiological frequency band for a given name
+
+    Args:
+        band: list
+            List of frequency band name
+
+    Returns:
+        List of freqeuncy bands
+    """
+    # Check input type :
+    if isinstance(band, str):
+        band = [band]
+    cref = list(stdF.values[0])
+    fband = []
+    for k in band:
+        try:
+            fband.append(list(stdF[k.lower()])[0])
+        except:
+            raise ValueError(k+' not found. Please, search for '+str(list(stdF.keys())))
+    return fband
