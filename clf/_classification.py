@@ -66,8 +66,8 @@ class classify(object):
             cross-validation. See the documentation of defCv.
 
     Example:
-        >> ># 1) Define a classifier and a cross-validation before classify():
 
+            >>> # 1) Define a classifier and a cross-validation before classify():
             >>> # Define a 50 times 5-folds cross-validation :
             >>> cv = defCv(y, cvtype='kfold', rep=50, n_folds=5)
             >>> # Define a Random Forest with 200 trees :
@@ -75,11 +75,11 @@ class classify(object):
             >>> # Past the two objects inside classify :
             >>> clfObj = classify(y, clf=clf, cvtype=cv)
 
-        >>> # 2) Define a classifier and a cross-validation inside classify():
+            >>> # 2) Define a classifier and a cross-validation inside classify():
             >>> clfObj = classify(y, clf = 'rf', cvtype = 'kfold',
-            ...        clfArg = {'n_tree':200, 'random_state':100},
-            ...                  cvArg = {'rep':50, 'n_folds':5})
-        >>> # 1) and 2) are equivalent. Then use clfObj.fit() to classify data.
+            >>>        clfArg = {'n_tree':200, 'random_state':100},
+            >>>                  cvArg = {'rep':50, 'n_folds':5})
+            >>> # 1) and 2) are equivalent. Then use clfObj.fit() to classify data.
     """
 
     def __init__(self, y, clf='lda', cvtype='skfold', clfArg={}, cvArg={}):

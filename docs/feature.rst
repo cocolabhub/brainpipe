@@ -1,119 +1,64 @@
-Neuronal Features
-=================
+Import features:
 
+.. code-block:: python
+
+    from brainpipe.features import *
 
 .. todo:: Missing methods in PLV // Entropy
 
-Here's the list of implemented features:
+Presentation
+============
+In order to classify diffrent conditions, you can extract from your neural signals, a large variety of features. The aim of a feature is to verify if it contains the main information you want to classify. For example, let's say you search if an electrode is accurate to differenciate resting state from motor behavior. You can for example extract beta or gamma power from this electrode and classify your resting state versus motor using power features. Here's the list of all the implemented features:
 
 * :ref:`sigfilt`
 * :ref:`amplitude` 
 * :ref:`power`
 * :ref:`tf`
 * :ref:`phase`
-* :ref:`entropy`
 * :ref:`pac`
 * :ref:`pp`
 * :ref:`plp`
 * :ref:`plv`
+* :ref:`psd`
+* :ref:`powpsd`
+* :ref:`sentr`
 
+Filtering based
+===============
+Those following features use filtering method to extract informations in specifics frequency bands
 
+.. toctree::
+   :maxdepth: 3
 
-.. code-block:: python
+   filtfeat
 
-    from brainpipe.features import *
-
-Basics
-------
-
-.. _sigfilt:
-
-Filtered signal
-~~~~~~~~~~~~~~~
-.. automodule:: feature
-   :members: sigfilt
-   :noindex:
-
-.. _amplitude:
-
-Amplitude
-~~~~~~~~~
-.. automodule:: feature
-   :members: amplitude
-   :noindex:
-
-.. _power:
-
-Power
-~~~~~
-.. automodule:: feature
-   :members: power
-   :noindex:
-
-.. _tf:
-
-Time-Frequency
-~~~~~~~~~~~~~~
-.. automodule:: feature
-   :members: TF
-   :noindex:
-
-.. figure::  ../images/tf.png
-   :align:   center
-
-.. _phase:
-
-Phase
-~~~~~
-.. automodule:: feature
-   :members: phase
-   :noindex:
-
-.. _entropy:
-
-Entropy
-~~~~~~~
 
 Coupling features
------------------
+=================
+Those following features use coupling (either distant or locals coupling)
 
-.. _pac:
+.. toctree::
+   :maxdepth: 3
 
-Phase-Amplitude Coupling
-~~~~~~~~~~~~~~~~~~~~~~~~
-.. automodule:: feature
-   :members: pac
-   :noindex:
-
-.. figure::  ../images/pac.png
-   :align:   center
-
-.. _pp:
-
-Prefered-phase
-~~~~~~~~~~~~~~~~~~~
-
-.. _plp:
-
-Phase-locked power
-~~~~~~~~~~~~~~~~~~~
-.. automodule:: feature
-   :members: PhaseLockedPower
-   :noindex:
-.. figure::  ../images/plp.png
-   :align:   center
-
-.. _plv:
+   couplingfeat
 
 
-Phase-Locking Value
-~~~~~~~~~~~~~~~~~~~
+PSD based features
+==================
+Those following features are extracted using a Power Spectrum Density (PSD)
+
+.. toctree::
+   :maxdepth: 3
+
+   psdfeat
+
 
 Tools
-------
-.. autofunction:: cfcVec
+=====
+.. autofunction:: feat.featools.cfcVec
 
-.. autofunction:: cfcRndSignals
+.. autofunction:: feat.featools.cfcRndSignals
+
 
 
 

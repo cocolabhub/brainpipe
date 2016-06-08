@@ -1,6 +1,3 @@
-Statistics
-==========
-
 .. code-block:: python
 
     from brainpipe.statistics import *
@@ -14,7 +11,7 @@ Statistics
 .. _bino:
 
 Binomial
---------
+========
 .. autofunction:: statistics.bino_da2p
 
 .. autofunction:: statistics.bino_p2da
@@ -24,15 +21,15 @@ Binomial
 .. _perm:
 
 Permutations
-------------
+============
 Evaluation
-~~~~~~~~~~
+----------
 .. autofunction:: statistics.perm_2pvalue
 
 .. autofunction:: statistics.perm_metric
 
 Generate
-~~~~~~~~
+--------
 .. autofunction:: statistics.perm_rndDatasets
 
 .. autofunction:: statistics.perm_swap
@@ -42,17 +39,17 @@ Generate
 .. _mltpcomp:
 
 Multiple-comparisons
---------------------
+====================
 Bonferroni
-~~~~~~~~~~
+----------
 .. autofunction:: statistics.bonferroni
 
 False Discovery Rate (FDR)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 .. autofunction:: statistics.fdr
 
 Maximum statistic
-~~~~~~~~~~~~~~~~~
+-----------------
 .. autofunction:: statistics.maxstat
 
 

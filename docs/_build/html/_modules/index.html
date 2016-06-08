@@ -61,34 +61,58 @@
         
           
           
-              <p class="caption"><span class="caption-text">PROCESSING</span></p>
+              <p class="caption"><span class="caption-text">PRE-PROCESSING</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../preprocessing.html">Pre-processing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../preprocessing.html#bipolarization">Bipolarization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../preprocessing.html#physiology">Physiology</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../preprocessing.html">Bipolarization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../preprocessing.html#physiology">Physiology</a></li>
+</ul>
+<p class="caption"><span class="caption-text">FEATURES</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../feature.html">Presentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../feature.html#filtering-based">Filtering based</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../filtfeat.html">Filtered signal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../filtfeat.html#amplitude">Amplitude</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../filtfeat.html#power">Power</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../filtfeat.html#time-frequency">Time-Frequency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../filtfeat.html#phase">Phase</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../feature.html">Neuronal Features</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../feature.html#basics">Basics</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../feature.html#coupling-features">Coupling features</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../feature.html#tools">Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../feature.html#coupling-features">Coupling features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../couplingfeat.html">Phase-Amplitude Coupling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../couplingfeat.html#prefered-phase">Prefered-phase</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../couplingfeat.html#phase-locked-power">Phase-locked power</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../couplingfeat.html#phase-locking-value">Phase-Locking Value</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../feature.html#psd-based-features">PSD based features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../psdfeat.html">Power Spectrum Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../psdfeat.html#power-psd">Power PSD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../psdfeat.html#spectral-entropy">Spectral entropy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../feature.html#tools">Tools</a></li>
 </ul>
 <p class="caption"><span class="caption-text">CLASSIFICATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../classification.html">Classification</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../classification.html#basic">Basic</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../classification.html#multi-features">Multi-features</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="../classification.html">Presentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../classification.html#define-a-classifier">Define a classifier</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../classification.html#define-a-cross-validation">Define a cross-validation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../classification.html#classify">Classify</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../classification.html#generalization">Generalization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../classification.html#multi-features">Multi-features</a></li>
 </ul>
 <p class="caption"><span class="caption-text">STATISTICS</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../stat.html">Statistics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../stat.html#binomial">Binomial</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../stat.html#permutations">Permutations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../stat.html#multiple-comparisons">Multiple-comparisons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stat.html">Binomial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stat.html#permutations">Permutations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../stat.html#evaluation">Evaluation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stat.html#generate">Generate</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../stat.html#multiple-comparisons">Multiple-comparisons</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../stat.html#bonferroni">Bonferroni</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stat.html#false-discovery-rate-fdr">False Discovery Rate (FDR)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stat.html#maximum-statistic">Maximum statistic</a></li>
 </ul>
 </li>
 </ul>
@@ -149,7 +173,7 @@
 <li><a href="brainpipe/clf/_multifeatures.html">brainpipe.clf._multifeatures</a></li>
 <li><a href="brainpipe/feat/basics.html">brainpipe.feat.basics</a></li>
 <li><a href="brainpipe/feat/coupling/cfc.html">brainpipe.feat.coupling.cfc</a></li>
-<li><a href="brainpipe/feat/featools.html">brainpipe.feat.featools</a></li>
+<li><a href="brainpipe/feat/psdfeat.html">brainpipe.feat.psdfeat</a></li>
 <li><a href="brainpipe/preproc/physio.html">brainpipe.preproc.physio</a></li>
 <li><a href="brainpipe/preproc/reference.html">brainpipe.preproc.reference</a></li>
 <li><a href="brainpipe/stat/binomial.html">brainpipe.stat.binomial</a></li>
@@ -159,6 +183,7 @@
 <li><a href="brainpipe/sys/dataframe.html">brainpipe.sys.dataframe</a></li>
 <li><a href="brainpipe/sys/tools.html">brainpipe.sys.tools</a></li>
 <li><a href="brainpipe/visu/cmon_plt.html">brainpipe.visu.cmon_plt</a></li>
+<li><a href="feat/featools.html">feat.featools</a></li>
 <li><a href="tools.html">tools</a></li>
 </ul>
 

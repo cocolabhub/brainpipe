@@ -1,6 +1,3 @@
-Pre-processing
-==============
-
 .. todo:: Add trials rejection (MATLAB code adaptation)
 
 .. code-block:: python
