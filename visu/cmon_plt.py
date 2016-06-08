@@ -252,6 +252,13 @@ class tilerplot(object):
                 'right', 'top', 'wspace', 'hspace'.
                 Example: {'top':0.85, 'wspace':0.8}
 
+            contour: dict, optional, [def: None]
+                Add a contour to your 2D-plot. In order to use this parameter,
+                define contour={'data':yourdata, 'label':[yourlabel], **kwargs}
+                where yourdata must have the same shape as y, level must float/int
+                from smallest to largest. Use **kwargs to pass other arguments to the
+                contour function
+
             kwargs:
                 Supplementar arguments to control each suplot:
                 title, xlabel, ylabel (which can be list for each subplot)
