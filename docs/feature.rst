@@ -55,6 +55,12 @@ Those following features are extracted using a Power Spectrum Density (PSD)
 
 Tools
 =====
+.. autofunction:: feat.featools.bandRef
+
+.. autofunction:: feat.featools.findBandName
+
+.. autofunction:: feat.featools.findBandFcy
+
 .. autofunction:: feat.featools.cfcVec
 
 .. autofunction:: feat.featools.cfcRndSignals

@@ -1,6 +1,3 @@
-Visualization
-=============
-
 
 .. code-block:: python
 
@@ -9,6 +6,9 @@ Visualization
 * :ref:`borderplt`
 * :ref:`addline`
 * :ref:`tilerplot`
+
+1-D graphics
+============
 
 .. _borderplt:
 
@@ -24,6 +24,9 @@ Border plot
    Border plot example
 
 .. _addline:
+
+1-D or 2-D graphics
+===================
 
 Add lines
 ---------

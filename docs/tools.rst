@@ -34,6 +34,6 @@ Load file
 
 Others
 ------
-.. autofunction:: system.adaptsize
+.. autofunction:: tools.p2str
 
 

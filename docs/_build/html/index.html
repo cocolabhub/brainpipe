@@ -119,8 +119,11 @@
 </ul>
 <p class="caption"><span class="caption-text">VISUALIZATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">1-D graphics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="visualization.html#border-plot">Border plot</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html#d-or-2-d-graphics">1-D or 2-D graphics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="visualization.html#add-lines">Add lines</a></li>
 <li class="toctree-l2"><a class="reference internal" href="visualization.html#tilerplot">tilerplot</a></li>
 </ul>
@@ -134,6 +137,18 @@
 <li class="toctree-l2"><a class="reference internal" href="tools.html#arrays">Arrays</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools.html#file-management">File management</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tools.html#others">Others</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">REFERENCES</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="references.html#pre-processing">Pre-processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="references.html#features">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="references.html#classification">Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="references.html#statistics">Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="references.html#visualization">Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="references.html#tools">Tools</a></li>
 </ul>
 </li>
 </ul>
@@ -173,7 +188,7 @@
             
   <div class="section" id="brainpipe">
 <h1>Brainpipe<a class="headerlink" href="#brainpipe" title="Permalink to this headline">¶</a></h1>
-<p>Brainpipe is a python toolbox dedicated for neuronal signals analysis and machine-learning. The aim is to provide a variety of tools to extract informations from neural activities (features) and use machine-learning to validate hypothesis. The machine-learning used the excellent <a class="reference external" href="http://scikit-learn.org/stable/">scikit-learn</a>  library. Brainpipe can also perform parallel computing and try to optimize RAM usage for our &#8216;large&#8217; datasets.</p>
+<p>Brainpipe is a python toolbox dedicated for neuronal signals analysis and machine-learning. The aim is to provide a variety of tools to extract informations from neural activities (features) and use machine-learning to validate hypothesis. The machine-learning used the excellent <a class="reference external" href="http://scikit-learn.org/stable/">scikit-learn</a>  library. Brainpipe can also perform parallel computing and try to optimize RAM usage for our &#8216;large&#8217; datasets. If you want to have a quick overview of what you can actually do, checkout the <a class="reference internal" href="references.html#refpart"><span class="std std-ref">References</span></a>.</p>
 <p>It&#8217;s evolving every day! So if you have problems, bugs or if you want to collaborate and add your own tools, contact me at <a class="reference external" href="mailto:e&#46;combrisson&#37;&#52;&#48;gmail&#46;com">e<span>&#46;</span>combrisson<span>&#64;</span>gmail<span>&#46;</span>com</a></p>
 <div class="figure align-center" id="id2">
 <img alt="_images/titend.png" src="_images/titend.png" />
@@ -188,11 +203,13 @@
 <li>matplotlib (visualization)</li>
 <li>scikit-learn (machine learning)</li>
 <li>joblib (parallel computing)</li>
+<li>scipy</li>
+<li>numpy</li>
 </ul>
 </div>
 <div class="section" id="installation">
 <h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>For instance, the easiest way of installing brainpipe is to ues github (<a class="reference external" href="https://github.com/EtienneCmb/brainpipe">brainpipe</a> ).</p>
+<p>For instance, the easiest way of installing brainpipe is to use github (<a class="reference external" href="https://github.com/EtienneCmb/brainpipe">brainpipe</a> ).</p>
 <p>Go to your python site-package folder (ex: anaconda3/lib/python3.5/site-packages) and in a terminal run</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">git</span><span class="nd">@github.com</span><span class="p">:</span><span class="n">EtienneCmb</span><span class="o">/</span><span class="n">brainpipe</span><span class="o">.</span><span class="n">git</span>
 </pre></div>
@@ -204,6 +221,11 @@
 <h2>v0.2.0<a class="headerlink" href="#v0-2-0" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li>New features (phase-locked power and PSD based features)</li>
+<li>New tools for physiological bands definition</li>
+<li>Add contour to plot2D() and some other parameters</li>
+<li>New doc !</li>
+<li>Bug fix: pac phase shuffling method</li>
+<li>Bug fix: statictical evaluation of permutations</li>
 </ul>
 </div>
 <div class="section" id="v0-1-0">
@@ -317,8 +339,11 @@
 <div class="toctree-wrapper compound" id="visualization">
 <p class="caption"><span class="caption-text">VISUALIZATION</span><a class="headerlink" href="#visualization" title="Permalink to this toctree">¶</a></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualization</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">1-D graphics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="visualization.html#border-plot">Border plot</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html#d-or-2-d-graphics">1-D or 2-D graphics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="visualization.html#add-lines">Add lines</a></li>
 <li class="toctree-l2"><a class="reference internal" href="visualization.html#tilerplot">tilerplot</a></li>
 </ul>
@@ -338,6 +363,20 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="tools.html#others">Others</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound" id="references">
+<p class="caption"><span class="caption-text">REFERENCES</span><a class="headerlink" href="#references" title="Permalink to this toctree">¶</a></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="references.html#pre-processing">Pre-processing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="references.html#features">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="references.html#classification">Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="references.html#statistics">Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="references.html#visualization">Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="references.html#tools">Tools</a></li>
 </ul>
 </li>
 </ul>
