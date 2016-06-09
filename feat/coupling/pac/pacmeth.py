@@ -192,33 +192,33 @@ def CfcSurrogatesList(Id, CfcModel, n_perm=200, tlag=[0, 0], matricial=True):
     """
     # No surrogates
     if Id == 0:
-        def CfcSuroModel(pha, amp, CfcModel, n_perm):
+        def CfcSuroModel(pha, amp, CfcModel, n_perm, *args):
             return (None, None, None)
         CfcSuroModelStr = 'No surrogates'
 
     # Swap phase/amplitude through trials
     elif Id == 1:
-        def CfcSuroModel(pha, amp, CfcModel, n_perm, matricial):
+        def CfcSuroModel(pha, amp, CfcModel, n_perm, matricial, *args):
             return CfcTrialSwap(pha, amp, CfcModel, n_perm=n_perm,
                                 matricial=matricial)
         CfcSuroModelStr = 'Swap phase/amplitude through trials, (Tort, 2010)'
 
     # Swap amplitude
     elif Id == 2:
-        def CfcSuroModel(pha, amp, CfcModel, n_perm, matricial):
+        def CfcSuroModel(pha, amp, CfcModel, n_perm, matricial, *args):
             return CfcAmpSwap(pha, amp, CfcModel, n_perm=n_perm,
                               matricial=matricial)
         CfcSuroModelStr = 'Swap amplitude, (Bahramisharif, 2013)'
 
     # Shuffle phase values
     elif Id == 3:
-        def CfcSuroModel(pha, amp, CfcModel, n_perm):
+        def CfcSuroModel(pha, amp, CfcModel, n_perm, *args):
             return CfcShuffle(pha, amp, CfcModel, n_perm=n_perm)
         CfcSuroModelStr = 'Shuffle phase values'
 
     # Introduce a time lag
     elif Id == 4:
-        def CfcSuroModel(pha, amp, CfcModel, n_perm, tlag):
+        def CfcSuroModel(pha, amp, CfcModel, n_perm, tlag, *args):
             return CfcTimeLag(pha, amp, CfcModel, n_perm=n_perm, tlag=tlag)
         CfcSuroModelStr = 'Time lag on amplitude between ['+int(
             tlag[0])+';'+int(tlag[1])+'] , (Canolty, 2006)'
