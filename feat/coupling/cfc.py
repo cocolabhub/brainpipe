@@ -1,8 +1,10 @@
 from joblib import Parallel, delayed
 from psutil import cpu_count
+
 import numpy as np
 from itertools import product
 from scipy.special import erfinv
+from scipy.stats import norm 
 
 from brainpipe.feat.utils._feat import (_manageWindow, _manageFrequencies,
                                         _checkref)
@@ -10,20 +12,20 @@ from brainpipe.feat.filtering import fextract, docfilter
 from brainpipe.feat.coupling.pac._pac import *
 from brainpipe.feat.coupling.pac.pacmeth import *
 from brainpipe.visu.cmon_plt import tilerplot
-from brainpipe.tools import binarize
-from brainpipe.statistics import perm_2pvalue
+from brainpipe.tools import binarize, binArray
+from brainpipe.statistics import perm_2pvalue, circ_corrcc
 from brainpipe.feat.utils._feat import normalize
 from brainpipe.feature import power, phase, sigfilt
 from brainpipe.visual import addLines
 
-__all__ = ['pac', 'PhaseLockedPower']
+__all__ = ['pac', 'PhaseLockedPower', 'erpac']
 
 
 windoc = """
         window: tuple/list/None, optional [def: None]
             List/tuple: [100,1500]
             List of list/tuple: [(100,500),(200,4000)]
-            None and the width and step parameters will be considered
+            Width and step parameters will be ignored.
 
         width: int, optional [def: None]
             width of a single window.
@@ -60,14 +62,17 @@ class _coupling(tilerplot):
                              cycle=pha_cycle, **kwargs)
         self._amp = fextract(kind=amp_kind, method=amp_meth,
                              cycle=amp_cycle, **kwargs)
-        self._window, self._xvec = _manageWindow(npts, window=window,
+        self._window, xvec = _manageWindow(npts, window=window,
                                                  width=width, step=step,
                                                  time=time)
         self._pha.f, _, _ = _manageFrequencies(pha_f, split=None)
         self._amp.f, _, _ = _manageFrequencies(amp_f, split=None)
         if self._window is None:
             self._window = [(0, npts)]
-            self.xvec = [0, npts]
+            self.time = xvec
+            # self.xvec = [0, npts]
+        else:
+            self.time = binArray(time, self._window)[0]
 
         # Get variables :
         self._width = width
@@ -106,7 +111,7 @@ class pac(_coupling):
 
                 * First digit: refer to the pac method:
 
-                    - '1': Modulation Index [#f1]_
+                    - '1': Mean Vector Length [#f1]_
                     - '2': Kullback-Leibler Distance [#f2]_
                     - '3': Heights Ratio
                     - '4': Phase synchrony
@@ -120,7 +125,7 @@ class pac(_coupling):
                     - '2': Swap trials amplitude [#f4]_
                     - '3': Shuffle phase values
                     - '4': Time lag [#f1]_ [NOT IMPLEMENTED YET]
-                    - '5': circular shifting [NOT IMPLEMENTED YET]
+                    - '5': Circular shifting [NOT IMPLEMENTED YET]
 
                 * Third digit: refer to the normalization method for correction:
 
@@ -331,6 +336,7 @@ class PhaseLockedPower(object):
                 - 2: Division
                 - 3: Substract then divide
                 - 4: Z-score
+
         powArgs: any supplementar arguments are directly passed to the power
         function.
     """
@@ -502,3 +508,158 @@ class PhaseLockedPower(object):
         elif move < 0:
             sigShift[:, np.abs(move)::] = sig[:, 0:npts-np.abs(move)]
         return sigShift
+
+
+class erpac(_coupling):
+
+    """Compute Event Related Phase-Amplitude coupling. See [#f5]_
+
+    .. rubric:: Footnotes
+    .. [#f5] `Voytek et al, 2013 <http://www.ncbi.nlm.nih.gov/pubmed/22986076>`_
+
+    Args:
+        sf: int
+            Sampling frequency
+
+        npts: int
+            Number of points of the time serie
+
+    Kargs:
+        pha_f: tuple/list, optional, [def: [2,4]]
+                List containing the couple of frequency bands for the phase.
+                Example: f=[ [2,4], [5,7], [60,250] ]
+
+        pha_meth: string, optional, [def: 'hilbert']
+            Method for the phase extraction.
+
+        pha_cycle: integer, optional, [def: 3]
+            Number of cycles for filtering the phase.
+
+        amp_f: tuple/list, optional, [def: [60,200]]
+                List containing the couple of frequency bands for the amplitude.
+                Each couple can be either a list or a tuple.
+
+        amp_meth: string, optional, [def: 'hilbert']
+            Method for the amplitude extraction.
+
+        amp_cycle: integer, optional, [def: 6]
+            Number of cycles for filtering the amplitude.
+
+        nbins: integer, optional, [def: 18]
+            Some pac method (like Kullback-Leibler Distance or Heights Ratio) need
+            a binarization of the phase. nbins control the number of bins.
+
+    """
+    __doc__ += windoc
+
+    def __init__(self, sf, npts, pha_f=[2, 4], pha_meth='hilbert',
+                 pha_cycle=3, amp_f=[60, 200], amp_meth='hilbert', amp_cycle=6,
+                 window=None, step=None, width=None, time=None, **kwargs):
+        # Check pha and amp methods:
+        _checkref('pha_meth', pha_meth, ['hilbert', 'hilbert1', 'hilbert2'])
+        _checkref('amp_meth', amp_meth, ['hilbert', 'hilbert1', 'hilbert2'])
+
+        # Check the type of f:
+        if (len(pha_f) == 4) and isinstance(pha_f[0], (int, float)):
+            pha_f = binarize(
+                pha_f[0], pha_f[1], pha_f[2], pha_f[3], kind='list')
+        if (len(amp_f) == 4) and isinstance(amp_f[0], (int, float)):
+            amp_f = binarize(
+                amp_f[0], amp_f[1], amp_f[2], amp_f[3], kind='list')
+
+        # Initialize cfc :
+        _coupling.__init__(self, pha_f, 'phase', pha_meth, pha_cycle,
+                           amp_f, 'amplitude', amp_meth, amp_cycle,
+                           sf, npts, window, width, step, time, **kwargs)
+
+    def get(self, xpha, xamp, n_perm=200, n_jobs=-1):
+        """Get the erpac mesure between an xpha and xamp signals.
+
+        Args:
+            xpha: array
+                Signal for phase. The shape of xpha should be :
+                (n_electrodes x n_pts x n_trials)
+
+            xamp: array
+                Signal for amplitude. The shape of xamp should be :
+                (n_electrodes x n_pts x n_trials)
+
+        Kargs:
+            n_perm: integer, optional, [def: 200]
+                Number of permutations for normalizing the cfc mesure.
+
+            n_jobs: integer, optional, [def: -1]
+                Control the number of jobs for parallel computing. Use 1, 2, ..
+                depending of your number or cores. -1 for all the cores.
+
+            If the same signal is used (example : xpha=x and xamp=x), this mean
+            the program compute a local cfc.
+
+        Returns:
+            xerpac: array
+                The erpac mesure of size :
+                (n_amplitude x n_phase x n_electrodes x n_windows)
+
+            pvalue: array
+                The associated p-values of size :
+                (n_amplitude x n_phase x n_electrodes x n_windows)
+        """
+        # Check and get methods:
+        xpha, xamp = _cfcCheck(xpha, xamp, self._npts)
+        npha, namp = self._nPha, self._nAmp
+        phaMeth = self._pha.get(self._sf, self._pha.f, self._npts)
+        ampMeth = self._amp.get(self._sf, self._amp.f, self._npts)
+        
+        # Extract phase and amplitude:
+        nelec, npts, ntrials = xpha.shape
+        xp = np.zeros((nelec, npha, npts, ntrials))
+        xa = np.zeros((nelec, namp, npts, ntrials))
+        for n in range(nelec):
+            xp[n, ...] = self._pha.apply(xpha[n, ...], phaMeth)
+            xa[n, ...] = self._pha.apply(xamp[n, ...], ampMeth)
+        del xpha, xamp, phaMeth, ampMeth
+
+        # Window:
+        if not (self._window == [(0, npts)]):
+            xp = binArray(xp, self._window, axis=2)[0]
+            xa = binArray(xa, self._window, axis=2)[0]
+            npts = xp.shape[2]            
+
+        # Extract ERPAC and surrogates:
+        iteract = product(range(nelec), range(npha), range(namp))
+        data = Parallel(n_jobs=n_jobs)(delayed(_erpac)(
+                xp[e, p, ...], xa[e, a, ...],
+                n_perm) for e, p, a in iteract)
+        
+        # Unpack arguments:
+        xerpac, pval = zip(*data)
+        xerpac = np.array(xerpac).reshape(nelec, npha, namp, npts)
+        pval = np.array(pval).reshape(nelec, npha, namp, npts)
+        
+        return xerpac, pval
+
+def _erpac(xp, xa, n_perm):
+    """Sub erpac function
+    [xp] = [xa] = (npts, ntrials)
+    """
+    npts, ntrials = xp.shape
+    # Compute ERPAC
+    xerpac = np.zeros((npts,))
+    for t in range(npts):
+        xerpac[t] = circ_corrcc(xp[t, :], xa[t, :])[0]
+
+    # Compute surrogates:
+    suro = np.zeros((n_perm, npts))
+    for pe in range(n_perm):
+        # Permute ntrials (only for amplitude):
+        perm = np.random.permutation(ntrials)
+        for t in range(npts):
+            suro[pe, t] = circ_corrcc(xp[t, :], xa[t, perm])[0]
+
+    # Normalize erpac:
+    xerpac = (xerpac - suro.mean(0))/suro.std(0)
+
+    # Get p-value:
+    pvalue = norm.cdf(-np.abs(xerpac))*2
+
+    return xerpac, pvalue

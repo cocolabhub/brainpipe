@@ -44,7 +44,7 @@ def CfcMethodList(Id, nbins=18):
     """List of methods to compute the cfc. This list include methods for
     Phase-Amplitude, phase-phase or amplitude-amplitude coupling. Here's the
     list of the implemented methods :
-    - Modulation Index
+    - Mean Vector Length
     - Kullback-Leibler Distance
     - Phase synchrony
     - Amplitude PSD
@@ -57,11 +57,11 @@ def CfcMethodList(Id, nbins=18):
     amp.shape = (Nb amplitude x Time points)
     And each method should return a (Nb amplitude x Nb phase)
     """
-    # Modulation Index (Canolty, 2006)
+    # Mean Vector Length (Canolty, 2006)
     if Id == 1:
         def CfcModel(pha, amp, *arg):
-            return ModulationIndex(pha, amp)
-        CfcModelStr = 'Modulation Index (Canolty, 2006)'
+            return MVL(pha, amp)
+        CfcModelStr = 'Mean Vector Length (Canolty, 2006)'
 
     # Kullback-Leiber divergence (Tort, 2010)
     elif Id == 2:
@@ -91,8 +91,8 @@ def CfcMethodList(Id, nbins=18):
     return CfcModel, CfcModelStr
 
 
-def ModulationIndex(pha, amp):
-    """Modulation index (Canolty, 2006)
+def MVL(pha, amp):
+    """Mean Vector Length (Canolty, 2006)
 
     Method :
     abs(amplitude x exp(phase)) <-> sum modulations of the
