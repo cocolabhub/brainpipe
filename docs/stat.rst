@@ -1,6 +1,3 @@
-Statistics
-==========
-
 .. code-block:: python
 
     from brainpipe.statistics import *
@@ -9,12 +6,13 @@ Statistics
 * :ref:`bino`
 * :ref:`perm` 
 * :ref:`mltpcomp`
+* :ref:`circstat`
 
 
 .. _bino:
 
 Binomial
---------
+========
 .. autofunction:: statistics.bino_da2p
 
 .. autofunction:: statistics.bino_p2da
@@ -24,15 +22,15 @@ Binomial
 .. _perm:
 
 Permutations
-------------
+============
 Evaluation
-~~~~~~~~~~
+----------
 .. autofunction:: statistics.perm_2pvalue
 
 .. autofunction:: statistics.perm_metric
 
 Generate
-~~~~~~~~
+--------
 .. autofunction:: statistics.perm_rndDatasets
 
 .. autofunction:: statistics.perm_swap
@@ -42,17 +40,27 @@ Generate
 .. _mltpcomp:
 
 Multiple-comparisons
---------------------
+====================
 Bonferroni
-~~~~~~~~~~
+----------
 .. autofunction:: statistics.bonferroni
 
 False Discovery Rate (FDR)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 .. autofunction:: statistics.fdr
 
 Maximum statistic
-~~~~~~~~~~~~~~~~~
+-----------------
 .. autofunction:: statistics.maxstat
+
+.. _circstat:
+
+Circular statistics toolbox
+===========================
+Python adaptation of the Matlab toolbox (Berens et al, 2009) 
+
+.. autofunction:: statistics.circ_corrcc
+
+
 
 

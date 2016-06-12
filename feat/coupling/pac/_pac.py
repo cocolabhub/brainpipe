@@ -78,7 +78,7 @@ def _cfcCheck(xPha, xAmp, npts):
     """Manage xPha and xAmp size
     """
     if xPha.shape == xAmp.shape:
-        if len(xPha.shape) == 2:
+        if xPha.ndim == 2:
             xPha = xPha[n.newaxis, ...]
             xAmp = xAmp[n.newaxis, ...]
         if xPha.shape[1] != npts:

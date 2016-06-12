@@ -1,6 +1,3 @@
-Pre-processing
-==============
-
 .. todo:: Add trials rejection (MATLAB code adaptation)
 
 .. code-block:: python
@@ -8,13 +5,13 @@ Pre-processing
     from brainpipe.preprocessing import *
 
 Bipolarization
---------------
+==============
 
 .. autofunction:: preprocessing.bipolarization
 
 
 Physiology
-----------
+==========
 .. automodule:: preprocessing
    :members: xyz2phy
    :noindex:

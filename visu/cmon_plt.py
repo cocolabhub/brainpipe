@@ -90,10 +90,16 @@ class _pltutils(object):
                     spine.set_smart_bounds(True)
         # Remove axis :
         if rmaxis:
-            for loc, spine in ax.spines.items():
-                if loc in rmaxis:
-                    spine.set_color('none')  # don't draw spine
-                    ax.tick_params(**{loc: 'off'})
+            _rmaxis(ax, rmaxis)
+
+
+def _rmaxis(ax, rmaxis):
+    """Remove axis subfunction
+    """
+    for loc, spine in ax.spines.items():
+        if loc in rmaxis:
+            spine.set_color('none')  # don't draw spine
+            ax.tick_params(**{loc: 'off'})
 
 
 class tilerplot(object):
@@ -176,7 +182,7 @@ class tilerplot(object):
                under=None, over=None, vmin=None, vmax=None, sharex=False,
                sharey=False, subdim=None, mask=None, interpolation='none',
                resample=(0, 0), figtitle='', transpose=False, maxplot=10,
-               subspace=None, **kwargs):
+               subspace=None, contour=None, **kwargs):
         """Plot y as an image
 
         Args:
@@ -245,6 +251,13 @@ class tilerplot(object):
                 Control the distance in subplots. Use 'left', 'bottom',
                 'right', 'top', 'wspace', 'hspace'.
                 Example: {'top':0.85, 'wspace':0.8}
+
+            contour: dict, optional, [def: None]
+                Add a contour to your 2D-plot. In order to use this parameter,
+                define contour={'data':yourdata, 'label':[yourlabel], **kwargs}
+                where yourdata must have the same shape as y, level must float/int
+                from smallest to largest. Use **kwargs to pass other arguments to the
+                contour function
 
             kwargs:
                 Supplementar arguments to control each suplot:
@@ -321,16 +334,33 @@ class tilerplot(object):
             im = plt.imshow(y, aspect='auto', cmap=cmap,
                             interpolation=interpolation, vmin=vmin, vmax=vmax,
                             extent=[xvec[0], xvec[-1], yvec[-1], yvec[0]])
+
             # Manage under and over:
             if (under is not None) and (isinstance(under, str)):
                 im.cmap.set_under(color=under)
             if (over is not None) and (isinstance(over, str)):
                 im.cmap.set_over(color=over)
 
+            # Manage contour:
+            if contour is not None:
+                contour_bck = contour.copy()
+                # Unpack necessary arguments :
+                datac = contour_bck['data']
+                level = contour_bck['level']
+                # Check data size:
+                if len(datac.shape) == 2:
+                    datac = datac[np.newaxis, ...]
+                contour_bck.pop('data'), contour_bck.pop('level')
+                _ = plt.contour(datac[k, ...], extent=[xvec[0], xvec[-1], yvec[0], yvec[-1]],
+                                levels=level, **contour_bck)
+
+            # Manage ticks, labek etc:
             plt.axis('tight')
             ax = plt.gca()
             _pltutils(ax, kwout['title'][k], kwout['xlabel'][k],
                       kwout['ylabel'][k], **kwargs)
+
+            # Manage colorbar:
             if colorbar:
                 cb = plt.colorbar(im, shrink=0.7, pad=0.01, aspect=10)
                 if cbticks == 'auto':
@@ -413,6 +443,7 @@ class tilerplot(object):
                     if sharey:
                         ax.set_yticklabels([])
                         ax.set_ylabel('')
+                        _rmaxis(ax, ['left'])
                 # Share-x axis:
                 if sharex and (k < (nrow-1)*ncol):
                     ax.set_xticklabels([])

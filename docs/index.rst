@@ -1,14 +1,14 @@
 Brainpipe
 *********
 
-Brainpipe is a python toolbox dedicated for neuronal signals analysis and machine-learning. The aim is to provide a variety of tools to extract informations from neural activities (features) and use machine-learning to validate hypothesis. The machine-learning used the excellent `scikit-learn <http://scikit-learn.org/stable/>`_  library. Brainpipe can also perform parallel computing and try to optimize RAM usage for our 'large' datasets. 
+Brainpipe is a python toolbox dedicated for neuronal signals analysis and machine-learning. The aim is to provide a variety of tools to extract informations from neural activities (features) and use machine-learning to validate hypothesis. The machine-learning used the excellent `scikit-learn <http://scikit-learn.org/stable/>`_  library. Brainpipe can also perform parallel computing and try to optimize RAM usage for our 'large' datasets. If you want to have a quick overview of what you can actually do, checkout the :ref:`refpart`.
 
 It's evolving every day! So if you have problems, bugs or if you want to collaborate and add your own tools, contact me at e.combrisson@gmail.com
 
 .. figure::  ../images/titend.png
    :align:   center
 
-   (My amazing `Jhenn Oz <https://www.facebook.com/jhenntattooist/?fref=ts>`_)
+   (`Jhenn Oz <https://www.facebook.com/jhenntattooist/?fref=ts>`_)
 
 	
 
@@ -21,10 +21,12 @@ Please, check if you have this toolbox installed and already up-to-date:
 - matplotlib (visualization)
 - scikit-learn (machine learning)
 - joblib (parallel computing)
+- scipy
+- numpy
 
 Installation
 ************
-For instance, the easiest way of installing brainpipe is to ues github (`brainpipe <https://github.com/EtienneCmb/brainpipe>`_ ). 
+For instance, the easiest way of installing brainpipe is to use github (`brainpipe <https://github.com/EtienneCmb/brainpipe>`_ ). 
 
 Go to your python site-package folder (ex: anaconda3/lib/python3.5/site-packages) and in a terminal run
 
@@ -34,6 +36,16 @@ Go to your python site-package folder (ex: anaconda3/lib/python3.5/site-packages
 
 What's new
 **********
+v0.2.0
+=======
+- New features (phase-locked power (coupling), ERPAC (coupling) and PSD based features)
+- New tools for physiological bands definition
+- Start to make the python adaptation of circstat Matlab toolbox
+- Add contour to plot2D() and some other parameters 
+- New doc ! Checkout the :ref:`refpart`
+- Bug fix: pac phase shuffling method, coupling time vector, statictical evaluation of permutations
+
+
 v0.1.0
 =======
 
@@ -50,17 +62,20 @@ v0.1.0
 - Tools:
 	- Array: ndsplit and ndjoin method which doesn't depend on odd/even size (but return list)
 	- squarefreq() generate a square frequency vector
-- Bugs:
-	- Probably on stat for classification() and multi-features, but not tested. It might works
 	
 
 Organization
 ************
 .. toctree::
-   :maxdepth: 3
-   :caption: PROCESSING
+   :maxdepth: 4
+   :caption: PRE-PROCESSING
 
    preprocessing
+
+.. toctree::
+   :maxdepth: 4
+   :caption: FEATURES
+
    feature
 
 .. toctree::
@@ -86,6 +101,12 @@ Organization
    :caption: OTHERS
 
    tools
+
+.. toctree::
+   :maxdepth: 4
+   :caption: REFERENCES
+
+   references
 
 
 
