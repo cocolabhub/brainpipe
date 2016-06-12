@@ -625,27 +625,17 @@ class erpac(_coupling):
             xa = binArray(xa, self._window, axis=2)[0]
             npts = xp.shape[2]
 
-        # Jobs management:
-        if nelec*npha*namp == 1:
-            surJobs = n_jobs
-            n_jobs = 1
-        else:
-            surJobs = 1
-
         # Extract ERPAC and surrogates:
         iteract = product(range(nelec), range(npha), range(namp))
-        data = Parallel(n_jobs=n_jobs)(delayed(_erpac)(
-                xp[e, p, ...], xa[e, a, ...],
-                n_perm, surJobs) for e, p, a in iteract)
-        
-        # Unpack arguments:
-        xerpac, pval = zip(*data)
-        xerpac = np.array(xerpac).reshape(nelec, npha, namp, npts)
-        pval = np.array(pval).reshape(nelec, npha, namp, npts)
+        xerpac = np.zeros((nelec, npha, namp, npts))
+        pval = np.empty_like(xerpac)
+        for e, p, a in iteract:
+            xerpac[e, p, a, :], pval[e, p, a, :] = _erpac(xp[e, p, ...],
+                                  xa[e, a, ...], n_perm, n_jobs)
         
         return xerpac, pval
 
-def _erpac(xp, xa, n_perm, surJobs):
+def _erpac(xp, xa, n_perm, n_jobs):
     """Sub erpac function
     [xp] = [xa] = (npts, ntrials)
     """
@@ -656,7 +646,7 @@ def _erpac(xp, xa, n_perm, surJobs):
         xerpac[t] = circ_corrcc(xp[t, :], xa[t, :])[0]
 
     # Compute surrogates:
-    data = Parallel(n_jobs=surJobs)(delayed(_erpacSuro)(
+    data = Parallel(n_jobs=n_jobs)(delayed(_erpacSuro)(
             xp, xa, npts, ntrials) for pe in range(n_perm))
     suro = np.array(data)
 
