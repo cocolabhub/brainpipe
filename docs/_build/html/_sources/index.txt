@@ -38,12 +38,12 @@ What's new
 **********
 v0.2.0
 =======
-- New features (phase-locked power and PSD based features)
+- New features (phase-locked power (coupling), ERPAC (coupling) and PSD based features)
 - New tools for physiological bands definition
+- Start to make the python adaptation of circstat Matlab toolbox
 - Add contour to plot2D() and some other parameters 
-- New doc !
-- Bug fix: pac phase shuffling method
-- Bug fix: statictical evaluation of permutations
+- New doc ! Checkout the :ref:`refpart`
+- Bug fix: pac phase shuffling method, coupling time vector, statictical evaluation of permutations
 
 
 v0.1.0
