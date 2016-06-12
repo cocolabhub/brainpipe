@@ -44,6 +44,7 @@ phase                   Phase of the signal
 tf                      Time-frequency maps
 pac                     Phase-Amplitude Coupling (large variety of methods)
 PhaseLockedPower        Time-frequency maps phase locked to a specific phase
+erpac                   Event Related Phase-Amplitude Coupling (time-resolved pac)
 PSD                     Power Spectrum Density
 powerPSD                Power exacted from PSD
 SpectralEntropy         Spectral entropy (entropy extracted from PSD)
@@ -100,6 +101,7 @@ perm_rep                Repeat a ndarray of permutations (matricial implementati
 bonferroni              Multiple comparison: Bonferroni
 fdr                     Multiple comparison: False Discovery Rate
 maxstat                 Multiple comparison: Maximum statistic
+circ_corrcc             Correlation coefficient between one circular and one linear random variable
 ================        ==================================================================================
 
 

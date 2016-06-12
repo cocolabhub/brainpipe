@@ -6,6 +6,7 @@
 * :ref:`bino`
 * :ref:`perm` 
 * :ref:`mltpcomp`
+* :ref:`circstat`
 
 
 .. _bino:
@@ -51,5 +52,15 @@ False Discovery Rate (FDR)
 Maximum statistic
 -----------------
 .. autofunction:: statistics.maxstat
+
+.. _circstat:
+
+Circular statistics toolbox
+===========================
+Python adaptation of the Matlab toolbox (Berens et al, 2009) 
+
+.. autofunction:: statistics.circ_corrcc
+
+
 
 

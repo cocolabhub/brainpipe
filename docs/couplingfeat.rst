@@ -27,7 +27,20 @@ Phase-locked power
 .. figure::  ../images/plp.png
    :align:   center
 
-   Phase-locked TF maps, aligned to alpha phase arround 0
+   Event Related Phase-Amplitude 
+
+.. _erpac:
+
+Event Related Phase-Amplitude Coupling
+--------------------------------------
+.. automodule:: feature
+   :members: erpac
+   :noindex:
+
+.. figure::  ../images/erpac.png
+   :align:   center
+
+   Event Related Phase-Amplitude Coupling
 
 .. _plv:
 
