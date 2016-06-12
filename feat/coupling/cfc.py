@@ -623,13 +623,20 @@ class erpac(_coupling):
         if not (self._window == [(0, npts)]):
             xp = binArray(xp, self._window, axis=2)[0]
             xa = binArray(xa, self._window, axis=2)[0]
-            npts = xp.shape[2]            
+            npts = xp.shape[2]
+
+        # Jobs management:
+        if nelec*npha*namp == 1:
+            surJobs = n_jobs
+            n_jobs = 1
+        else:
+            surJobs = 1
 
         # Extract ERPAC and surrogates:
         iteract = product(range(nelec), range(npha), range(namp))
         data = Parallel(n_jobs=n_jobs)(delayed(_erpac)(
                 xp[e, p, ...], xa[e, a, ...],
-                n_perm) for e, p, a in iteract)
+                n_perm, surJobs) for e, p, a in iteract)
         
         # Unpack arguments:
         xerpac, pval = zip(*data)
@@ -638,7 +645,7 @@ class erpac(_coupling):
         
         return xerpac, pval
 
-def _erpac(xp, xa, n_perm):
+def _erpac(xp, xa, n_perm, surJobs):
     """Sub erpac function
     [xp] = [xa] = (npts, ntrials)
     """
@@ -649,12 +656,9 @@ def _erpac(xp, xa, n_perm):
         xerpac[t] = circ_corrcc(xp[t, :], xa[t, :])[0]
 
     # Compute surrogates:
-    suro = np.zeros((n_perm, npts))
-    for pe in range(n_perm):
-        # Permute ntrials (only for amplitude):
-        perm = np.random.permutation(ntrials)
-        for t in range(npts):
-            suro[pe, t] = circ_corrcc(xp[t, :], xa[t, perm])[0]
+    data = Parallel(n_jobs=surJobs)(delayed(_erpacSuro)(
+            xp, xa, npts, ntrials) for pe in range(n_perm))
+    suro = np.array(data)
 
     # Normalize erpac:
     xerpac = (xerpac - suro.mean(0))/suro.std(0)
@@ -663,3 +667,12 @@ def _erpac(xp, xa, n_perm):
     pvalue = norm.cdf(-np.abs(xerpac))*2
 
     return xerpac, pvalue
+
+def _erpacSuro(xp, xa, npts, ntrials):
+    """Parallel surrogates
+    """
+    # Permute ntrials (only for amplitude):
+    perm = np.random.permutation(ntrials)
+    for t in range(npts):
+        suro = circ_corrcc(xp[t, :], xa[t, perm])[0]
+    return suro
