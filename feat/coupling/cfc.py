@@ -45,6 +45,7 @@ Footnotes = """
     .. [#f2] `Tort et al, 2010 <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2941206/>`_
     .. [#f3] `Ozkurt et al, 2012 <http://www.ncbi.nlm.nih.gov/pubmed/22531738/>`_
     .. [#f4] `Bahramisharif et al, 2013 <http://www.jneurosci.org/content/33/48/18849.short/>`_
+    .. [#f5] `Penny et al, 2008 <http://www.sciencedirect.com/science/article/pii/S0165027008003816>`_
 
 """
 
@@ -63,13 +64,15 @@ class _coupling(tilerplot):
         self._amp = fextract(kind=amp_kind, method=amp_meth,
                              cycle=amp_cycle, **kwargs)
         self._window, xvec = _manageWindow(npts, window=window,
-                                                 width=width, step=step,
-                                                 time=time)
+                                           width=width, step=step,
+                                           time=time)
         self._pha.f, _, _ = _manageFrequencies(pha_f, split=None)
         self._amp.f, _, _ = _manageFrequencies(amp_f, split=None)
+        if time is None:
+            time = np.arange(npts)
         if self._window is None:
             self._window = [(0, npts)]
-            self.time = xvec
+            self.time = np.array(self._window).mean()
             # self.xvec = [0, npts]
         else:
             self.time = binArray(time, self._window)[0]
@@ -91,9 +94,9 @@ class pac(_coupling):
     """Compute the phase-amplitude coupling (pac) either in local or
     distant coupling. PAC require three things:
 
-        - Main method for compute it
-        - Surrogates to correct the true pac value
-        - A normalization method to correct true pas value bu surrogates
+        - Main method to compute it
+        - Surrogates to correct the true pac estimation
+        - A normalization method to correct pas by surrogates
 
     Contributor: Juan LP Soto.
 
@@ -112,20 +115,20 @@ class pac(_coupling):
                 * First digit: refer to the pac method:
 
                     - '1': Mean Vector Length [#f1]_
-                    - '2': Kullback-Leibler Distance [#f2]_
+                    - '2': Kullback-Leibler Divergence [#f2]_
                     - '3': Heights Ratio
-                    - '4': Phase synchrony
+                    - '4': Phase synchrony (or adapted PLV) [#f5]_
                     - '5': ndPAC [#f3]_
-                    - '6': Amplitude PSD [NOT IMPLEMENTED YET]
 
                 * Second digit: refer to the method for computing surrogates:
 
                     - '0': No surrogates
                     - '1': Swap trials phase/amplitude [#f2]_
                     - '2': Swap trials amplitude [#f4]_
-                    - '3': Shuffle phase values
-                    - '4': Time lag [#f1]_ [NOT IMPLEMENTED YET]
-                    - '5': Circular shifting [NOT IMPLEMENTED YET]
+                    - '3': Shuffle phase time-series
+                    - '4': Shuffle amplitude time-series
+                    - '5': Time lag [#f1]_ [NOT IMPLEMENTED YET]
+                    - '6': Circular shifting [NOT IMPLEMENTED YET]
 
                 * Third digit: refer to the normalization method for correction:
 
@@ -136,9 +139,9 @@ class pac(_coupling):
                     - '4': Z-score
 
             So, if Id='143', this mean that pac will be evaluate using the
-            Modulation Index ('1'), then surrogates will be find by introducing a
-            time lag ('4') and finally, the true pac value will be normalized by
-            substracting then dividing by the mean of surrogates.
+            Modulation Index ('1'), then surrogates are computing by randomly
+            shuffle amplitude values ('4') and finally, the true pac value
+            will be normalized by substracting then dividing by the mean of surrogates.
 
         pha_f: tuple/list, optional, [def: [2,4]]
                 List containing the couple of frequency bands for the phase.
@@ -169,7 +172,8 @@ class pac(_coupling):
 
     def __init__(self, sf, npts, Id='113', pha_f=[2, 4], pha_meth='hilbert',
                  pha_cycle=3, amp_f=[60, 200], amp_meth='hilbert', amp_cycle=6,
-                 nbins=18, window=None, width=None, step=None, time=None, **kwargs):
+                 nbins=18, window=None, width=None, step=None, time=None,
+                 **kwargs):
         # Check pha and amp methods:
         _checkref('pha_meth', pha_meth, ['hilbert', 'hilbert1', 'hilbert2'])
         _checkref('amp_meth', amp_meth, ['hilbert', 'hilbert1', 'hilbert2'])
@@ -193,7 +197,7 @@ class pac(_coupling):
             pha_kind, amp_kind = 'phase', 'amplitude'
         #       - Methods using phase // phase :
         elif me in ['4']:
-            pha_kind, amp_kind = 'phase', 'phase'
+            pha_kind, amp_kind = 'phase', 'amplitude'
         #   2 - Specific case of Ozkurt :
         if me == '5':
             Id = '500'
@@ -216,7 +220,7 @@ class pac(_coupling):
 
         return cfcStr+phafilt+',\n'+ampfilt+')'
 
-    def get(self, xpha, xamp, n_perm=200, p=0.05, matricial=True, n_jobs=-1):
+    def get(self, xpha, xamp, n_perm=200, p=0.05, matricial=False, n_jobs=-1):
         """Get the normalized cfc mesure between an xpha and xamp signals.
 
         Args:
@@ -235,6 +239,12 @@ class pac(_coupling):
             p: float, optional, [def: 0.05]
                 p-value for the statistical method of Ozkurt 2012.
 
+            matricial: bool, optional, [def: False]
+                Some methods can work in matricial computation. This can lead
+                to a 10x or 30x time faster. But, please, monitor your RAM usage
+                beacause this parameter can use a lot of RAM. So, turn this parameter
+                in case of small computation.
+
             n_jobs: integer, optional, [def: -1]
                 Control the number of jobs for parallel computing. Use 1, 2, ..
                 depending of your number or cores. -1 for all the cores.
@@ -244,7 +254,7 @@ class pac(_coupling):
 
         Returns:
             ncfc: array
-                The unormalized cfc mesure of size :
+                The cfc mesure of size :
                 (n_amplitude x n_phase x n_electrodes x n_windows x n_trials)
 
             pvalue: array
@@ -278,9 +288,9 @@ class pac(_coupling):
         uCfc = np.array(uCfc)
 
         # Permutations ans stat:
-        if self.Id[0] is not '5':
+        if (self.Id[0] is not '5'):
             # Compute permutations :
-            if self.n_perm is not 0:
+            if (self.n_perm is not 0) and (self.Id[1] is not '0'):
                 Suro, mSuro, stdSuro = np.array(
                     Suro), np.array(mSuro), np.array(stdSuro)
 
