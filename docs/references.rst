@@ -102,6 +102,8 @@ bonferroni              Multiple comparison: Bonferroni
 fdr                     Multiple comparison: False Discovery Rate
 maxstat                 Multiple comparison: Maximum statistic
 circ_corrcc             Correlation coefficient between one circular and one linear random variable
+circ_r                  Computes mean resultant vector length for circular data
+circ_rtest              Computes Rayleigh test for non-uniformity of circular data
 ================        ==================================================================================
 
 
