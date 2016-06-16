@@ -5,7 +5,7 @@ from brainpipe.visu._interp import mapinterpolation
 from warnings import warn
 
 
-__all__ = ['addLines', 'BorderPlot', 'tilerplot']
+__all__ = ['addLines', 'BorderPlot', 'tilerplot', 'addPval']
 
 
 class _pltutils(object):
@@ -695,3 +695,63 @@ def _BorderPlot(time, x, color, kind, alpha, legend, linewidth, axes):
     plt.sca(axes)
     ax = plt.plot(time, xMean, color=color, label=legend, linewidth=linewidth)
     plt.fill_between(time, xLow, xHigh, alpha=alpha, color=ax[0].get_color())
+
+
+def addPval(ax, pval, y=0, x=None, p=0.05, minsucc=1, color='b', shape='-',
+            lw=2, **kwargs):
+    """Add significants p-value to your existing plot
+
+    Args:
+        ax: matplotlib axes
+            The axes to add lines. USe for example plt.gca()
+
+        pval: vector
+            Vector of pvalues
+
+    Kargs:
+        y: int/float
+            The y location of your p-values
+
+        x: vector
+            x vector of the plot. Must have the same size as pval
+
+        p: float
+            p-value threshold to plot
+
+        minsucc: int
+            Minimum number of successive significants p-values
+
+        color: string
+            Color of th p-value line
+
+        shape: string
+            Shape of th p-value line
+
+        lw: int
+            Linewidth of th p-value line
+
+        **kwargs:
+            Any supplementar arguments are passed to the plt.plot()
+            function
+
+    Return:
+        ax: updated matplotlib axes
+    """
+    # Check inputs:
+    pval = np.ravel(pval)
+    N = len(pval)
+    if x is None:
+        x = np.arange(N)
+    if len(x)-N is not 0:
+        raise ValueError("The length of pval ("+str(N)+") must be the same as x ("+str(len(x))+")")
+
+    # Find successive points:
+    underp = np.where(pval < p)[0]
+    pvsplit = np.split(underp, np.where(np.diff(underp) != 1)[0]+1)
+    succlst = [[k[0], k[-1]] for k in pvsplit if len(k) >= minsucc ]
+
+    # Plot lines:
+    for k in succlst:
+        ax.plot((x[k[0]], x[k[1]]), (y, y), lw=lw, color=color, **kwargs)
+
+    return plt.gca()
