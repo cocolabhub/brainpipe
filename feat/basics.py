@@ -3,7 +3,8 @@ from brainpipe.tools import binarize, binArray
 from brainpipe.feat.utils._feat import (_manageWindow, _manageFrequencies,
                                         normalize, _checkref)
 from brainpipe.visu.cmon_plt import tilerplot
-from brainpipe.statistics import perm_swap, perm_metric, perm_2pvalue, maxstat
+from brainpipe.statistics import (perm_swap, perm_metric, perm_2pvalue,
+                                  maxstat, circ_rtest)
 
 from scipy.stats import wilcoxon, kruskal
 
@@ -428,3 +429,39 @@ class phase(_spectral):
         _checkref('method', method, ['hilbert', 'hilbert1', 'hilbert2'])
         _spectral.__init__(self, sf, npts, 'phase', f, None, None, method,
                            window, width, step, None, time, False, **kwargs)
+
+    def get(self, x, n_jobs=-1):
+        """
+        """
+        # Check input size :
+        if len(x.shape) == 2:
+            x = x[np.newaxis, ...]
+        if x.shape[1] != self._npts:
+            raise ValueError('The second dimension must be '+str(self._npts))
+        nfeat = x.shape[0]
+        # run feature computation:
+        data = Parallel(n_jobs=n_jobs)(
+            delayed(_phase)(x[k, ...], self) for k in range(nfeat))
+        xF, pvalues = zip(*data)
+        xF, pvalues = np.array(xF), np.array(pvalues)
+
+        return xF, pvalues
+
+def _phase(x, self):
+    """Sub-phase function
+    """
+
+    # Get the filter properties and apply:
+    fMeth = self._fobj.get(self._sf, self._fSplit, self._npts)
+    xF = self._fobj.apply(x, fMeth)
+    nf, npts, nt = xF.shape
+
+    # Get p-value:
+    pvalues = np.zeros((nf, npts))
+    for f in range(nf):
+        for k in range(npts):
+            pvalues[f, k] = circ_rtest(xF[f, k, :])[0]
+
+    return xF, pvalues
+
+    print(xF.shape)

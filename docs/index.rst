@@ -38,6 +38,7 @@ What's new
 **********
 v0.2.0
 =======
+- PAC: new surrogates method (shuffle amplitude time-series) + phase synchro
 - New features (phase-locked power (coupling), ERPAC (coupling) and PSD based features)
 - New tools for physiological bands definition
 - Start to make the python adaptation of circstat Matlab toolbox
