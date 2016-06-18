@@ -5,7 +5,8 @@ from brainpipe.visu._interp import mapinterpolation
 from warnings import warn
 
 
-__all__ = ['addLines', 'BorderPlot', 'tilerplot', 'addPval']
+__all__ = ['addLines', 'BorderPlot', 'tilerplot',
+           'addPval', 'rmaxis', 'despine']
 
 
 class _pltutils(object):
@@ -42,17 +43,17 @@ class _pltutils(object):
         style:
             style of the plot [def: None]
 
-        despine:
+        dpaxis:
             List of axis to despine ['left', 'right', 'top', 'bottom']
 
-        rmaxis:
+        rmax:
             Remove axis ['left', 'right', 'top', 'bottom']
 
     """
 
     def __init__(self, ax, title='', xlabel='', ylabel='', xlim=[], ylim=[],
                  xticks=[], yticks=[], xticklabels=[], yticklabels=[],
-                 style=None, despine=None, rmaxis=None):
+                 style=None, dpaxis=None, rmax=None):
 
         if not hasattr(self, '_xType'):
             self._xType = int
@@ -83,23 +84,48 @@ class _pltutils(object):
         if style:
             plt.style.use(style)
         # Despine :
-        if despine:
-            for loc, spine in ax.spines.items():
-                if loc in despine:
-                    spine.set_position(('outward', 10))  # outward by 10 points
-                    spine.set_smart_bounds(True)
+        if dpaxis:
+            despine(ax, dpaxis)
         # Remove axis :
-        if rmaxis:
-            _rmaxis(ax, rmaxis)
+        if rmax:
+            rmaxis(ax, rmax)
 
 
-def _rmaxis(ax, rmaxis):
-    """Remove axis subfunction
+def rmaxis(ax, rmax):
+    """Remove ticks and axis of a existing plot
+
+    Args:
+        ax: matplotlib axes
+            Axes to remove axis
+
+        rmax: list of strings
+            List of axis name to be removed. For example, use
+            ['left', 'right', 'top', 'bottom']
     """
     for loc, spine in ax.spines.items():
-        if loc in rmaxis:
+        if loc in rmax:
             spine.set_color('none')  # don't draw spine
             ax.tick_params(**{loc: 'off'})
+
+def despine(ax, dpaxis, outward=10):
+    """Despine axis of a existing plot
+
+    Args:
+        ax: matplotlib axes
+            Axes to despine axis
+
+        dpaxis: list of strings
+            List of axis name to be despined. For example, use
+            ['left', 'right', 'top', 'bottom']
+
+    Kargs:
+        outward: int/float, optional, [def: 10]
+            Distance of despined axis from the original position.
+    """
+    for loc, spine in ax.spines.items():
+        if loc in dpaxis:
+            spine.set_position(('outward', outward))  # outward by 10 points
+            spine.set_smart_bounds(True)
 
 
 class tilerplot(object):
@@ -149,7 +175,7 @@ class tilerplot(object):
                 Supplementar arguments to control each suplot:
                 title, xlabel, ylabel (which can be list for each subplot)
                 xlim, ylim, xticks, yticks, xticklabels, yticklabels, style,
-                despine, rmaxis.
+                dpaxis, rmax.
         """
         # Fig properties:
         self._fig = self._figmngmt(fig, figtitle=figtitle, transpose=transpose)
@@ -263,7 +289,7 @@ class tilerplot(object):
                 Supplementar arguments to control each suplot:
                 title, xlabel, ylabel (which can be list for each subplot)
                 xlim, ylim, xticks, yticks, xticklabels, yticklabels, style
-                despine, rmaxis.
+                dpaxis, rmax.
         """
 
         # Fig properties:
@@ -443,7 +469,7 @@ class tilerplot(object):
                     if sharey:
                         ax.set_yticklabels([])
                         ax.set_ylabel('')
-                        _rmaxis(ax, ['left'])
+                        rmaxis(ax, ['left'])
                 # Share-x axis:
                 if sharex and (k < (nrow-1)*ncol):
                     ax.set_xticklabels([])
@@ -699,7 +725,7 @@ def _BorderPlot(time, x, color, kind, alpha, legend, linewidth, axes):
 
 def addPval(ax, pval, y=0, x=None, p=0.05, minsucc=1, color='b', shape='-',
             lw=2, **kwargs):
-    """Add significants p-value to your existing plot
+    """Add significants p-value to an existing plot
 
     Args:
         ax: matplotlib axes
