@@ -121,7 +121,7 @@ class _spectral(tilerplot):
 
     def get(self, x, statmeth=None, tail=2, n_perm=200, metric='m_center',
             maxstat=False, n_jobs=-1):
-        """Get the spectral informations of the signal x.
+        """Get the spectral feature of the signal x.
 
         Args:
             x: array
@@ -157,6 +157,10 @@ class _spectral(tilerplot):
             maxstat: bool, optional, [def: False]
                 Correct p-values with maximum statistique. If maxstat is True,
                 the correction will be applied only trhough frequencies.
+
+            n_jobs: integer, optional, [def: -1]
+                Control the number of jobs to extract features. If
+                n_jobs = -1, all the jobs are used.
 
         Return:
             xF: array
@@ -430,8 +434,29 @@ class phase(_spectral):
         _spectral.__init__(self, sf, npts, 'phase', f, None, None, method,
                            window, width, step, None, time, False, **kwargs)
 
-    def get(self, x, n_jobs=-1):
-        """
+    def get(self, x, getstat=True, n_jobs=-1):
+        """Get the spectral phase of the signal x.
+
+        Args:
+            x: array
+                Data with a shape of (n_electrodes x n_pts x n_trials)
+
+        Kargs:
+            getstat: bool, optional, [def: True]
+                Set it to True if p-values should be computed. Satistical
+                p-values are comptuted using Rayleigh test.
+
+            n_jobs: integer, optional, [def: -1]
+                Control the number of jobs to extract features. If
+                n_jobs = -1, all the jobs are used.
+
+        Return:
+            xF: array
+                The phase of x, with a shape of
+                (n_frequency x n_electrodes x n_window x n_trials)
+
+            pvalues: array
+                p-values with a shape of (n_frequency x n_electrodes x n_window)
         """
         # Check input size :
         if len(x.shape) == 2:
@@ -439,29 +464,38 @@ class phase(_spectral):
         if x.shape[1] != self._npts:
             raise ValueError('The second dimension must be '+str(self._npts))
         nfeat = x.shape[0]
+        self._getstat = getstat
         # run feature computation:
         data = Parallel(n_jobs=n_jobs)(
             delayed(_phase)(x[k, ...], self) for k in range(nfeat))
         xF, pvalues = zip(*data)
-        xF, pvalues = np.array(xF), np.array(pvalues)
+        # Manage output type:
+        if pvalues[0] is None:
+            pvalues = None
+        else:
+            pvalues = np.array(pvalues)
 
-        return xF, pvalues
+        return np.array(xF), pvalues
 
 def _phase(x, self):
     """Sub-phase function
     """
-
     # Get the filter properties and apply:
     fMeth = self._fobj.get(self._sf, self._fSplit, self._npts)
     xF = self._fobj.apply(x, fMeth)
+
+    # Mean time :
+    if self._window is not None:
+        xF, _ = binArray(xF, self._window, axis=1)
     nf, npts, nt = xF.shape
 
     # Get p-value:
-    pvalues = np.zeros((nf, npts))
-    for f in range(nf):
-        for k in range(npts):
-            pvalues[f, k] = circ_rtest(xF[f, k, :])[0]
+    if self._getstat:
+        pvalues = np.zeros((nf, npts), dtype=float)
+        for f in range(nf):
+            for k in range(npts):
+                pvalues[f, k] = circ_rtest(xF[f, k, :])[0]
+    else:
+        pvalues = None
 
     return xF, pvalues
-
-    print(xF.shape)
