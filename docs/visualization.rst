@@ -51,3 +51,10 @@ tilerplot
    :align:   center
 
    Automatic 1D and 2D plot
+
+
+Tools
+=====
+.. autofunction:: visual.rmaxis
+
+.. autofunction:: visual.despine

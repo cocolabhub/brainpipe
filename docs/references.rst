@@ -123,6 +123,9 @@ Function                Description
 BorderPlot              Plot data and deviation/sem in transparency
 addLines                Quickly add vertical and horizontal lines
 tilerplot               Generate automatic 1D or 2D subplots with a lot of control
+addPval                 Add significants p-value to an existing plot
+rmaxis                  Remove ticks and axis of a existing plot
+despine                 Despine axis of a existing plot
 ================        ==================================================================================
 
 
