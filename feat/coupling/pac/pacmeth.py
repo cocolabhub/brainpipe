@@ -66,7 +66,7 @@ def CfcMethodList(Id, nbins=18):
     # Kullback-Leiber divergence (Tort, 2010)
     elif Id == 2:
         def CfcModel(pha, amp, nbins=nbins):
-            return KullbackLeiblerDistance(pha, amp, nbins)
+            return KullbackLeiblerDivergence(pha, amp, nbins)
         CfcModelStr = 'Kullback-Leibler Divergence ['+str(
             nbins)+' bins] (Tort, 2010)'
 
@@ -101,8 +101,8 @@ def MVL(pha, amp):
     return np.array(abs(amp*np.exp(1j*pha).T)/pha.shape[1])
 
 
-def KullbackLeiblerDistance(pha, amp, nbins):
-    """Kullback Leibler Distance (Tort, 2010)
+def KullbackLeiblerDivergence(pha, amp, nbins):
+    """Kullback Leibler Divergence (Tort, 2010)
     """
     # Get the phase locked binarized amplitude :
     abin, abinsum = _kl_hr(pha, amp, nbins)
