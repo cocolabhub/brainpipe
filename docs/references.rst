@@ -45,6 +45,7 @@ tf                      Time-frequency maps
 pac                     Phase-Amplitude Coupling (large variety of methods)
 PhaseLockedPower        Time-frequency maps phase locked to a specific phase
 erpac                   Event Related Phase-Amplitude Coupling (time-resolved pac)
+pfdphase                Preferred-phase
 PSD                     Power Spectrum Density
 powerPSD                Power exacted from PSD
 SpectralEntropy         Spectral entropy (entropy extracted from PSD)
@@ -121,6 +122,8 @@ Bundle of functions to visualize results and make some <3 pretty plots <3.
 Function                Description
 ================        ==================================================================================
 BorderPlot              Plot data and deviation/sem in transparency
+addPval                 Add p-values to an existing plot
+continuouscol           Plot lines with continuous color
 addLines                Quickly add vertical and horizontal lines
 tilerplot               Generate automatic 1D or 2D subplots with a lot of control
 addPval                 Add significants p-value to an existing plot
