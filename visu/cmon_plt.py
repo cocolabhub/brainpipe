@@ -732,7 +732,7 @@ def addPval(ax, pval, y=0, x=None, p=0.05, minsucc=1, color='b', shape='-',
 
     Args:
         ax: matplotlib axes
-            The axes to add lines. USe for example plt.gca()
+            The axes to add lines. Use for example plt.gca()
 
         pval: vector
             Vector of pvalues
@@ -792,7 +792,7 @@ class continuouscol(_pltutils):
 
     Args:
         ax: matplotlib axes
-            The axes to add lines. USe for example plt.gca()
+            The axes to add lines. Use for example plt.gca()
 
         y: vector
             Vector to plot
