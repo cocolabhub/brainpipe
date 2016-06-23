@@ -967,6 +967,7 @@ class PLV(_coupling):
 
         # Select samples :
         xp1, xp2 = xp1[:, :, self._sample, :], xp2[:, :, self._sample, :]
+        npts = xp1.shape[2]
 
         # Compute true PLV:
         iteract = product(range(nelec1), range(nelec2))
