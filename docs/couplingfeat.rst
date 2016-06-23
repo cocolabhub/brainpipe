@@ -55,4 +55,12 @@ Event Related Phase-Amplitude Coupling
 
 Phase-Locking Value
 -------------------
-[coming soon]
+.. automodule:: feature
+   :members: PLV
+   :noindex:
+
+.. figure::  ../images/plv.png
+   :align:   center
+
+   Example of an alpha PLV
+

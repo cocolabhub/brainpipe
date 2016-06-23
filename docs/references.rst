@@ -47,6 +47,7 @@ pac                     Phase-Amplitude Coupling (large variety of methods)
 PhaseLockedPower        Time-frequency maps phase locked to a specific phase
 erpac                   Event Related Phase-Amplitude Coupling (time-resolved pac)
 pfdphase                Preferred-phase
+PLV                     Phase-Locking Value
 PSD                     Power Spectrum Density
 powerPSD                Power exacted from PSD
 SpectralEntropy         Spectral entropy (entropy extracted from PSD)
