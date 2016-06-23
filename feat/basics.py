@@ -13,7 +13,14 @@ import numpy as np
 from itertools import product
 from warnings import warn
 
-__all__ = ['sigfilt', 'amplitude', 'power', 'TF', 'phase']
+
+__all__ = ['sigfilt',
+           'amplitude',
+           'power',
+           'TF',
+           'phase',
+           'PLF'
+           ]
 
 
 # ------------------------------------------------------------
@@ -428,7 +435,7 @@ class phase(_spectral):
             - 'hilbert2': 2D hilbert transform
     """ + supfilter
 
-    def __init__(self, sf, npts, f=[60, 200], method='hilbert', window=None,
+    def __init__(self, sf, npts, f=[2, 4], method='hilbert', window=None,
                  width=None, step=None, time=None, **kwargs):
         _checkref('method', method, ['hilbert', 'hilbert1', 'hilbert2'])
         _spectral.__init__(self, sf, npts, 'phase', f, None, None, method,
@@ -499,3 +506,52 @@ def _phase(x, self):
         pvalues = None
 
     return xF, pvalues
+
+
+class PLF(phase):
+
+    """Extract the phase-locking factor of a signal. """
+    __doc__ += _spectral.__doc__
+    __doc__ += """method: string
+        Method to transform the signal. Possible values are:
+            - 'hilbert': apply a hilbert transform to each column
+            - 'hilbert1': hilbert transform to a whole matrix
+            - 'hilbert2': 2D hilbert transform
+    """ + supfilter
+
+    def __init__(self, sf, npts, f=[2, 4], method='hilbert', window=None,
+                 width=None, step=None, time=None, **kwargs):
+        phase.__init__(self, sf, npts, f=f, method=method, window=window,
+                       width=width, step=step, time=time, **kwargs)
+        self.__phaO = phase(sf, npts, f=f, method=method, window=window,
+                            width=width, step=step, time=time, **kwargs)
+
+    def get(self, x, getstat=True, n_jobs=-1):
+        """Get the phase-locking factor of the signal x.
+
+        Args:
+            x: array
+                Data with a shape of (n_electrodes x n_pts x n_trials)
+
+        Kargs:
+            getstat: bool, optional, [def: True]
+                Set it to True if p-values should be computed. Satistical
+                p-values are comptuted using Rayleigh test.
+
+            n_jobs: integer, optional, [def: -1]
+                Control the number of jobs to extract features. If
+                n_jobs = -1, all the jobs are used.
+
+        Return:
+            plf: array
+                The PLF of x, with a shape of
+                (n_frequency x n_electrodes x n_window)
+
+            pvalues: array
+                p-values with a shape of (n_frequency x n_electrodes x n_window)
+        """
+        # Get phase and p-values
+        xf, pval = self.__phaO.get(x, getstat=getstat, n_jobs=n_jobs)
+        # Get plf
+        plf = np.abs(np.exp(1j*(xf)).mean(3))
+        return plf, pval

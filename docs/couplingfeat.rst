@@ -15,6 +15,14 @@ Phase-Amplitude Coupling
 
 Prefered-phase
 --------------
+.. automodule:: feature
+   :members: pfdphase
+   :noindex:
+
+.. figure::  ../images/pfdphase.png
+   :align:   center
+
+   Example of preferred phase for an alpha-gamma coupling in BA6
 
 .. _plp:
 
