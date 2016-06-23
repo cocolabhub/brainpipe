@@ -13,12 +13,17 @@ from brainpipe.feat.coupling.pac._pac import *
 from brainpipe.feat.coupling.pac.pacmeth import *
 from brainpipe.visu.cmon_plt import tilerplot
 from brainpipe.tools import binarize, binArray
-from brainpipe.statistics import perm_2pvalue, circ_corrcc
+from brainpipe.statistics import perm_2pvalue, circ_corrcc, circ_rtest
 from brainpipe.feat.utils._feat import normalize
 from brainpipe.feature import power, phase, sigfilt
 from brainpipe.visual import addLines
 
-__all__ = ['pac', 'PhaseLockedPower', 'erpac']
+__all__ = ['pac',
+           'PhaseLockedPower',
+           'erpac', 
+           'pfdphase',
+           'PLV'
+           ]
 
 
 windoc = """
@@ -45,8 +50,32 @@ Footnotes = """
     .. [#f2] `Tort et al, 2010 <http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2941206/>`_
     .. [#f3] `Ozkurt et al, 2012 <http://www.ncbi.nlm.nih.gov/pubmed/22531738/>`_
     .. [#f4] `Bahramisharif et al, 2013 <http://www.jneurosci.org/content/33/48/18849.short/>`_
+    .. [#f5] `Penny et al, 2008 <http://www.sciencedirect.com/science/article/pii/S0165027008003816>`_
 
 """
+
+def cfcparafilt(xpha, xamp, n_jobs, self):
+    """Parallel filtering through electrode dimension
+    """
+    nelec = xpha.shape[0]
+    # Run para filtering :
+    data = Parallel(n_jobs=n_jobs)(delayed(_cfcparafilt)(
+            xpha[e, ...], xamp[e, ...], self,
+            ) for e in range(nelec))
+    pha, amp = zip(*data)
+    return np.array(pha), np.array(amp)
+
+
+def _cfcparafilt(xpha, xamp, self):
+    """Sub parallel filtering function
+    """
+    # Get the filter for phase/amplitude properties :
+    phaMeth = self._pha.get(self._sf, self._pha.f, self._npts)
+    ampMeth = self._amp.get(self._sf, self._amp.f, self._npts)
+    # Filt phase and amplitude :
+    pha = self._pha.apply(xpha, phaMeth)
+    amp = self._amp.apply(xamp, ampMeth)
+    return pha, amp
 
 
 class _coupling(tilerplot):
@@ -63,13 +92,15 @@ class _coupling(tilerplot):
         self._amp = fextract(kind=amp_kind, method=amp_meth,
                              cycle=amp_cycle, **kwargs)
         self._window, xvec = _manageWindow(npts, window=window,
-                                                 width=width, step=step,
-                                                 time=time)
+                                           width=width, step=step,
+                                           time=time)
         self._pha.f, _, _ = _manageFrequencies(pha_f, split=None)
         self._amp.f, _, _ = _manageFrequencies(amp_f, split=None)
+        if time is None:
+            time = np.arange(npts)
         if self._window is None:
             self._window = [(0, npts)]
-            self.time = xvec
+            self.time = np.array(self._window).mean()
             # self.xvec = [0, npts]
         else:
             self.time = binArray(time, self._window)[0]
@@ -91,9 +122,9 @@ class pac(_coupling):
     """Compute the phase-amplitude coupling (pac) either in local or
     distant coupling. PAC require three things:
 
-        - Main method for compute it
-        - Surrogates to correct the true pac value
-        - A normalization method to correct true pas value bu surrogates
+        - Main method to compute it
+        - Surrogates to correct the true pac estimation
+        - A normalization method to correct pas by surrogates
 
     Contributor: Juan LP Soto.
 
@@ -112,20 +143,20 @@ class pac(_coupling):
                 * First digit: refer to the pac method:
 
                     - '1': Mean Vector Length [#f1]_
-                    - '2': Kullback-Leibler Distance [#f2]_
+                    - '2': Kullback-Leibler Divergence [#f2]_
                     - '3': Heights Ratio
-                    - '4': Phase synchrony
+                    - '4': Phase synchrony (or adapted PLV) [#f5]_
                     - '5': ndPAC [#f3]_
-                    - '6': Amplitude PSD [NOT IMPLEMENTED YET]
 
                 * Second digit: refer to the method for computing surrogates:
 
                     - '0': No surrogates
                     - '1': Swap trials phase/amplitude [#f2]_
                     - '2': Swap trials amplitude [#f4]_
-                    - '3': Shuffle phase values
-                    - '4': Time lag [#f1]_ [NOT IMPLEMENTED YET]
-                    - '5': Circular shifting [NOT IMPLEMENTED YET]
+                    - '3': Shuffle phase time-series
+                    - '4': Shuffle amplitude time-series
+                    - '5': Time lag [#f1]_ [NOT IMPLEMENTED YET]
+                    - '6': Circular shifting [NOT IMPLEMENTED YET]
 
                 * Third digit: refer to the normalization method for correction:
 
@@ -136,13 +167,13 @@ class pac(_coupling):
                     - '4': Z-score
 
             So, if Id='143', this mean that pac will be evaluate using the
-            Modulation Index ('1'), then surrogates will be find by introducing a
-            time lag ('4') and finally, the true pac value will be normalized by
-            substracting then dividing by the mean of surrogates.
+            Modulation Index ('1'), then surrogates are computing by randomly
+            shuffle amplitude values ('4') and finally, the true pac value
+            will be normalized by substracting then dividing by the mean of surrogates.
 
         pha_f: tuple/list, optional, [def: [2,4]]
-                List containing the couple of frequency bands for the phase.
-                Example: f=[ [2,4], [5,7], [60,250] ]
+            List containing the couple of frequency bands for the phase.
+            Example: f=[ [2,4], [5,7], [60,250] ]
 
         pha_meth: string, optional, [def: 'hilbert']
             Method for the phase extraction.
@@ -151,8 +182,8 @@ class pac(_coupling):
             Number of cycles for filtering the phase.
 
         amp_f: tuple/list, optional, [def: [60,200]]
-                List containing the couple of frequency bands for the amplitude.
-                Each couple can be either a list or a tuple.
+            List containing the couple of frequency bands for the amplitude.
+            Each couple can be either a list or a tuple.
 
         amp_meth: string, optional, [def: 'hilbert']
             Method for the amplitude extraction.
@@ -169,7 +200,8 @@ class pac(_coupling):
 
     def __init__(self, sf, npts, Id='113', pha_f=[2, 4], pha_meth='hilbert',
                  pha_cycle=3, amp_f=[60, 200], amp_meth='hilbert', amp_cycle=6,
-                 nbins=18, window=None, width=None, step=None, time=None, **kwargs):
+                 nbins=18, window=None, width=None, step=None, time=None,
+                 **kwargs):
         # Check pha and amp methods:
         _checkref('pha_meth', pha_meth, ['hilbert', 'hilbert1', 'hilbert2'])
         _checkref('amp_meth', amp_meth, ['hilbert', 'hilbert1', 'hilbert2'])
@@ -193,7 +225,7 @@ class pac(_coupling):
             pha_kind, amp_kind = 'phase', 'amplitude'
         #       - Methods using phase // phase :
         elif me in ['4']:
-            pha_kind, amp_kind = 'phase', 'phase'
+            pha_kind, amp_kind = 'phase', 'amplitude'
         #   2 - Specific case of Ozkurt :
         if me == '5':
             Id = '500'
@@ -216,7 +248,7 @@ class pac(_coupling):
 
         return cfcStr+phafilt+',\n'+ampfilt+')'
 
-    def get(self, xpha, xamp, n_perm=200, p=0.05, matricial=True, n_jobs=-1):
+    def get(self, xpha, xamp, n_perm=200, p=0.05, matricial=False, n_jobs=-1):
         """Get the normalized cfc mesure between an xpha and xamp signals.
 
         Args:
@@ -235,6 +267,12 @@ class pac(_coupling):
             p: float, optional, [def: 0.05]
                 p-value for the statistical method of Ozkurt 2012.
 
+            matricial: bool, optional, [def: False]
+                Some methods can work in matricial computation. This can lead
+                to a 10x or 30x time faster. But, please, monitor your RAM usage
+                beacause this parameter can use a lot of RAM. So, turn this parameter
+                in case of small computation.
+
             n_jobs: integer, optional, [def: -1]
                 Control the number of jobs for parallel computing. Use 1, 2, ..
                 depending of your number or cores. -1 for all the cores.
@@ -244,7 +282,7 @@ class pac(_coupling):
 
         Returns:
             ncfc: array
-                The unormalized cfc mesure of size :
+                The cfc mesure of size :
                 (n_amplitude x n_phase x n_electrodes x n_windows x n_trials)
 
             pvalue: array
@@ -278,9 +316,9 @@ class pac(_coupling):
         uCfc = np.array(uCfc)
 
         # Permutations ans stat:
-        if self.Id[0] is not '5':
+        if (self.Id[0] is not '5'):
             # Compute permutations :
-            if self.n_perm is not 0:
+            if (self.n_perm is not 0) and (self.Id[1] is not '0'):
                 Suro, mSuro, stdSuro = np.array(
                     Suro), np.array(mSuro), np.array(stdSuro)
 
@@ -512,10 +550,10 @@ class PhaseLockedPower(object):
 
 class erpac(_coupling):
 
-    """Compute Event Related Phase-Amplitude coupling. See [#f5]_
+    """Compute Event Related Phase-Amplitude coupling. See [#f6]_
 
     .. rubric:: Footnotes
-    .. [#f5] `Voytek et al, 2013 <http://www.ncbi.nlm.nih.gov/pubmed/22986076>`_
+    .. [#f6] `Voytek et al, 2013 <http://www.ncbi.nlm.nih.gov/pubmed/22986076>`_
 
     Args:
         sf: int
@@ -526,8 +564,8 @@ class erpac(_coupling):
 
     Kargs:
         pha_f: tuple/list, optional, [def: [2,4]]
-                List containing the couple of frequency bands for the phase.
-                Example: f=[ [2,4], [5,7], [60,250] ]
+            List containing the couple of frequency bands for the phase.
+            Example: f=[ [2,4], [5,7], [60,250] ]
 
         pha_meth: string, optional, [def: 'hilbert']
             Method for the phase extraction.
@@ -536,18 +574,14 @@ class erpac(_coupling):
             Number of cycles for filtering the phase.
 
         amp_f: tuple/list, optional, [def: [60,200]]
-                List containing the couple of frequency bands for the amplitude.
-                Each couple can be either a list or a tuple.
+            List containing the couple of frequency bands for the amplitude.
+            Each couple can be either a list or a tuple.
 
         amp_meth: string, optional, [def: 'hilbert']
             Method for the amplitude extraction.
 
         amp_cycle: integer, optional, [def: 6]
             Number of cycles for filtering the amplitude.
-
-        nbins: integer, optional, [def: 18]
-            Some pac method (like Kullback-Leibler Distance or Heights Ratio) need
-            a binarization of the phase. nbins control the number of bins.
 
     """
     __doc__ += windoc
@@ -593,7 +627,7 @@ class erpac(_coupling):
                 depending of your number or cores. -1 for all the cores.
 
             If the same signal is used (example : xpha=x and xamp=x), this mean
-            the program compute a local cfc.
+            the program compute a local erpac.
 
         Returns:
             xerpac: array
@@ -612,12 +646,7 @@ class erpac(_coupling):
         
         # Extract phase and amplitude:
         nelec, npts, ntrials = xpha.shape
-        xp = np.zeros((nelec, npha, npts, ntrials))
-        xa = np.zeros((nelec, namp, npts, ntrials))
-        for n in range(nelec):
-            xp[n, ...] = self._pha.apply(xpha[n, ...], phaMeth)
-            xa[n, ...] = self._pha.apply(xamp[n, ...], ampMeth)
-        del xpha, xamp, phaMeth, ampMeth
+        xp, xa = cfcparafilt(xpha, xamp, n_jobs, self)
 
         # Window:
         if not (self._window == [(0, npts)]):
@@ -666,3 +695,313 @@ def _erpacSuro(xp, xa, npts, ntrials):
     for t in range(npts):
         suro = circ_corrcc(xp[t, :], xa[t, perm])[0]
     return suro
+
+
+class pfdphase(_coupling):
+
+    """Get the preferred phase of a phase-amplitude coupling
+
+    Args:
+        sf: int
+            Sampling frequency
+
+        npts: int
+            Number of points of the time serie
+
+    Kargs:
+        nbins: integer, optional, [def: 18]
+            Number of bins to binarize the amplitude.
+
+        pha_f: tuple/list, optional, [def: [2,4]]
+            List containing the couple of frequency bands for the phase.
+            Example: f=[ [2,4], [5,7], [60,250] ]
+
+        pha_meth: string, optional, [def: 'hilbert']
+            Method for the phase extraction.
+
+        pha_cycle: integer, optional, [def: 3]
+            Number of cycles for filtering the phase.
+
+        amp_f: tuple/list, optional, [def: [60,200]]
+            List containing the couple of frequency bands for the amplitude.
+            Each couple can be either a list or a tuple.
+
+        amp_meth: string, optional, [def: 'hilbert']
+            Method for the amplitude extraction.
+
+        amp_cycle: integer, optional, [def: 6]
+            Number of cycles for filtering the amplitude.
+
+    """
+    __doc__ += windoc
+
+    def __init__(self, sf, npts, nbins=18, pha_f=[2, 4], pha_meth='hilbert',
+                 pha_cycle=3, amp_f=[60, 200], amp_meth='hilbert', amp_cycle=6,
+                 window=None, width=None, step=None, time=None,
+                 **kwargs):
+        # Check pha and amp methods:
+        _checkref('pha_meth', pha_meth, ['hilbert', 'hilbert1', 'hilbert2'])
+        _checkref('amp_meth', amp_meth, ['hilbert', 'hilbert1', 'hilbert2'])
+
+        # Check the type of f:
+        if (len(pha_f) == 4) and isinstance(pha_f[0], (int, float)):
+            pha_f = binarize(
+                pha_f[0], pha_f[1], pha_f[2], pha_f[3], kind='list')
+        if (len(amp_f) == 4) and isinstance(amp_f[0], (int, float)):
+            amp_f = binarize(
+                amp_f[0], amp_f[1], amp_f[2], amp_f[3], kind='list')
+        self.xvec = []
+        
+        # Binarize phase vector :
+        self._binsize = 360 / nbins
+        self._phabin = np.arange(0, 360, self._binsize)
+        self.phabin = np.concatenate((self._phabin[:, np.newaxis],
+                                      self._phabin[:, np.newaxis]+self._binsize), axis=1)
+
+        # Initialize coupling:
+        _coupling.__init__(self, pha_f, 'phase', pha_meth, pha_cycle,
+                           amp_f, 'amplitude', amp_meth, amp_cycle,
+                           sf, npts, window, width, step, time, **kwargs)
+        self._nbins = nbins
+
+    def get(self, xpha, xamp, n_jobs=-1):
+        """Get the preferred phase
+
+        Args:
+            xpha: array
+                Signal for phase. The shape of xpha should be :
+                (n_electrodes x n_pts x n_trials)
+
+            xamp: array
+                Signal for amplitude. The shape of xamp should be :
+                (n_electrodes x n_pts x n_trials)
+
+        Kargs:
+            n_jobs: integer, optional, [def: -1]
+                Control the number of jobs for parallel computing. Use 1, 2, ..
+                depending of your number or cores. -1 for all the cores.
+
+            If the same signal is used (example : xpha=x and xamp=x), this mean
+            the program compute a local cfc.
+
+        Returns:
+            pfp: array
+                The preferred phase extracted from the mean of trials of size :
+                (n_amplitude x n_phase x n_electrodes x n_windows)
+
+            prf: array
+                The preferred phase extracted from each trial of size :
+                (n_amplitude x n_phase x n_electrodes x n_windows x n_trials)
+
+            ambin: array
+                The binarized amplitude of size :
+                (n_amplitude x n_phase x n_electrodes x n_windows x n_bins x n_trials)
+
+            pvalue: array
+                The associated p-values of size :
+                (n_amplitude x n_phase x n_electrodes x n_windows)
+        """
+        # Check the inputs variables :
+        xpha, xamp = _cfcCheck(xpha, xamp, self._npts)
+        nelec, npts, ntrials = xamp.shape
+        namp, npha, nwin, nbins = self._nAmp, self._nPha, self._nwin, self._nbins
+        phabin, binsize = self._phabin, self._binsize
+
+        # Get filtered phase and amplitude ;
+        pha, amp = cfcparafilt(xpha, xamp, n_jobs, self)
+
+        # Bring phase from [-pi,pi] to [0, 360]
+        pha = np.rad2deg((pha+2*np.pi)%(2*np.pi))
+
+        # Windowing phase an amplitude :
+        pha = [pha[:, :, k[0]:k[1], :] for k in self._window]
+        amp = [amp[:, :, k[0]:k[1], :] for k in self._window]
+
+        # Define iter product :
+        iteract = product(range(namp), range(npha), range(nelec), range(nwin))
+        data = Parallel(n_jobs=n_jobs)(delayed(_pfp)(
+                pha[w][e, p, ...], amp[w][e, a, ...],
+                phabin, binsize) for a, p, e, w in iteract)
+
+        # Manage dim and output :
+        pfp, prf, pval, ampbin = zip(*data)
+        del pha, amp, data
+        ls = [namp, npha, nelec, nwin, nbins, ntrials]
+        ampbin = np.array(ampbin).reshape(*tuple(ls))
+        prf = np.array(prf).reshape(*tuple(ls[0:-2]))
+        pval = np.array(pval).reshape(*tuple(ls[0:-2]))
+        ls.pop(4)
+        pfp = np.array(pfp).reshape(*tuple(ls))
+
+        return pfp, prf, ampbin, pval
+        
+def _pfp(pha, amp, phabin, binsize):
+    """Sub prefered phase function
+    """
+    nbin, nt = len(phabin), pha.shape[1]
+    ampbin = np.zeros((len(phabin), nt), dtype=float)
+    # Binarize amplitude accros all trials :
+    for t in range(nt):
+        curpha, curamp = pha[:, t], amp[:, t]
+        for i, p in enumerate(phabin):
+            idx = np.logical_and(curpha >= p, curpha < p+binsize)
+            if idx.astype(int).sum() != 0:
+                ampbin[i, t] = curamp[idx].mean()
+            else:
+                ampbin[i, t] = 0
+        ampbin[:, t] /= ampbin[:, t].sum()
+    # Find prefered phase and p-values :
+    pfp = np.array([phabin[k]+binsize/2 for k in ampbin.argmax(axis=0)])
+    pvalue = circ_rtest(pfp)[0]
+    prf = phabin[ampbin.mean(axis=1).argmax()]+binsize/2
+    
+    return pfp, prf, pvalue, ampbin
+
+
+class PLV(_coupling):
+
+    """Compute the Phase-Locking Value [#f7]_
+
+    Args:
+        sf: int
+            Sampling frequency
+
+        npts: int
+            Number of points of the time serie
+
+    Kargs:
+        f: tuple/list, optional, [def: [2,4]]
+            List containing the couple of frequency bands for the phase.
+            Example: f=[ [2,4], [5,7], [60,250] ]
+
+        method: string, optional, [def: 'hilbert']
+            Method for the phase extraction.
+
+        cycle: integer, optional, [def: 3]
+            Number of cycles for filtering the phase.
+
+        sample: list, optional, [def: None]
+            Select samples in the time series to compute the plv
+
+        time: list/array, optional [def: None]
+            Define a specific time vector
+
+        amp_cycle: integer, optional, [def: 6]
+            Number of cycles for filtering the amplitude.
+
+    .. rubric:: Footnotes
+    .. [#f7] `Lachaux et al, 1999 <http://www.ma.utexas.edu/users/davis/reu/ch3/cwt/lachaux.pdf>`_
+    """
+
+    def __init__(self, sf, npts, f=[2, 4], method='hilbert', cycle=3,
+                 sample=None, time=None, **kwargs):
+        # Check pha and amp methods:
+        _checkref('pha_meth', method, ['hilbert', 'hilbert1', 'hilbert2'])
+
+        # Check the type of f:
+        if (len(f) == 4) and isinstance(f[0], (int, float)):
+            f = binarize(f[0], f[1], f[2], f[3], kind='list')
+
+        # Initialize PLV :
+        _coupling.__init__(self, f, 'phase', method, cycle,
+                           f, 'phase', method, cycle,
+                           sf, npts, None, None, None, time, **kwargs)
+        if time is None:
+            time = np.arange(npts)
+        else:
+            time = time
+
+        if sample is None:
+            sample = slice(npts)
+        self._sample = sample
+        self.time = time[sample]
+        del self.amp
+
+    def get(self, xelec1, xelec2, n_perm=200, n_jobs=-1):
+        """Get Phase-Locking Values for a set of distant sites
+
+        Args:
+            xelec1, xelec2: array
+                PLV will be compute between xelec1 and xelec2. Both matrix
+                contains times-series of each trial pear electrodes. It's
+                not forced that both have the same size but they must have at least
+                the same number of time points (npts) and trials (ntrials).
+                [xelec1] = (n_elec1, npts, ntrials), [xelec2] = (n_elec2, npts, ntrials)
+
+        Kargs:
+            n_perm: int, optional, [def: 200]
+                Number of permutations to estimate the statistical significiancy
+                of the plv mesure
+
+            n_jobs: integer, optional, [def: -1]
+                Control the number of jobs for parallel computing. Use 1, 2, ..
+                depending of your number or cores. -1 for all the cores.
+
+        Returns:
+            plv: array
+                The plv mesure for each phase and across electrodes of size:
+                [plv] = (n_pha, n_elec1, n_elec2, n_sample)
+
+            pvalues: array
+                The p-values with the same shape of plv
+        """
+        # Check the inputs variables :
+        if xelec1.ndim == 2:
+            xelec1 = xelec1[np.newaxis, ...]
+        if xelec2.ndim == 2:
+            xelec2 = xelec2[np.newaxis, ...]
+        if (xelec1.shape[1] != self._npts) or (xelec2.shape[1] != self._npts):
+            raise ValueError("The second dimension of xelec1 and xelec2 must be "+str(self._npts))
+        if not np.array_equal(np.array(xelec1.shape[1::]), np.array(xelec2.shape[1::])):
+            raise ValueError("xelec1 and xelec2 could have a diffrent number of electrodes"
+                             " but the number of time points and trials must be the same.")
+        nelec1, npts, ntrials, nelec2, npha = *xelec1.shape, xelec2.shape[0], self._nPha
+
+        # Get filtered phase for xelec1 and xelec2 :
+        xcat = np.concatenate((xelec1, xelec2), axis=0)
+        del xelec1, xelec2
+        data = np.array(Parallel(n_jobs=n_jobs)(delayed(_plvfilt)(
+                    xcat[e, ...], self) for e in range(xcat.shape[0])))
+        xp1, xp2 = data[0:nelec1, ...], data[nelec1::, ...]
+        del data
+
+        # Select samples :
+        xp1, xp2 = xp1[:, :, self._sample, :], xp2[:, :, self._sample, :]
+
+        # Compute true PLV:
+        iteract = product(range(nelec1), range(nelec2))
+        plv = np.array(Parallel(n_jobs=n_jobs)(delayed(_plv)(
+                    xp1[e1, ...], xp2[e2, ...]) for e1, e2 in iteract))
+        plv = np.transpose(plv.reshape(nelec1, nelec2, npha, npts), (2, 0, 1, 3))
+
+        # Compute surrogates:
+        pvalues = np.zeros_like(plv)
+        perm = [np.random.permutation(ntrials) for k in range(n_perm)]
+        iteract = product(range(nelec1), range(nelec2))
+        for e1, e2 in iteract:
+            pvalues[:, e1, e2, ...] = _plvstat(xp1[e1, ...], xp2[e2, ...],
+                                               plv[:, e1, e2, ...], n_perm, n_jobs, perm)
+
+        return plv, pvalues
+    
+def _plvfilt(x, self):
+    """Sub PLV filt
+    """
+    # Get the filter for phase/amplitude properties :
+    fMeth = self._pha.get(self._sf, self._pha.f, self._npts)
+    return self._pha.apply(x, fMeth)
+
+def _plvstat(xp1, xp2, plv, n_perm, n_jobs, perm):
+    """Sub plv-stat function
+    """
+    # Compute plv for each permutation of xp2 trials :
+    plvs = np.array(Parallel(n_jobs=n_jobs)(delayed(_plv)(
+                 xp1, xp2[..., p]) for p in perm))
+
+    # Get p-values from permutations :
+    return perm_2pvalue(plv, plvs, n_perm, tail=1)
+
+def _plv(phi1, phi2):
+    """PLV, (lachaux et al, 1999)
+    """
+    return np.abs(np.exp(1j*(phi1-phi2)).mean(axis=-1))

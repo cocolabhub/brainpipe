@@ -25,6 +25,28 @@ Border plot
 
 .. _addline:
 
+p-value plot
+------------
+.. automodule:: visual
+   :members: addPval
+   :noindex:
+
+.. figure::  ../images/pval.png
+   :align:   center
+
+   Add p-values to an existing plot
+
+Continuous color
+----------------
+.. automodule:: visual
+   :members: continuouscol
+   :noindex:
+
+.. figure::  ../images/contcol.png
+   :align:   center
+
+   Continuous color-line
+
 1-D or 2-D graphics
 ===================
 
@@ -51,3 +73,10 @@ tilerplot
    :align:   center
 
    Automatic 1D and 2D plot
+
+
+Tools
+=====
+.. autofunction:: visual.rmaxis
+
+.. autofunction:: visual.despine

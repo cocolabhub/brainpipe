@@ -61,6 +61,9 @@ Python adaptation of the Matlab toolbox (Berens et al, 2009)
 
 .. autofunction:: statistics.circ_corrcc
 
+.. autofunction:: statistics.circ_r
+
+.. autofunction:: statistics.circ_rtest
 
 
 

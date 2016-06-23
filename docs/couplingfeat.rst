@@ -15,6 +15,14 @@ Phase-Amplitude Coupling
 
 Prefered-phase
 --------------
+.. automodule:: feature
+   :members: pfdphase
+   :noindex:
+
+.. figure::  ../images/pfdphase.png
+   :align:   center
+
+   Example of preferred phase for an alpha-gamma coupling in BA6
 
 .. _plp:
 
@@ -47,4 +55,12 @@ Event Related Phase-Amplitude Coupling
 
 Phase-Locking Value
 -------------------
-[coming soon]
+.. automodule:: feature
+   :members: PLV
+   :noindex:
+
+.. figure::  ../images/plv.png
+   :align:   center
+
+   Example of an alpha PLV
+

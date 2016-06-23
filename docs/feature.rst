@@ -4,7 +4,7 @@ Import features:
 
     from brainpipe.features import *
 
-.. todo:: Missing methods in PLV // Entropy
+.. todo:: Coherence // permutation entropy // wavelet filtering (numpy.wlt)
 
 Presentation
 ============
@@ -15,8 +15,10 @@ In order to classify diffrent conditions, you can extract from your neural signa
 * :ref:`power`
 * :ref:`tf`
 * :ref:`phase`
+* :ref:`plf`
 * :ref:`pac`
 * :ref:`pp`
+* :ref:`erpac`
 * :ref:`plp`
 * :ref:`plv`
 * :ref:`psd`
@@ -55,15 +57,12 @@ Those following features are extracted using a Power Spectrum Density (PSD)
 
 Tools
 =====
-.. autofunction:: feat.featools.bandRef
 
-.. autofunction:: feat.featools.findBandName
+.. toctree::
+   :maxdepth: 3
 
-.. autofunction:: feat.featools.findBandFcy
+   featools
 
-.. autofunction:: feat.featools.cfcVec
-
-.. autofunction:: feat.featools.cfcRndSignals
 
 
 

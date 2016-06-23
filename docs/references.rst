@@ -41,20 +41,29 @@ sigfilt                 Filtered signal only
 amplitude               Amplitude of the signal
 power                   Power of the signal
 phase                   Phase of the signal
-tf                      Time-frequency maps
+PLF                     Phase-Locking Factor
+TF                      Time-frequency maps
 pac                     Phase-Amplitude Coupling (large variety of methods)
 PhaseLockedPower        Time-frequency maps phase locked to a specific phase
 erpac                   Event Related Phase-Amplitude Coupling (time-resolved pac)
+pfdphase                Preferred-phase
+PLV                     Phase-Locking Value
 PSD                     Power Spectrum Density
 powerPSD                Power exacted from PSD
 SpectralEntropy         Spectral entropy (entropy extracted from PSD)
-bandRef                 Tools: get usual oscillation bands informations
-findBandName            Tools: Get physiological name of a frequency band
-findBandFcy             Tools: Get frequency band from a physiological name
-cfcVec                  Tools: Generate cross-frequency vectors
-cfcRndSignals           Tools: Generate signals artificialy coupled (great to test pac methods)
 ================        ==================================================================================
 
+brainpipe also provide a bundle of tools for features
+
+================        ==================================================================================
+Function                Description
+================        ==================================================================================
+bandRef                 Get usual oscillation bands informations
+findBandName            Get physiological name of a frequency band
+findBandFcy             Get frequency band from a physiological name
+cfcVec                  Generate cross-frequency vectors
+cfcRndSignals           Generate signals artificialy coupled (great to test pac methods)
+================        ==================================================================================
 
 Classification
 --------------
@@ -102,6 +111,8 @@ bonferroni              Multiple comparison: Bonferroni
 fdr                     Multiple comparison: False Discovery Rate
 maxstat                 Multiple comparison: Maximum statistic
 circ_corrcc             Correlation coefficient between one circular and one linear random variable
+circ_r                  Computes mean resultant vector length for circular data
+circ_rtest              Computes Rayleigh test for non-uniformity of circular data
 ================        ==================================================================================
 
 
@@ -119,8 +130,13 @@ Bundle of functions to visualize results and make some <3 pretty plots <3.
 Function                Description
 ================        ==================================================================================
 BorderPlot              Plot data and deviation/sem in transparency
+addPval                 Add p-values to an existing plot
+continuouscol           Plot lines with continuous color
 addLines                Quickly add vertical and horizontal lines
 tilerplot               Generate automatic 1D or 2D subplots with a lot of control
+addPval                 Add significants p-value to an existing plot
+rmaxis                  Remove ticks and axis of a existing plot
+despine                 Despine axis of a existing plot
 ================        ==================================================================================
 
 

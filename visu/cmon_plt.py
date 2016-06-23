@@ -1,11 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
+from matplotlib.collections import LineCollection
 from brainpipe.visu._interp import mapinterpolation
 from warnings import warn
 
 
-__all__ = ['addLines', 'BorderPlot', 'tilerplot']
+__all__ = ['addLines', 'BorderPlot', 'tilerplot',
+           'addPval', 'rmaxis', 'despine', 'continuouscol']
 
 
 class _pltutils(object):
@@ -42,17 +44,17 @@ class _pltutils(object):
         style:
             style of the plot [def: None]
 
-        despine:
+        dpax:
             List of axis to despine ['left', 'right', 'top', 'bottom']
 
-        rmaxis:
+        rmax:
             Remove axis ['left', 'right', 'top', 'bottom']
 
     """
 
     def __init__(self, ax, title='', xlabel='', ylabel='', xlim=[], ylim=[],
                  xticks=[], yticks=[], xticklabels=[], yticklabels=[],
-                 style=None, despine=None, rmaxis=None):
+                 style=None, dpax=None, rmax=None):
 
         if not hasattr(self, '_xType'):
             self._xType = int
@@ -83,23 +85,48 @@ class _pltutils(object):
         if style:
             plt.style.use(style)
         # Despine :
-        if despine:
-            for loc, spine in ax.spines.items():
-                if loc in despine:
-                    spine.set_position(('outward', 10))  # outward by 10 points
-                    spine.set_smart_bounds(True)
+        if dpax:
+            despine(ax, dpax)
         # Remove axis :
-        if rmaxis:
-            _rmaxis(ax, rmaxis)
+        if rmax:
+            rmaxis(ax, rmax)
 
 
-def _rmaxis(ax, rmaxis):
-    """Remove axis subfunction
+def rmaxis(ax, rmax):
+    """Remove ticks and axis of a existing plot
+
+    Args:
+        ax: matplotlib axes
+            Axes to remove axis
+
+        rmax: list of strings
+            List of axis name to be removed. For example, use
+            ['left', 'right', 'top', 'bottom']
     """
     for loc, spine in ax.spines.items():
-        if loc in rmaxis:
+        if loc in rmax:
             spine.set_color('none')  # don't draw spine
             ax.tick_params(**{loc: 'off'})
+
+def despine(ax, dpax, outward=10):
+    """Despine axis of a existing plot
+
+    Args:
+        ax: matplotlib axes
+            Axes to despine axis
+
+        dpax: list of strings
+            List of axis name to be despined. For example, use
+            ['left', 'right', 'top', 'bottom']
+
+    Kargs:
+        outward: int/float, optional, [def: 10]
+            Distance of despined axis from the original position.
+    """
+    for loc, spine in ax.spines.items():
+        if loc in dpax:
+            spine.set_position(('outward', outward))  # outward by 10 points
+            spine.set_smart_bounds(True)
 
 
 class tilerplot(object):
@@ -149,7 +176,7 @@ class tilerplot(object):
                 Supplementar arguments to control each suplot:
                 title, xlabel, ylabel (which can be list for each subplot)
                 xlim, ylim, xticks, yticks, xticklabels, yticklabels, style,
-                despine, rmaxis.
+                dpax, rmax.
         """
         # Fig properties:
         self._fig = self._figmngmt(fig, figtitle=figtitle, transpose=transpose)
@@ -182,7 +209,7 @@ class tilerplot(object):
                under=None, over=None, vmin=None, vmax=None, sharex=False,
                sharey=False, subdim=None, mask=None, interpolation='none',
                resample=(0, 0), figtitle='', transpose=False, maxplot=10,
-               subspace=None, contour=None, **kwargs):
+               subspace=None, contour=None, pltargs={}, **kwargs):
         """Plot y as an image
 
         Args:
@@ -254,16 +281,16 @@ class tilerplot(object):
 
             contour: dict, optional, [def: None]
                 Add a contour to your 2D-plot. In order to use this parameter,
-                define contour={'data':yourdata, 'label':[yourlabel], **kwargs}
+                define contour={'data':yourdata, 'label':[yourlabel], kwargs}
                 where yourdata must have the same shape as y, level must float/int
-                from smallest to largest. Use **kwargs to pass other arguments to the
+                from smallest to largest. Use kwargs to pass other arguments to the
                 contour function
 
             kwargs:
                 Supplementar arguments to control each suplot:
                 title, xlabel, ylabel (which can be list for each subplot)
                 xlim, ylim, xticks, yticks, xticklabels, yticklabels, style
-                despine, rmaxis.
+                dpax, rmax.
         """
 
         # Fig properties:
@@ -306,7 +333,7 @@ class tilerplot(object):
             yi = []
             maski = []
             for k in range(l0):
-                yT, xvec, yvec = mapinterpolation(y[k, ...], x=xvec, y=yvec,
+                yT, yvec, xvec = mapinterpolation(y[k, ...], x=yvec, y=xvec,
                                                   interpx=resample[0],
                                                   interpy=resample[1])
                 yi.append(yT)
@@ -330,10 +357,13 @@ class tilerplot(object):
                 norm = Normalize(vmin, vmax)
                 y = plt.get_cmap(cmap)(norm(y))
                 y[..., 3] = mask[k, ...]
-            # Plot picture:
-            im = plt.imshow(y, aspect='auto', cmap=cmap,
-                            interpolation=interpolation, vmin=vmin, vmax=vmax,
-                            extent=[xvec[0], xvec[-1], yvec[-1], yvec[0]])
+                # Plot picture:
+                im = plt.imshow(y, aspect='auto', cmap=cmap, origin='upper',
+                                interpolation=interpolation, vmin=vmin, vmax=vmax,
+                                extent=[xvec[0], xvec[-1], yvec[-1], yvec[0]])
+                plt.gca().invert_yaxis()
+            else:
+                im = plt.pcolormesh(xvec, yvec, y, cmap=cmap, vmin=vmin, vmax=vmax, **pltargs)
 
             # Manage under and over:
             if (under is not None) and (isinstance(under, str)):
@@ -374,7 +404,6 @@ class tilerplot(object):
                 else:
                     cb.set_ticks(cbticks)
                 cb.set_label(cblabel, labelpad=ycb)
-            ax.invert_yaxis()
 
         axAll = self._subplotND(y, _fcn, maxplot, subdim, sharex, sharey)
         fig = plt.gcf()
@@ -443,7 +472,7 @@ class tilerplot(object):
                     if sharey:
                         ax.set_yticklabels([])
                         ax.set_ylabel('')
-                        _rmaxis(ax, ['left'])
+                        rmaxis(ax, ['left'])
                 # Share-x axis:
                 if sharex and (k < (nrow-1)*ncol):
                     ax.set_xticklabels([])
@@ -695,3 +724,123 @@ def _BorderPlot(time, x, color, kind, alpha, legend, linewidth, axes):
     plt.sca(axes)
     ax = plt.plot(time, xMean, color=color, label=legend, linewidth=linewidth)
     plt.fill_between(time, xLow, xHigh, alpha=alpha, color=ax[0].get_color())
+
+
+def addPval(ax, pval, y=0, x=None, p=0.05, minsucc=1, color='b', shape='-',
+            lw=2, **kwargs):
+    """Add significants p-value to an existing plot
+
+    Args:
+        ax: matplotlib axes
+            The axes to add lines. Use for example plt.gca()
+
+        pval: vector
+            Vector of pvalues
+
+    Kargs:
+        y: int/float
+            The y location of your p-values
+
+        x: vector
+            x vector of the plot. Must have the same size as pval
+
+        p: float
+            p-value threshold to plot
+
+        minsucc: int
+            Minimum number of successive significants p-values
+
+        color: string
+            Color of th p-value line
+
+        shape: string
+            Shape of th p-value line
+
+        lw: int
+            Linewidth of th p-value line
+
+        kwargs:
+            Any supplementar arguments are passed to the plt.plot()
+            function
+
+    Return:
+        ax: updated matplotlib axes
+    """
+    # Check inputs:
+    pval = np.ravel(pval)
+    N = len(pval)
+    if x is None:
+        x = np.arange(N)
+    if len(x)-N is not 0:
+        raise ValueError("The length of pval ("+str(N)+") must be the same as x ("+str(len(x))+")")
+
+    # Find successive points:
+    underp = np.where(pval < p)[0]
+    pvsplit = np.split(underp, np.where(np.diff(underp) != 1)[0]+1)
+    succlst = [[k[0], k[-1]] for k in pvsplit if len(k) >= minsucc ]
+
+    # Plot lines:
+    for k in succlst:
+        ax.plot((x[k[0]], x[k[1]]), (y, y), lw=lw, color=color, **kwargs)
+
+    return plt.gca()
+
+
+class continuouscol(_pltutils):
+
+    """Plot signal with continuous color
+
+    Args:
+        ax: matplotlib axes
+            The axes to add lines. Use for example plt.gca()
+
+        y: vector
+            Vector to plot
+
+    Kargs:
+        x: vector, optional, [def: None]
+            Values on the x-axis. x should have the same length as y.
+            By default, x-values are 0, 1, ..., len(y)
+
+        color: vector, optional, [def: None]
+            Values to colorize the line. color should have the same length as y.
+
+        cmap: string, optional, [def: 'inferno']
+            The name of the colormap to use
+
+        pltargs: dict, optional, [def: {}]
+            Arguments to pass to the LineCollection() function of matplotlib
+
+        kwargs:
+            Supplementar arguments to control each suplot:
+            title, xlabel, ylabel (which can be list for each subplot)
+            xlim, ylim, xticks, yticks, xticklabels, yticklabels, style. 
+    """
+
+    def __init__(self, ax, y, x=None, color=None, cmap='inferno', pltargs={}, **kwargs):
+        pass
+
+    def __new__(self, ax, y, x=None, color=None, cmap='inferno', pltargs={}, **kwargs):
+        # Check inputs :
+        y = np.ravel(y)
+        if x is None:
+            x = np.arange(len(y))
+        else:
+            x = np.ravel(x)
+            if len(y) != len(x):
+                raise ValueError('x and y must have the same length')
+        if color is None:
+            color = np.arange(len(y))
+
+        # Create segments:
+        xy = np.array([x, y]).T[..., np.newaxis].reshape(-1, 1, 2)
+        segments = np.concatenate((xy[0:-1, :], xy[1::]), axis=1)
+        lc = LineCollection(segments, cmap=cmap, **pltargs)
+        lc.set_array(color)
+
+        # Plot managment:
+        ax.add_collection(lc)
+        plt.axis('tight')
+        _pltutils.__init__(self, ax, **kwargs)
+        
+        return plt.gca()
