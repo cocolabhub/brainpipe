@@ -41,7 +41,8 @@ sigfilt                 Filtered signal only
 amplitude               Amplitude of the signal
 power                   Power of the signal
 phase                   Phase of the signal
-tf                      Time-frequency maps
+PLF                     Phase-Locking Factor
+TF                      Time-frequency maps
 pac                     Phase-Amplitude Coupling (large variety of methods)
 PhaseLockedPower        Time-frequency maps phase locked to a specific phase
 erpac                   Event Related Phase-Amplitude Coupling (time-resolved pac)
@@ -49,13 +50,19 @@ pfdphase                Preferred-phase
 PSD                     Power Spectrum Density
 powerPSD                Power exacted from PSD
 SpectralEntropy         Spectral entropy (entropy extracted from PSD)
-bandRef                 Tools: get usual oscillation bands informations
-findBandName            Tools: Get physiological name of a frequency band
-findBandFcy             Tools: Get frequency band from a physiological name
-cfcVec                  Tools: Generate cross-frequency vectors
-cfcRndSignals           Tools: Generate signals artificialy coupled (great to test pac methods)
 ================        ==================================================================================
 
+brainpipe also provide a bundle of tools for features
+
+================        ==================================================================================
+Function                Description
+================        ==================================================================================
+bandRef                 Get usual oscillation bands informations
+findBandName            Get physiological name of a frequency band
+findBandFcy             Get frequency band from a physiological name
+cfcVec                  Generate cross-frequency vectors
+cfcRndSignals           Generate signals artificialy coupled (great to test pac methods)
+================        ==================================================================================
 
 Classification
 --------------

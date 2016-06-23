@@ -15,8 +15,10 @@ In order to classify diffrent conditions, you can extract from your neural signa
 * :ref:`power`
 * :ref:`tf`
 * :ref:`phase`
+* :ref:`plf`
 * :ref:`pac`
 * :ref:`pp`
+* :ref:`erpac`
 * :ref:`plp`
 * :ref:`plv`
 * :ref:`psd`
