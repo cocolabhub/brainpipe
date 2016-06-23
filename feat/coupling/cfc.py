@@ -755,7 +755,7 @@ class pfdphase(_coupling):
         
         # Binarize phase vector :
         self._binsize = 360 / nbins
-        self._phabin = np.arange(-180, 180, self._binsize)
+        self._phabin = np.arange(0, 360, self._binsize)
         self.phabin = np.concatenate((self._phabin[:, np.newaxis],
                                       self._phabin[:, np.newaxis]+self._binsize), axis=1)
 
@@ -811,15 +811,17 @@ class pfdphase(_coupling):
         # Get filtered phase and amplitude ;
         pha, amp = cfcparafilt(xpha, xamp, n_jobs, self)
 
+        # Bring phase from [-pi,pi] to [0, 360]
+        pha = np.rad2deg((pha+2*np.pi)%(2*np.pi))
+
         # Windowing phase an amplitude :
-        pha = np.array([pha[:, :, k[0]:k[1], :] for k in self._window])
-        amp = np.array([amp[:, :, k[0]:k[1], :] for k in self._window])
-        pha = np.rad2deg(pha)
+        pha = [pha[:, :, k[0]:k[1], :] for k in self._window]
+        amp = [amp[:, :, k[0]:k[1], :] for k in self._window]
 
         # Define iter product :
         iteract = product(range(namp), range(npha), range(nelec), range(nwin))
         data = Parallel(n_jobs=n_jobs)(delayed(_pfp)(
-                pha[w, e, p, ...], amp[w, e, a, ...],
+                pha[w][e, p, ...], amp[w][e, a, ...],
                 phabin, binsize) for a, p, e, w in iteract)
 
         # Manage dim and output :
