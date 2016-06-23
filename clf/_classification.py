@@ -206,8 +206,8 @@ class classify(object):
 
 
     .. rubric:: Footnotes
-    .. [#f6] `Ojala and Garriga, 2010 <http://www.jmlr.org/papers/volume11/ojala10a/ojala10a.pdf>`_
-    .. [#f7] `Combrisson and Jerbi, 2015 <http://www.ncbi.nlm.nih.gov/pubmed/25596422/>`_
+    .. [#f8] `Ojala and Garriga, 2010 <http://www.jmlr.org/papers/volume11/ojala10a/ojala10a.pdf>`_
+    .. [#f9] `Combrisson and Jerbi, 2015 <http://www.ncbi.nlm.nih.gov/pubmed/25596422/>`_
 
         """
         # Get the current da

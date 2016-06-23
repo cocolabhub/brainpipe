@@ -281,9 +281,9 @@ class tilerplot(object):
 
             contour: dict, optional, [def: None]
                 Add a contour to your 2D-plot. In order to use this parameter,
-                define contour={'data':yourdata, 'label':[yourlabel], **kwargs}
+                define contour={'data':yourdata, 'label':[yourlabel], kwargs}
                 where yourdata must have the same shape as y, level must float/int
-                from smallest to largest. Use **kwargs to pass other arguments to the
+                from smallest to largest. Use kwargs to pass other arguments to the
                 contour function
 
             kwargs:
@@ -759,7 +759,7 @@ def addPval(ax, pval, y=0, x=None, p=0.05, minsucc=1, color='b', shape='-',
         lw: int
             Linewidth of th p-value line
 
-        **kwargs:
+        kwargs:
             Any supplementar arguments are passed to the plt.plot()
             function
 
