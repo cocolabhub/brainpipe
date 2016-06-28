@@ -130,8 +130,8 @@ class mf(object):
                       'direction': direction, 'occurence': occurence,
                       'clfIn': defClf(y, **clfIn).lgStr,
                       'clfOut': defClf(y, **clfOut).lgStr,
-                      'cvIn': defCv(y, **cvIn)[0].lgStr,
-                      'cvOut': defCv(y, **cvOut)[0].lgStr}
+                      'cvIn': defCv(y, **cvIn).lgStr,
+                      'cvOut': defCv(y, **cvOut).lgStr}
 
     def str(self):
         pass

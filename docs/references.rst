@@ -96,14 +96,15 @@ Bundle of functions to apply statistics.
 
 .. cssclass:: table-striped
 
-================        ==================================================================================
+==================      ==================================================================================
 Function                Description
-================        ==================================================================================
+==================      ==================================================================================
 bino_da2p               Get associated p-value of a decoding accuracy using a binomial law
 bino_p2da               Get associated decoding accuracy of a p-value using a binomial law
 bino_signifeat          Get significant features using a binomial law
 perm_2pvalue            Get p-value from a permutation dataset
 perm_metric             Get a metric (usefull for mastat)
+perm_pvalue2level       Get p-associated level in a permutation distribution
 perm_rndDatasets        Generate random dataset of permutations
 perm_swap               Randomly swap ndarray (matricial implementation)
 perm_rep                Repeat a ndarray of permutations (matricial implementation)
@@ -113,7 +114,7 @@ maxstat                 Multiple comparison: Maximum statistic
 circ_corrcc             Correlation coefficient between one circular and one linear random variable
 circ_r                  Computes mean resultant vector length for circular data
 circ_rtest              Computes Rayleigh test for non-uniformity of circular data
-================        ==================================================================================
+==================      ==================================================================================
 
 
 Visualization
@@ -160,6 +161,7 @@ pdTools                 Some complement functions for pandas Dataframe (search, 
 ndsplit                 Split ndarray (works on odd and even dimensions)
 ndjoin                  Join ndarray (works on odd and even dimensions)
 p2str                   Transform a p-value to string (usefull to save files with corresponding p-value)
+uorderlst               Get unique ordered elements from a list
 ================        ==================================================================================
 
 

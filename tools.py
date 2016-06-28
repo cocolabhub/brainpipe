@@ -7,7 +7,8 @@ __all__ = ['binarize',
            'groupInList',
            'ndsplit',
            'ndjoin',
-           'squarefreq'
+           'squarefreq',
+           'uorderlst'
            ]
 
 
@@ -185,3 +186,11 @@ def squarefreq(fstart, fend, fwidth):
     ref = np.arange(fstart, fend+fwidth, fwidth)
     [[fce.append([k, i]) for i in ref[num+1::]] for num, k in enumerate(ref)]
     return fce
+
+
+def uorderlst(lst):
+    """Return a unique set of a list, and preserve order of appearance
+    """
+    seen = set()
+    seen_add = seen.add
+    return [x for x in lst if not (x in seen or seen_add(x))]

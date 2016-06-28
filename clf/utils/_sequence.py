@@ -116,6 +116,6 @@ def _clfcombi(clfObj, x):
     """Classify one combination
     """
     if x.shape[1] != 0:
-        return np.mean(clfObj.fit(x, n_jobs=1, mf=True))
+        return np.mean(clfObj.fit(x, n_jobs=1, mf=True)[0])
     else:
         return 0
