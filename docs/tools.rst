@@ -36,4 +36,6 @@ Others
 ------
 .. autofunction:: tools.p2str
 
+.. autofunction:: tools.uorderlst
+
 
