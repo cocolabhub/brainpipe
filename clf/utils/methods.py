@@ -98,14 +98,14 @@ def select_all(x):
 
 def select_stat(x, y, clf, meth, grp, p, n_perm):
     """Select and return idx of significant features"""
-    _, pvalue, _ = clf.fit_stat(x, mf=True, grp=grp, method=meth,
-                                n_perm=n_perm, n_jobs=1)
+    _, pvalue, _ = clf.fit(x, mf=True, grp=grp, method=meth,
+                           n_perm=n_perm, n_jobs=1)
     return grp2idx(grp, [k for k, i in enumerate(pvalue) if i <= p])
 
 
 def select_nbest(x, y, clf, nbest, grp):
     """Select nbest features"""
-    da = np.mean(clf.fit(x, mf=True, grp=grp, n_jobs=1), 1)
+    da = np.mean(clf.fit(x, mf=True, grp=grp, n_jobs=1)[0], 1)
     return grp2idx(grp, list(np.ravel(da.T).argsort()[-nbest:][::-1]))
 
 

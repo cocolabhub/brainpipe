@@ -1,13 +1,17 @@
 import numpy as np
 from itertools import product
 from types import FunctionType
+from brainpipe.tools import uorderlst
+from brainpipe.stat.multcomp import *
 
 __all__ = ["perm_rndDatasets",
            "perm_swap",
            "perm_array",
            "perm_rep",
            "perm_metric",
-           "perm_2pvalue"
+           "perm_2pvalue",
+           "permIntraClass",
+           "perm_pvalue2level"
            ]
 
 
@@ -311,3 +315,42 @@ def _scramble2D(a, rndstate=0):
     idx = np.argsort(b)
     shuffled = a[np.arange(a.shape[0])[:, None], idx]
     return shuffled, idx
+
+
+def permIntraClass(y, rnd=0):
+    """Generate intr-class permutations
+    """
+    yt = np.arange(len(y))
+    rnd = np.random.RandomState(rnd)
+    return np.ravel([rnd.permutation(yt[y == k]) for k in uorderlst(y)])
+
+
+def perm_pvalue2level(perm, p=0.05, maxst=False):
+    """Get level from which you can consider
+    that it's p-significant;
+
+    Args:
+        perm:
+            Array of permutations of shape
+            (n_perm, d1, d2, ..., dn)
+
+    Kargs:
+        p: float, optional, [def: 0.05]
+            p-value to search in permutation distribution
+
+        maxst: bool, optional, [def: False]
+            Correct permutations with maximum statistics
+
+    Return:
+        level: float
+            The level from which you can consider
+            your results as p-significants using permutations
+    """
+    n_perm = perm.shape[0]
+    n2take = int(np.round(n_perm*p))
+    if n2take < 1:
+        n2take = 1
+    if maxst:
+        perm = maxstat(perm, axis=0)
+    perm.sort(axis=0)
+    return perm[-n2take, :]

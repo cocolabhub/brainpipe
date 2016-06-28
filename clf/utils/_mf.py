@@ -15,7 +15,7 @@ def _mf(x, Id, grp, self, display, probOccur):
 
     # Unpack arguments :
     y = self._y
-    cvOut = defCv(y, **self._cvOut)
+    cvOut = defCv(y, **self._cvOut).cvr
     clfOut = defClf(y, **self._clfOut)
 
     # Repetitions loop :

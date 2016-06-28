@@ -59,6 +59,13 @@ Classify
    :members: classify
    :noindex:
 
+Leave p-subjects out
+====================
+.. automodule:: classification
+   :members: LeavePSubjectOut
+   :noindex:
+
+
 Generalization
 ==============
 .. automodule:: classification

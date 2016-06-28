@@ -29,6 +29,8 @@ Evaluation
 
 .. autofunction:: statistics.perm_metric
 
+.. autofunction:: statistics.perm_pvalue2level
+
 Generate
 --------
 .. autofunction:: statistics.perm_rndDatasets

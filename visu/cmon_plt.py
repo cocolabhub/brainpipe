@@ -207,9 +207,10 @@ class tilerplot(object):
     def plot2D(self, fig, y, xvec=None, yvec=None, cmap='inferno',
                colorbar=True, cbticks='minmax', ycb=-10, cblabel='',
                under=None, over=None, vmin=None, vmax=None, sharex=False,
-               sharey=False, subdim=None, mask=None, interpolation='none',
-               resample=(0, 0), figtitle='', transpose=False, maxplot=10,
-               subspace=None, contour=None, pltargs={}, **kwargs):
+               sharey=False, textin=False, textcolor='w', textype='%.4f', subdim=None,
+               mask=None, interpolation='none', resample=(0, 0), figtitle='',
+               transpose=False, maxplot=10, subspace=None, contour=None, pltargs={},
+               **kwargs):
         """Plot y as an image
 
         Args:
@@ -251,6 +252,15 @@ class tilerplot(object):
 
             sharex, sharey: bool, optional, [def: False]
                 Define if subplots should share x and y
+
+            textin: bool, optional, [def: False]
+                Display values inside the heatmap
+
+            textcolor: string, optional, [def: 'w']
+                Color of values inside the heatmap
+
+            textype: string, optional, [def: '%.4f']
+                Way of display text inside the heatmap
 
             subdim: tuple, optional, [def: None]
                 Force subplots to be subdim=(n_colums, n_rows)
@@ -313,9 +323,9 @@ class tilerplot(object):
         # Check y shape :
         y = self._checkarray(y)
         if xvec is None:
-            xvec = np.arange(y.shape[-1])
+            xvec = np.arange(y.shape[-1]+1)
         if yvec is None:
-            yvec = np.arange(y.shape[1])
+            yvec = np.arange(y.shape[1]+1)
         l0, l1, l2 = y.shape
 
         if (vmin is None) and (vmax is None):
@@ -404,6 +414,15 @@ class tilerplot(object):
                 else:
                     cb.set_ticks(cbticks)
                 cb.set_label(cblabel, labelpad=ycb)
+
+            # Text inside:
+            if textin:
+                for k in range(y.shape[0]):
+                    for i in range(y.shape[1]):
+                        plt.text(i + 0.5, k + 0.5, textype % y[i, k],
+                                 color=textcolor,
+                                 horizontalalignment='center',
+                                 verticalalignment='center')
 
         axAll = self._subplotND(y, _fcn, maxplot, subdim, sharex, sharey)
         fig = plt.gcf()
