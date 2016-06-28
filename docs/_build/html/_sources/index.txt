@@ -38,7 +38,7 @@ What's new
 **********
 v0.1.5
 =======
-- classify: fit_stat() has been removed, there is only fi() now. confusion_matrix() has been rename to cm()
+- classify: fit_stat() has been removed, there is only fit() now. confusion_matrix() has been rename to cm()
 - LeavePSubjectOut: new leave p-subjects out cross validation
 - classification: embedded visualization (daplot, cmplot), statistics (classify.stat.), dataframe for quick settings summarize (classify.info.) with excel exportation
 - New folder: ipython notebook examples
