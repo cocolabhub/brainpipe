@@ -53,7 +53,7 @@ class _pltutils(object):
     """
 
     def __init__(self, ax, title='', xlabel='', ylabel='', xlim=[], ylim=[],
-                 xticks=[], yticks=[], xticklabels=[], yticklabels=[],
+                 ytitle=1.02, xticks=[], yticks=[], xticklabels=[], yticklabels=[],
                  style=None, dpax=None, rmax=None):
 
         if not hasattr(self, '_xType'):
@@ -80,7 +80,7 @@ class _pltutils(object):
             ax.set_xlim(xlim)
         if np.array(ylim).size:
             ax.set_ylim(ylim)
-        ax.set_title(title, y=1.02)
+        ax.set_title(title, y=ytitle)
         # Style :
         if style:
             plt.style.use(style)
@@ -210,7 +210,7 @@ class tilerplot(object):
                sharey=False, textin=False, textcolor='w', textype='%.4f', subdim=None,
                mask=None, interpolation='none', resample=(0, 0), figtitle='',
                transpose=False, maxplot=10, subspace=None, contour=None, pltargs={},
-               **kwargs):
+               pltype='pcolor', ncontour=10, polar=False, **kwargs):
         """Plot y as an image
 
         Args:
@@ -362,18 +362,21 @@ class tilerplot(object):
         # Plotting function :
         def _fcn(y, k, mask=mask):
             # Get a mask for data:
-            if np.array(mask).size:
-                mask = np.array(mask)
-                norm = Normalize(vmin, vmax)
-                y = plt.get_cmap(cmap)(norm(y))
-                y[..., 3] = mask[k, ...]
+            if pltype is 'pcolor':
+                im = plt.pcolormesh(xvec, yvec, y, cmap=cmap, vmin=vmin, vmax=vmax, **pltargs)
+            elif  pltype is 'imshow':
+                if np.array(mask).size:
+                    mask = np.array(mask)
+                    norm = Normalize(vmin, vmax)
+                    y = plt.get_cmap(cmap)(norm(y))
+                    y[..., 3] = mask[k, ...]
                 # Plot picture:
                 im = plt.imshow(y, aspect='auto', cmap=cmap, origin='upper',
                                 interpolation=interpolation, vmin=vmin, vmax=vmax,
-                                extent=[xvec[0], xvec[-1], yvec[-1], yvec[0]])
+                                extent=[xvec[0], xvec[-1], yvec[-1], yvec[0]], **pltargs)
                 plt.gca().invert_yaxis()
-            else:
-                im = plt.pcolormesh(xvec, yvec, y, cmap=cmap, vmin=vmin, vmax=vmax, **pltargs)
+            elif pltype is 'contour':
+                im = plt.contourf(xvec, yvec, y, ncontour, cmap=cmap, vmin=vmin, vmax=vmax, **pltargs)
 
             # Manage under and over:
             if (under is not None) and (isinstance(under, str)):
@@ -414,6 +417,7 @@ class tilerplot(object):
                 else:
                     cb.set_ticks(cbticks)
                 cb.set_label(cblabel, labelpad=ycb)
+                cb.outline.set_visible(False)
 
             # Text inside:
             if textin:
@@ -424,7 +428,8 @@ class tilerplot(object):
                                  horizontalalignment='center',
                                  verticalalignment='center')
 
-        axAll = self._subplotND(y, _fcn, maxplot, subdim, sharex, sharey)
+        axAll = self._subplotND(y, _fcn, maxplot, subdim, sharex, sharey,
+                                polar=polar)
         fig = plt.gcf()
         fig.tight_layout()
 
@@ -456,7 +461,8 @@ class tilerplot(object):
                              '3 dimensions')
         return y
 
-    def _subplotND(self, y, fcn, maxplot, subdim, sharex, sharey):
+    def _subplotND(self, y, fcn, maxplot, subdim, sharex, sharey,
+                   polar=False):
         """Manage subplots
         """
         axall = []
@@ -481,7 +487,7 @@ class tilerplot(object):
                 nrow = backup
             self._nrow, self._ncol = nrow, ncol
             for k in range(L):
-                fig.add_subplot(nrow, ncol, k+1)
+                fig.add_subplot(nrow, ncol, k+1, polar=polar)
                 fcn(y[k, ...], k)
                 ax = plt.gca()
                 # Share-y axis:
@@ -497,7 +503,10 @@ class tilerplot(object):
                     ax.set_xticklabels([])
                     ax.set_xlabel('')
                 axall.append(plt.gca())
-                plt.gca().grid('off')
+                if polar:
+                    ax.grid(color='gray', lw=0.5, linestyle='-')
+                else:
+                    plt.gca().grid('off')
             return axall
         else:
             raise ValueError('Warning : the "maxplot" parameter prevent to a'
