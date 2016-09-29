@@ -7,7 +7,7 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.decomposition import PCA
-from sklearn.feature_selection import SelectKBest, SelectFdr, SelectFpr
+from sklearn.feature_selection import SelectKBest, SelectFdr, SelectFpr, RFECV
 from sklearn.pipeline import Pipeline, FeatureUnion
 
 
@@ -45,7 +45,7 @@ class MFpipe(object):
             self._cv.random_state = random_state
 
         
-    def fit(self, x, rep=1, n_iter=5, n_jobs=1, verbose=None):
+    def fit(self, x, rep=1, n_iter=5, n_jobs=1, verbose=0):
         """Apply the pipeline.
 
         Args:
@@ -63,7 +63,7 @@ class MFpipe(object):
             n_jobs: integer, optional, (def: 1)
                 Number of jobs for parallel computing. Use -1 for all jobs.
 
-            verbose: integer, optional, (def: None)
+            verbose: integer, optional, (def: 0)
                 Control displaying state 
 
         Return
@@ -101,7 +101,7 @@ class MFpipe(object):
                 best_params_.append(grid.best_params_)
 
                 # Step print :
-                if verbose is not None:
+                if verbose > 0:
                     print(outstr.format(r=r+1, f=f+1, param=str(grid.best_params_)))
 
                 # Evaluate on testing :
@@ -189,10 +189,10 @@ class MFpipe(object):
         # ----------------------------------------------------------------
         # RANGE DEFINITION
         # ---------------------------------------------------------
-        pca_range = np.arange(1, n_pca)
-        kbest_range = np.arange(1, n_best)
-        C_range = np.logspace(-2, 2, svm_C)
-        gamma_range = np.logspace(-9, 2, svm_gamma)
+        pca_range = np.arange(1, n_pca+1)
+        kbest_range = np.arange(1, n_best+1)
+        C_range = np.logspace(-5, 15, svm_C, base=2.) #np.logspace(-2, 2, svm_C)
+        gamma_range = np.logspace(-15, 3, svm_gamma, base=2.) #np.logspace(-9, 2, svm_gamma)
 
         # Check range :
         if not kbest_range.size: kbest_range = [1]
@@ -277,6 +277,11 @@ class MFpipe(object):
         if name.lower().find('kbest') != -1:
             combine.append(("kBest", selection))
             grid['features__kBest__k'] = kbest_range
+
+        # -> RFECV :
+        if name.lower().find('rfecv') != -1:
+            rfecv = RFECV(clf)
+            combine.append(("RFECV", rfecv))
 
         self.combine = FeatureUnion(combine)
 
