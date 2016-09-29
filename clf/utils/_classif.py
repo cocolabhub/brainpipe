@@ -13,9 +13,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
-from sklearn.cross_validation import (StratifiedKFold, KFold, LeaveOneOut,
-                                      StratifiedShuffleSplit, ShuffleSplit,
-                                      LeaveOneLabelOut)
+from sklearn.model_selection import (StratifiedKFold, KFold, LeaveOneOut,
+                                     StratifiedShuffleSplit, ShuffleSplit,
+                                     LeaveOneGroupOut)
 
 from brainpipe.statistics import *
 from brainpipe.tools import uorderlst
@@ -417,7 +417,7 @@ def _define(y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
 
     # Leave One Label Out :
     elif cvtype == 'lolo':
-        cvT = LeaveOneLabelOut(y)
+        cvT = LeaveOneGroupOut(y)
         lgStr = str(rep)+'-times, leave One Label Out'
         shStr = str(rep)+'-rep_'+cvtype
 

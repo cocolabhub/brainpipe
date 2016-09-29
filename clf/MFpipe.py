@@ -2,8 +2,7 @@ import numpy as np
 
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
-from sklearn.cross_validation import StratifiedShuffleSplit, KFold, permutation_test_score
-from sklearn.grid_search import GridSearchCV
+from sklearn.model_selection import (StratifiedShuffleSplit, KFold, permutation_test_score, GridSearchCV)
 from sklearn.metrics import accuracy_score
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.decomposition import PCA
