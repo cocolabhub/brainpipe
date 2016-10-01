@@ -157,9 +157,9 @@ class _info(object):
 def _cvscore(x, y, clf, cvS):
     """Get the decoding accuracy of one cross-validation
     """
-    y_pred = []
-    y_true = []
-    for trainidx, testidx in cvS:
+    y_pred, y_true = [], []
+    iterator = cvS.split(x, y=y)
+    for trainidx, testidx in iterator:
         xtrain, xtest = x[trainidx, ...], x[testidx, ...]
         ytrain, ytest = y[trainidx, ...], y[testidx, ...]
         clf.fit(xtrain, ytrain)
@@ -368,7 +368,7 @@ class defCv(object):
         self.cvr = [0]*rep
         self.rep = rep
         for k in range(rep):
-            self.cvr[k], self.lgStr, self.shStr = _define(y, cvtype=cvtype, n_folds=n_folds,
+            self.cvr[k], self.lgStr, self.shStr = _define(y, cvtype=cvtype, n_splits=n_folds,
                                                           rndstate=k, rep=rep, **kwargs)
 
 
@@ -376,38 +376,38 @@ class defCv(object):
         return self.lgStr
 
 
-def _define(y, cvtype='skfold', n_folds=10, rndstate=0, rep=10,
+def _define(y, cvtype='skfold', n_splits=10, rndstate=0, rep=10,
             **kwargs):
     # Stratified k-fold :
     if cvtype == 'skfold':
-        cvT = StratifiedKFold(y, n_folds=n_folds, shuffle=True,
+        cvT = StratifiedKFold(n_splits=n_splits, shuffle=True,
                               random_state=rndstate, **kwargs)
-        lgStr = str(rep)+'-times, '+str(n_folds)+' Stratified k-folds'
-        shStr = str(rep)+'-rep_'+str(n_folds)+'-'+cvtype
+        lgStr = str(rep)+'-times, '+str(n_splits)+' Stratified k-folds'
+        shStr = str(rep)+'-rep_'+str(n_splits)+'-'+cvtype
 
     # k-fold :
     elif cvtype == 'kfold':
-        cvT = KFold(len(y), n_folds=n_folds, shuffle=True,
+        cvT = KFold(n_splits=n_splits, shuffle=True,
                     random_state=rndstate, **kwargs)
-        lgStr = str(rep)+'-times, '+str(n_folds)+' k-folds'
-        shStr = str(rep)+'-rep_'+str(n_folds)+'-'+cvtype
+        lgStr = str(rep)+'-times, '+str(n_splits)+' k-folds'
+        shStr = str(rep)+'-rep_'+str(n_splits)+'-'+cvtype
 
     # Shuffle stratified k-fold :
     elif cvtype == 'sss':
-        cvT = StratifiedShuffleSplit(y, n_iter=n_folds,
-                                     test_size=1/n_folds,
+        cvT = StratifiedShuffleSplit(n_splits=n_splits,
+                                     test_size=1/n_splits,
                                      random_state=rndstate, **kwargs)
         lgStr = str(rep)+'-times, test size 1/' + \
-            str(n_folds)+' Shuffle Stratified Split'
-        shStr = str(rep)+'-rep_'+str(n_folds)+'-'+cvtype
+            str(n_splits)+' Shuffle Stratified Split'
+        shStr = str(rep)+'-rep_'+str(n_splits)+'-'+cvtype
 
     # Shuffle stratified :
     elif cvtype == 'ss':
-        cvT = ShuffleSplit(len(y), n_iter=rep, test_size=1/n_folds,
+        cvT = ShuffleSplit(n_splits=rep, test_size=1/n_splits,
                            random_state=rndstate, **kwargs)
         lgStr = str(rep)+'-times, test size 1/' + \
-            str(n_folds)+' Shuffle Stratified'
-        shStr = str(rep)+'-rep_'+str(n_folds)+'-'+cvtype
+            str(n_splits)+' Shuffle Stratified'
+        shStr = str(rep)+'-rep_'+str(n_splits)+'-'+cvtype
 
     # Leave One Out :
     elif cvtype == 'loo':
