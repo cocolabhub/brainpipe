@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import product
 
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
@@ -35,9 +36,12 @@ class MFpipe(object):
     def __init__(self, y, cv, random_state=0):
         # Get variables :
         self._cv = cv
-        self._nfolds = len(self._cv)
+        self._nfolds = cv.n_splits
         self._y = y
         self._nclass = len(np.unique(y))
+        self.best_estimator_, self.best_params_ = [], []
+        self.pipeline = None
+        
 
         # Check cross-validation :
         if not self._cv.random_state:
@@ -68,11 +72,13 @@ class MFpipe(object):
         Return
             da: the final vector of decoding accuracy of shape (n_repetitions,)
         """
-    
+        # Save some usefull variables :
+        self._rep, self._n_iter = rep, n_iter
+        self._ntrials, self._nfeat = x.shape
+
         # Pre-defined matrix :
         da = np.zeros((rep,), dtype=np.float32)
         self.y_predict, self.y_test = [], []
-        self.best_estimator_, self.best_params_ = [], []
         outstr = 'REP: {r}/'+str(rep)+', FOLD: {f}/'+str(self._nfolds)+' = {param}'
 
         # Loop on repetitions :
@@ -83,14 +89,15 @@ class MFpipe(object):
             best_estimator_, best_params_ = [], []
 
             # Loop on training/testing index :
-            for f, (trainIdx, testIdx) in enumerate(self._cv):
+            iterator = self._cv.split(x, self._y)
+            for f, (trainIdx, testIdx) in enumerate(iterator):
 
                 # Training/testing set :
                 xtrain, ytrain = x[trainIdx, :], self._y[trainIdx]
                 xtest, ytest = x[testIdx, :], self._y[testIdx]
 
                 # Cross-validate the choice of parameters  :
-                cv = StratifiedShuffleSplit(ytrain, n_iter=n_iter, test_size=0.2)
+                cv = StratifiedShuffleSplit(n_splits=n_iter, test_size=0.2)
                 grid = GridSearchCV(self.pipeline, cv=cv, param_grid=self.grid, verbose=verbose, n_jobs=n_jobs)
                 grid.fit(xtrain, ytrain)
                 grid.best_estimator_.fit(xtrain, ytrain)
@@ -179,11 +186,11 @@ class MFpipe(object):
         # ----------------------------------------------------------------
         # DEFINED COMBINORS
         # ----------------------------------------------------------------
-        self._piperef = ['lda_pca', 'lda_pca-kBest', 'lda_optimized_pca', 'lda_optimized_pca-kBest']
         pca = PCA()
         selection = SelectKBest()
         scaler = StandardScaler()
         fdr = SelectFdr()
+        fpr = SelectFpr()
 
         # ----------------------------------------------------------------
         # RANGE DEFINITION
@@ -264,7 +271,7 @@ class MFpipe(object):
 
         # -> FPR :
         if name.lower().find('fpr') != -1:
-            combine.append(("fpr", fdr))
+            combine.append(("fpr", fpr))
             grid['features__fpr__alpha'] = fpr_alpha        
 
         # -> PCA :
@@ -282,6 +289,10 @@ class MFpipe(object):
             rfecv = RFECV(clf)
             combine.append(("RFECV", rfecv))
 
+        # if combine is empty, select all features :
+        if not len(combine):
+            combine.append(("kBest", SelectKBest(k='all')))
+
         self.combine = FeatureUnion(combine)
 
         # ----------------------------------------------------------------
@@ -295,5 +306,51 @@ class MFpipe(object):
         # Save pipeline :
         self.pipeline = Pipeline(pipeline)
         self.grid = grid
+        self._pipename = name
 
         # print('\nCOMBINE: ', self.combine, '\n\nPIPELINE: ', self.pipeline, '\n\nGRID: ', self.grid)
+
+
+    def selected_features(self):
+        """Get the number of times a feature was selected
+        """
+        if len(self.best_estimator_):
+            # Get selected features from the best estimator :
+            iterator = product(range(self._rep), range(self._nfolds))
+            fselected = []
+            featrange = np.arange(self._nfeat)[np.newaxis, ...]
+            for k, i in iterator:
+                estimator = self.best_estimator_[k][i].get_params()['features']
+                fselected.extend(list(estimator.transform(featrange).ravel().astype(int)))
+            return np.bincount(np.array(fselected))
+        else:
+            print('You must run the fit() method before')
+
+    def get_grid(self, n_splits=3, n_jobs=1):
+        """Return the cross-validated grid search object
+
+        Kargs:
+            n_splits: int, optional, (def: 3)
+                The number of folds for the cross-validation
+
+            n_jobs: int, optional, (def: 1)
+                Number of jobs to use for parallel processing
+
+        Return:
+            grid: a sklearn.GridSearchCV object with the defined pipeline
+        """
+        if self.pipeline is not None:
+            grid = GridSearchCV(self.pipeline, cv=StratifiedShuffleSplit(n_splits=n_splits, test_size=1/n_splits),
+                                param_grid=self.grid, n_jobs=n_jobs)
+        else:
+            raise ValueError('You must first define a pipeline')
+        return grid
+
+    @property
+    def pipename(self):
+        return self._pipename
+
+    @pipename.setter
+    def pipename(self, value):
+        self.default_pipeline(value)
+        print('Pipeline updated')
