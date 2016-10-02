@@ -10,7 +10,7 @@ from sklearn.discriminant_analysis import (LinearDiscriminantAnalysis,
                                            QuadraticDiscriminantAnalysis)
 from sklearn.svm import SVC, LinearSVC, NuSVC
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import (StratifiedKFold, KFold, LeaveOneOut,
@@ -26,6 +26,7 @@ __all__ = ['_classification',
            'checkXY',
            'defClf',
            'defCv',
+           'defVoting',
            'clfstat'
            ]
 
@@ -38,6 +39,8 @@ class _classification(object):
     def __init__(self, y, clf='lda', cvtype='skfold', clfArg={}, cvArg={}):
 
         self._y = y
+        if not hasattr(clf, 'shStr') or not hasattr(clf, 'lgStr'):
+            clf.shStr, clf.lgStr = 'custom', 'Custom classifier'
         self._lgStr = ''
         # Defineclassifier and cross-valdation :
         self._defineClf(clf, **clfArg)
@@ -255,70 +258,135 @@ class defClf(object):
     def __new__(self, y, clf='lda', kern='rbf', n_knn=10, n_tree=100,
                 priors=False, **kwargs):
 
-        # Default value for priors :
-        priors = np.array([1/len(np.unique(y))]*len(np.unique(y)))
+        # Use a pre-defined classifier :
+        if isinstance(clf, (str, int)):
+            # Default value for priors :
+            priors = np.array([1/len(np.unique(y))]*len(np.unique(y)))
 
-        if isinstance(clf, str):
-            clf = clf.lower()
+            if isinstance(clf, str):
+                clf = clf.lower()
 
-        # LDA :
-        if clf == 'lda' or clf == 0:
-            clfObj = LinearDiscriminantAnalysis(
-                priors=priors, **kwargs)
-            clfObj.lgStr = 'Linear Discriminant Analysis'
-            clfObj.shStr = 'LDA'
+            # LDA :
+            if clf == 'lda' or clf == 0:
+                clfObj = LinearDiscriminantAnalysis(
+                    priors=priors, **kwargs)
+                clfObj.lgStr = 'Linear Discriminant Analysis'
+                clfObj.shStr = 'LDA'
 
-        # SVM : ‘linear’, ‘poly’, ‘rbf’, ‘sigmoid’, ‘precomputed’ or a callable
-        elif clf == 'svm' or clf == 1:
-            clfObj = SVC(kernel=kern, probability=True, **kwargs)
-            clfObj.lgStr = 'Support Vector Machine (kernel=' + kern + ')'
-            clfObj.shStr = 'SVM-' + kern
+            # SVM : ‘linear’, ‘poly’, ‘rbf’, ‘sigmoid’, ‘precomputed’ or a callable
+            elif clf == 'svm' or clf == 1:
+                clfObj = SVC(kernel=kern, probability=True, **kwargs)
+                clfObj.lgStr = 'Support Vector Machine (kernel=' + kern + ')'
+                clfObj.shStr = 'SVM-' + kern
 
-        # Linear SVM:
-        elif clf == 'linearsvm' or clf == 2:
-            clfObj = LinearSVC(**kwargs)
-            clfObj.lgStr = 'Linear Support Vector Machine'
-            clfObj.shStr = 'LSVM'
+            # Linear SVM:
+            elif clf == 'linearsvm' or clf == 2:
+                clfObj = LinearSVC(**kwargs)
+                clfObj.lgStr = 'Linear Support Vector Machine'
+                clfObj.shStr = 'LSVM'
 
-        # Nu SVM :
-        elif clf == 'nusvm' or clf == 3:
-            clfObj = NuSVC(**kwargs)
-            clfObj.lgStr = 'Nu Support Vector Machine'
-            clfObj.shStr = 'NuSVM'
+            # Nu SVM :
+            elif clf == 'nusvm' or clf == 3:
+                clfObj = NuSVC(**kwargs)
+                clfObj.lgStr = 'Nu Support Vector Machine'
+                clfObj.shStr = 'NuSVM'
 
-        # Naive Bayesian :
-        elif clf == 'nb' or clf == 4:
-            clfObj = GaussianNB(**kwargs)
-            clfObj.lgStr = 'Naive Baysian'
-            clfObj.shStr = 'NB'
+            # Naive Bayesian :
+            elif clf == 'nb' or clf == 4:
+                clfObj = GaussianNB(**kwargs)
+                clfObj.lgStr = 'Naive Baysian'
+                clfObj.shStr = 'NB'
 
-        # KNN :
-        elif clf == 'knn' or clf == 5:
-            clfObj = KNeighborsClassifier(n_neighbors=n_knn, **kwargs)
-            clfObj.lgStr = 'k-Nearest Neighbor (neighbor=' + str(n_knn) + ')'
-            clfObj.shStr = 'KNN-' + str(n_knn)
+            # KNN :
+            elif clf == 'knn' or clf == 5:
+                clfObj = KNeighborsClassifier(n_neighbors=n_knn, **kwargs)
+                clfObj.lgStr = 'k-Nearest Neighbor (neighbor=' + str(n_knn) + ')'
+                clfObj.shStr = 'KNN-' + str(n_knn)
 
-        # Random forest :
-        elif clf == 'rf' or clf == 6:
-            clfObj = RandomForestClassifier(n_estimators=n_tree, **kwargs)
-            clfObj.lgStr = 'Random Forest (tree=' + str(n_tree) + ')'
-            clfObj.shStr = 'RF-' + str(n_tree)
+            # Random forest :
+            elif clf == 'rf' or clf == 6:
+                clfObj = RandomForestClassifier(n_estimators=n_tree, **kwargs)
+                clfObj.lgStr = 'Random Forest (tree=' + str(n_tree) + ')'
+                clfObj.shStr = 'RF-' + str(n_tree)
 
-        # Logistic regression :
-        elif clf == 'lr' or clf == 7:
-            clfObj = LogisticRegression(**kwargs)
-            clfObj.lgStr = 'Logistic Regression'
-            clfObj.shStr = 'LogReg'
+            # Logistic regression :
+            elif clf == 'lr' or clf == 7:
+                clfObj = LogisticRegression(**kwargs)
+                clfObj.lgStr = 'Logistic Regression'
+                clfObj.shStr = 'LogReg'
 
-        # QDA :
-        elif clf == 'qda' or clf == 8:
-            clfObj = QuadraticDiscriminantAnalysis(**kwargs)
-            clfObj.lgStr = 'Quadratic Discriminant Analysis'
-            clfObj.shStr = 'QDA'
+            # QDA :
+            elif clf == 'qda' or clf == 8:
+                clfObj = QuadraticDiscriminantAnalysis(**kwargs)
+                clfObj.lgStr = 'Quadratic Discriminant Analysis'
+                clfObj.shStr = 'QDA'
 
+            else:
+                raise ValueError('No classifier "'+str(clf)+'"" found')
+
+        # Use a custom classifier :
         else:
-            raise ValueError('No classifier "'+str(clf)+'"" found')
+            clfObj = clf
+            clfObj.shStr = 'custom'
+            clfObj.lgStr = 'Custom classifier'
 
+
+        return clfObj
+
+
+
+class defVoting(object):
+
+    """Define a voting classifier
+
+    Args:
+        y: list/array
+            The label vector
+
+    Kargs:
+        estimators: list, optional, (def: [])
+            A list a pre-build estimators using defClf()
+
+        clfArgs: list, optional, (def: [])
+            Instead of sending a list of pre-defined classifiers,
+            build estimators directly using a list of dictionnaries
+            to pass to the defClf class.    
+
+    Return
+        clf: a classifier object
+
+    Example:
+        >>> # Build two classifiers :
+        >>> clf0 = defClf(y, clf='lda')
+        >>> clf1 = defClf(y, clf='svm')
+        >>> # Build the voting classifier :
+        >>> clf = defVoting(y, estimators=[clf0, clf1])
+        >>> # Alternatively, thos steps can be done in one line :
+        >>> clf = defVoting(y, clfArgs=[{'clf':'lda'}, {'clf':'svm'}])
+    """
+    
+
+    def __new__(self, y, estimators=[], clfArgs=[], **kwargs):
+
+        # estimators is not list :
+        if not isinstance(estimators, list):
+            raise ValueError('estimators must be a list of classifiers define with defClf')
+        # estimators is list and not empty :
+        elif isinstance(estimators, list) and (len(estimators)):
+            clfObj = self._voting(estimators, **kwargs)
+        # estimators is list :
+        elif not len(estimators) and len(clfArgs):
+            estimators = [defClf(y, **k) for k in clfArgs]
+            clfObj = self._voting(estimators, **kwargs)
+            
+        return clfObj
+    
+    def _voting(estimators, **kwargs):
+        """Build the classifier
+        """
+        clfObj = VotingClassifier([(k.shStr, k) for k in estimators], n_jobs=1, **kwargs)
+        clfObj.lgStr = ' + '.join([k.lgStr for k in estimators])
+        clfObj.shStr = ' + '.join([k.shStr for k in estimators])
         return clfObj
 
 
