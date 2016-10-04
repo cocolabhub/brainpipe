@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from itertools import product
 
 from sklearn.svm import SVC
@@ -48,7 +49,7 @@ class MFpipe(object):
             self._cv.random_state = random_state
 
         
-    def fit(self, x, rep=1, n_iter=5, n_jobs=1, verbose=0):
+    def fit(self, x, name=None, rep=1, n_iter=5, n_jobs=1, verbose=0):
         """Apply the pipeline.
 
         Args:
@@ -56,6 +57,9 @@ class MFpipe(object):
                 Array of features organize as (n_trials, n_features)
 
         Kargs:
+            name: ndarray, optional, (def: None)
+                Array of string with the same length as the number of features
+
             rep: integer, optional, (def: 1)
                 Number of repetitions for the whole pipeline.
 
@@ -75,6 +79,16 @@ class MFpipe(object):
         # Save some usefull variables :
         self._rep, self._n_iter = rep, n_iter
         self._ntrials, self._nfeat = x.shape
+
+        # Define features name :
+        if name is None:
+            name = np.array(['f'+str(k) for k in range(self._nfeat)])
+        elif name is not None:
+            if not isinstance(name, np.ndarray) and len(name) == self._nfeat:
+                name = np.array(name)
+            elif len(name) != self._nfeat:
+                raise ValueError('The length of name must be the same as the number of features in x')
+        self._name = name
 
         # Pre-defined matrix :
         da = np.zeros((rep,), dtype=np.float32)
@@ -322,7 +336,14 @@ class MFpipe(object):
             for k, i in iterator:
                 estimator = self.best_estimator_[k][i].get_params()['features']
                 fselected.extend(list(estimator.transform(featrange).ravel().astype(int)))
-            return np.bincount(np.array(fselected))
+            # Get the count for each feature :
+            bins = np.bincount(np.array(fselected))
+            selectedBins = np.zeros((self._nfeat,), dtype=int)
+            selectedBins[np.arange(len(bins))] = bins
+            # Put everything in a Dataframe :
+            resum = pd.DataFrame({'Name':self._name, 'Count':selectedBins,
+                                 'Percent':100*selectedBins/selectedBins.sum()}, columns=['Name', 'Count', 'Percent'])
+            return resum
         else:
             print('You must run the fit() method before')
 
