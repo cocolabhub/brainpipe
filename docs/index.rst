@@ -5,11 +5,6 @@ Brainpipe is a python toolbox dedicated for neuronal signals analysis and machin
 
 It's evolving every day! So if you have problems, bugs or if you want to collaborate and add your own tools, contact me at e.combrisson@gmail.com
 
-.. figure::  ../images/titend.png
-   :align:   center
-
-   (`Jhenn Oz <https://www.facebook.com/jhenntattooist/?fref=ts>`_)
-
 	
 
 Requirement
@@ -36,6 +31,11 @@ Go to your python site-package folder (ex: anaconda3/lib/python3.5/site-packages
 
 What's new
 **********
+v0.1.6
+=======
+- Fix scikit-learn v0.18 compatibility
+- Add mutli-features pipelines
+ 
 v0.1.5
 =======
 - classify: fit_stat() has been removed, there is only fit() now. confusion_matrix() has been rename to cm()

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from itertools import product
 
-from sklearn.cross_validation import LeavePLabelOut
+from sklearn.model_selection import LeavePGroupsOut
 from sklearn.metrics import accuracy_score
 from joblib import Parallel, delayed
 
@@ -48,7 +48,7 @@ class LeavePSubjectOut(clfplt):
         self._nsuj = nsuj
         self._pout = pout
         # Manage cross-validation:
-        self._cv = LeavePLabelOut(np.arange(nsuj), pout)
+        self._cv = LeavePGroupsOut(np.arange(nsuj), pout)
         self._cv.shStr = 'Leave '+str(pout)+' subjects out'
         self._cv.lgStr = self._cv.shStr
         self._cv.rep = 1

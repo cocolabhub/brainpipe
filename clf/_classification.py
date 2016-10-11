@@ -18,6 +18,7 @@ import pandas as pd
 __all__ = ['classify',
            'defClf',
            'defCv',
+           'defVoting',
            'generalization'
            ]
 

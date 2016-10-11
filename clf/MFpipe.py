@@ -1,13 +1,14 @@
 import numpy as np
+import pandas as pd
+from itertools import product
 
 from sklearn.svm import SVC
 from sklearn.preprocessing import StandardScaler
-from sklearn.cross_validation import StratifiedShuffleSplit, KFold, permutation_test_score
-from sklearn.grid_search import GridSearchCV
+from sklearn.model_selection import (StratifiedShuffleSplit, KFold, permutation_test_score, GridSearchCV)
 from sklearn.metrics import accuracy_score
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.decomposition import PCA
-from sklearn.feature_selection import SelectKBest, SelectFdr, SelectFpr
+from sklearn.feature_selection import SelectKBest, SelectFdr, SelectFpr, RFECV
 from sklearn.pipeline import Pipeline, FeatureUnion
 
 
@@ -36,16 +37,19 @@ class MFpipe(object):
     def __init__(self, y, cv, random_state=0):
         # Get variables :
         self._cv = cv
-        self._nfolds = len(self._cv)
+        self._nfolds = cv.n_splits
         self._y = y
         self._nclass = len(np.unique(y))
+        self.best_estimator_, self.best_params_ = [], []
+        self.pipeline = None
+        
 
         # Check cross-validation :
         if not self._cv.random_state:
             self._cv.random_state = random_state
 
         
-    def fit(self, x, rep=1, n_iter=5, n_jobs=1, verbose=None):
+    def fit(self, x, name=None, rep=1, n_iter=5, n_jobs=1, verbose=0):
         """Apply the pipeline.
 
         Args:
@@ -53,6 +57,9 @@ class MFpipe(object):
                 Array of features organize as (n_trials, n_features)
 
         Kargs:
+            name: ndarray, optional, (def: None)
+                Array of string with the same length as the number of features
+
             rep: integer, optional, (def: 1)
                 Number of repetitions for the whole pipeline.
 
@@ -63,17 +70,29 @@ class MFpipe(object):
             n_jobs: integer, optional, (def: 1)
                 Number of jobs for parallel computing. Use -1 for all jobs.
 
-            verbose: integer, optional, (def: None)
+            verbose: integer, optional, (def: 0)
                 Control displaying state 
 
         Return
             da: the final vector of decoding accuracy of shape (n_repetitions,)
         """
-    
+        # Save some usefull variables :
+        self._rep, self._n_iter = rep, n_iter
+        self._ntrials, self._nfeat = x.shape
+
+        # Define features name :
+        if name is None:
+            name = np.array(['f'+str(k) for k in range(self._nfeat)])
+        elif name is not None:
+            if not isinstance(name, np.ndarray) and len(name) == self._nfeat:
+                name = np.array(name)
+            elif len(name) != self._nfeat:
+                raise ValueError('The length of name must be the same as the number of features in x')
+        self._name = name
+
         # Pre-defined matrix :
         da = np.zeros((rep,), dtype=np.float32)
         self.y_predict, self.y_test = [], []
-        self.best_estimator_, self.best_params_ = [], []
         outstr = 'REP: {r}/'+str(rep)+', FOLD: {f}/'+str(self._nfolds)+' = {param}'
 
         # Loop on repetitions :
@@ -84,14 +103,15 @@ class MFpipe(object):
             best_estimator_, best_params_ = [], []
 
             # Loop on training/testing index :
-            for f, (trainIdx, testIdx) in enumerate(self._cv):
+            iterator = self._cv.split(x, self._y)
+            for f, (trainIdx, testIdx) in enumerate(iterator):
 
                 # Training/testing set :
                 xtrain, ytrain = x[trainIdx, :], self._y[trainIdx]
                 xtest, ytest = x[testIdx, :], self._y[testIdx]
 
                 # Cross-validate the choice of parameters  :
-                cv = StratifiedShuffleSplit(ytrain, n_iter=n_iter, test_size=0.2)
+                cv = StratifiedShuffleSplit(n_splits=n_iter, test_size=0.2)
                 grid = GridSearchCV(self.pipeline, cv=cv, param_grid=self.grid, verbose=verbose, n_jobs=n_jobs)
                 grid.fit(xtrain, ytrain)
                 grid.best_estimator_.fit(xtrain, ytrain)
@@ -101,7 +121,7 @@ class MFpipe(object):
                 best_params_.append(grid.best_params_)
 
                 # Step print :
-                if verbose is not None:
+                if verbose > 0:
                     print(outstr.format(r=r+1, f=f+1, param=str(grid.best_params_)))
 
                 # Evaluate on testing :
@@ -180,19 +200,19 @@ class MFpipe(object):
         # ----------------------------------------------------------------
         # DEFINED COMBINORS
         # ----------------------------------------------------------------
-        self._piperef = ['lda_pca', 'lda_pca-kBest', 'lda_optimized_pca', 'lda_optimized_pca-kBest']
         pca = PCA()
         selection = SelectKBest()
         scaler = StandardScaler()
         fdr = SelectFdr()
+        fpr = SelectFpr()
 
         # ----------------------------------------------------------------
         # RANGE DEFINITION
         # ---------------------------------------------------------
-        pca_range = np.arange(1, n_pca)
-        kbest_range = np.arange(1, n_best)
-        C_range = np.logspace(-2, 2, svm_C)
-        gamma_range = np.logspace(-9, 2, svm_gamma)
+        pca_range = np.arange(1, n_pca+1)
+        kbest_range = np.arange(1, n_best+1)
+        C_range = np.logspace(-5, 15, svm_C, base=2.) #np.logspace(-2, 2, svm_C)
+        gamma_range = np.logspace(-15, 3, svm_gamma, base=2.) #np.logspace(-9, 2, svm_gamma)
 
         # Check range :
         if not kbest_range.size: kbest_range = [1]
@@ -265,7 +285,7 @@ class MFpipe(object):
 
         # -> FPR :
         if name.lower().find('fpr') != -1:
-            combine.append(("fpr", fdr))
+            combine.append(("fpr", fpr))
             grid['features__fpr__alpha'] = fpr_alpha        
 
         # -> PCA :
@@ -277,6 +297,15 @@ class MFpipe(object):
         if name.lower().find('kbest') != -1:
             combine.append(("kBest", selection))
             grid['features__kBest__k'] = kbest_range
+
+        # -> RFECV :
+        if name.lower().find('rfecv') != -1:
+            rfecv = RFECV(clf)
+            combine.append(("RFECV", rfecv))
+
+        # if combine is empty, select all features :
+        if not len(combine):
+            combine.append(("kBest", SelectKBest(k='all')))
 
         self.combine = FeatureUnion(combine)
 
@@ -291,5 +320,58 @@ class MFpipe(object):
         # Save pipeline :
         self.pipeline = Pipeline(pipeline)
         self.grid = grid
+        self._pipename = name
 
         # print('\nCOMBINE: ', self.combine, '\n\nPIPELINE: ', self.pipeline, '\n\nGRID: ', self.grid)
+
+
+    def selected_features(self):
+        """Get the number of times a feature was selected
+        """
+        if len(self.best_estimator_):
+            # Get selected features from the best estimator :
+            iterator = product(range(self._rep), range(self._nfolds))
+            fselected = []
+            featrange = np.arange(self._nfeat)[np.newaxis, ...]
+            for k, i in iterator:
+                estimator = self.best_estimator_[k][i].get_params()['features']
+                fselected.extend(list(estimator.transform(featrange).ravel().astype(int)))
+            # Get the count for each feature :
+            bins = np.bincount(np.array(fselected))
+            selectedBins = np.zeros((self._nfeat,), dtype=int)
+            selectedBins[np.arange(len(bins))] = bins
+            # Put everything in a Dataframe :
+            resum = pd.DataFrame({'Name':self._name, 'Count':selectedBins,
+                                 'Percent':100*selectedBins/selectedBins.sum()}, columns=['Name', 'Count', 'Percent'])
+            return resum
+        else:
+            print('You must run the fit() method before')
+
+    def get_grid(self, n_splits=3, n_jobs=1):
+        """Return the cross-validated grid search object
+
+        Kargs:
+            n_splits: int, optional, (def: 3)
+                The number of folds for the cross-validation
+
+            n_jobs: int, optional, (def: 1)
+                Number of jobs to use for parallel processing
+
+        Return:
+            grid: a sklearn.GridSearchCV object with the defined pipeline
+        """
+        if self.pipeline is not None:
+            grid = GridSearchCV(self.pipeline, cv=StratifiedShuffleSplit(n_splits=n_splits, test_size=1/n_splits),
+                                param_grid=self.grid, n_jobs=n_jobs)
+        else:
+            raise ValueError('You must first define a pipeline')
+        return grid
+
+    @property
+    def pipename(self):
+        return self._pipename
+
+    @pipename.setter
+    def pipename(self, value):
+        self.default_pipeline(value)
+        print('Pipeline updated')

@@ -83,6 +83,7 @@ defCv                   Define a cross-validation
 classify                Classify features (either each one of them or grouping)
 generalization          Generalization of decoding performance (generally, across time)
 mf                      Multi-features procedure. Select the best combination of features
+MFpipe                  Multi-features pipeline
 ================        ==================================================================================
 
 
