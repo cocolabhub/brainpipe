@@ -83,3 +83,7 @@ Multi-features
 .. automodule:: classification
    :members: mf
    :noindex:
+
+.. automodule:: classification
+   :members: MFpipe
+   :noindex:
