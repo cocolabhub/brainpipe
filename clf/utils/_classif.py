@@ -350,7 +350,7 @@ class defVoting(object):
         clfArgs: list, optional, (def: [])
             Instead of sending a list of pre-defined classifiers,
             build estimators directly using a list of dictionnaries
-            to pass to the defClf class.    
+            to pass to the defClf class.
 
     Return
         clf: a classifier object
@@ -364,7 +364,7 @@ class defVoting(object):
         >>> # Alternatively, thos steps can be done in one line :
         >>> clf = defVoting(y, clfArgs=[{'clf':'lda'}, {'clf':'svm'}])
     """
-    
+
 
     def __new__(self, y, estimators=[], clfArgs=[], **kwargs):
 
@@ -378,9 +378,9 @@ class defVoting(object):
         elif not len(estimators) and len(clfArgs):
             estimators = [defClf(y, **k) for k in clfArgs]
             clfObj = self._voting(estimators, **kwargs)
-            
+
         return clfObj
-    
+
     def _voting(estimators, **kwargs):
         """Build the classifier
         """
