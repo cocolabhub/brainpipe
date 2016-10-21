@@ -71,7 +71,7 @@ class data2classif(object):
         errorMsg = 'Not the same number of features (feat_dim='+str(feat_dim)+') in condition {cond}'
         featCond = {k:[j.shape[feat_dim] for j in condition[k]] for i, k in enumerate(condLst)}
         self._2bool(featAll, msg=errorMsg.format(cond=str(featCond)))
-        
+
         # Concatenate data :
         #   -> Concatenate features inside each condition :
         for k in condLst:

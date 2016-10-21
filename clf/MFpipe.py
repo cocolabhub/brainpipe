@@ -25,7 +25,7 @@ class MFpipe(object):
 
         cv: sklearn.cross_validation, optional, (def: default)
             An external cross-validation to split in training and testing
-            to validate the pipeline without overfiting.               
+            to validate the pipeline without overfiting.
 
         random_state: ineteger, optional, (def: 0)
             Fix the random state of the machine for reproducibility.
@@ -42,13 +42,13 @@ class MFpipe(object):
         self._nclass = len(np.unique(y))
         self.best_estimator_, self.best_params_ = [], []
         self.pipeline = None
-        
+
 
         # Check cross-validation :
         if not self._cv.random_state:
             self._cv.random_state = random_state
 
-        
+
     def fit(self, x, name=None, rep=1, n_iter=5, n_jobs=1, verbose=0):
         """Apply the pipeline.
 
@@ -71,7 +71,7 @@ class MFpipe(object):
                 Number of jobs for parallel computing. Use -1 for all jobs.
 
             verbose: integer, optional, (def: 0)
-                Control displaying state 
+                Control displaying state
 
         Return
             da: the final vector of decoding accuracy of shape (n_repetitions,)
@@ -286,7 +286,7 @@ class MFpipe(object):
         # -> FPR :
         if name.lower().find('fpr') != -1:
             combine.append(("fpr", fpr))
-            grid['features__fpr__alpha'] = fpr_alpha        
+            grid['features__fpr__alpha'] = fpr_alpha
 
         # -> PCA :
         if name.lower().find('pca') != -1:
@@ -321,7 +321,7 @@ class MFpipe(object):
         self.pipeline = Pipeline(pipeline)
         self.grid = grid
         self._pipename = name
-
+        print('Default pipeline set')
         # print('\nCOMBINE: ', self.combine, '\n\nPIPELINE: ', self.pipeline, '\n\nGRID: ', self.grid)
 
 
